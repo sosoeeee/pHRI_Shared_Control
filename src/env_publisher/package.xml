@@ -2,7 +2,7 @@
 <package format="2">
   <name>env_publisher</name>
   <version>0.0.0</version>
-  <description>The env_publisher package</description>
+  <description>The env_publisher subscribe the information of obstacles in environment via VICON node and publish it in a 'visualization_msgs/Marker' message format</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
@@ -49,10 +49,18 @@
   <!-- Use doc_depend for packages you need only for building documentation: -->
   <!--   <doc_depend>doxygen</doc_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
-  <build_depend>rospy</build_depend>
-  <build_export_depend>rospy</build_export_depend>
-  <exec_depend>rospy</exec_depend>
 
+  <build_depend>rospy</build_depend>
+  <build_depend>visualization_msgs</build_depend>
+  <build_depend>geometry_msgs</build_depend>
+
+  <build_export_depend>rospy</build_export_depend>
+  <build_export_depend>visualization_msgs</build_export_depend>
+  <build_export_depend>geometry_msgs</build_export_depend>
+
+  <exec_depend>rospy</exec_depend>
+  <exec_depend>visualization_msgs</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
