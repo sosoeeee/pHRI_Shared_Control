@@ -7,10 +7,10 @@ from geometry_msgs.msg import TransformStamped
 class EnvPublisher:
     def __init__(self):
         # get the parameters
-        self.VICON_topics = rospy.get_param('/env_publisher/VICON_topics', [])
-        self.obstacle_args = rospy.get_param('/env_publisher/obstacle_args', [])
-        self.publish_rate = rospy.get_param('/env_publisher/publish_rate', 10)
-        self.publish_topic = rospy.get_param('/env_publisher/publish_topic', 'env_obstacles')
+        self.VICON_topics = rospy.get_param('~env_publisher/VICON_topics', [])
+        self.obstacle_args = rospy.get_param('~env_publisher/obstacle_args', [])
+        self.publish_rate = rospy.get_param('~env_publisher/publish_rate', 10)
+        self.publish_topic = rospy.get_param('~env_publisher/publish_topic', 'env_obstacles')
 
         if len(self.VICON_topics) != len(self.obstacle_args):
             raise Exception('Number of VICON topics and obstacle arguments do not match')
@@ -20,15 +20,14 @@ class EnvPublisher:
             rospy.Subscriber(topic, TransformStamped, self.updateObstacles, args, queue_size=1)
 
         # initialize the obstacles
-        self.obstacles = []
-        self.initObstacles(len(self.VICON_topics))
-
         self.typeDict = {
             'cube': Marker.CUBE,
             'sphere': Marker.SPHERE,
             'cylinder': Marker.CYLINDER,
             'arrow': Marker.ARROW,
         }
+        self.obstacles = []
+        self.initObstacles(len(self.VICON_topics))
 
         # publish the markers
         self.env_publisher = rospy.Publisher(self.publish_topic, MarkerArray, queue_size=1)
@@ -37,7 +36,7 @@ class EnvPublisher:
     def initObstacles(self, num):
         for i in range(num):
             marker = Marker()
-            marker.header.frame_id = "world"
+            marker.header.frame_id = "map" # need create a frame for visual(map is defaulf one)
             marker.ns = "env"
             marker.id = i
             marker.type = self.typeDict[self.obstacle_args[i]['type']]
@@ -57,25 +56,17 @@ class EnvPublisher:
 
     def updateObstacles(self, data, args):
         i = args['id']
-        # self.obstacles[i].pose.position.x = data.transform.translation.x
-        # self.obstacles[i].pose.position.y = data.transform.translation.y
-        # self.obstacles[i].pose.position.z = data.transform.translation.z
-        # self.obstacles[i].pose.orientation.x = data.transform.rotation.x
-        # self.obstacles[i].pose.orientation.y = data.transform.rotation.y
-        # self.obstacles[i].pose.orientation.z = data.transform.rotation.z
-        # self.obstacles[i].pose.orientation.w = data.transform.rotation.w
-
-        self.obstacles[i].pose.position.x = 1
-        self.obstacles[i].pose.position.y = 1
-        self.obstacles[i].pose.position.z = 1
-        self.obstacles[i].pose.orientation.x = 1
-        self.obstacles[i].pose.orientation.y = 0
-        self.obstacles[i].pose.orientation.z = 0
-        self.obstacles[i].pose.orientation.w = 0
+        self.obstacles[i].pose.position.x = data.transform.translation.x
+        self.obstacles[i].pose.position.y = data.transform.translation.y
+        self.obstacles[i].pose.position.z = data.transform.translation.z
+        self.obstacles[i].pose.orientation.x = data.transform.rotation.x
+        self.obstacles[i].pose.orientation.y = data.transform.rotation.y
+        self.obstacles[i].pose.orientation.z = data.transform.rotation.z
+        self.obstacles[i].pose.orientation.w = data.transform.rotation.w
 
     def run(self):
         # test Rviz
-        self.updateObstacles(None, {'id': 0})
+        # self.updateObstacles(None, {'id': 0})
 
         while not rospy.is_shutdown():
             self.env_publisher.publish(self.obstacles)

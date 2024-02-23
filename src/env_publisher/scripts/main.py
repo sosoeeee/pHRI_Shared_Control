@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 import sys
+import os
 
-sys.path.append("src/env_publisher/scripts") # the path relative to ROS workspace
+sys.path.append(os.path.dirname(__file__)) # when using launch file, must be global path :( so directly use "os.path.dirname(__file__)"
 
 from EnvPublisherClass import EnvPublisher
 import rospy
