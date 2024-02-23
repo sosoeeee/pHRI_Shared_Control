@@ -4,14 +4,6 @@ import rospy
 from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import TransformStamped
 
-typeDict = {
-    'cube': Marker.CUBE,
-    'sphere': Marker.SPHERE,
-    'cylinder': Marker.CYLINDER,
-    'arrow': Marker.ARROW,
-}
-
-
 class EnvPublisher:
     def __init__(self):
         # get the parameters
@@ -25,14 +17,18 @@ class EnvPublisher:
 
         # subscribe to the VICON data
         for topic, args in zip(self.VICON_topics, self.obstacle_args):
-            try:
-                rospy.Subscriber(topic, TransformStamped, self.updateObstacles, args, queue_size=1)
-            except:
-                raise Exception('Error subscribing to topic: ', topic)
+            rospy.Subscriber(topic, TransformStamped, self.updateObstacles, args, queue_size=1)
 
         # initialize the obstacles
         self.obstacles = []
         self.initObstacles(len(self.VICON_topics))
+
+        self.typeDict = {
+            'cube': Marker.CUBE,
+            'sphere': Marker.SPHERE,
+            'cylinder': Marker.CYLINDER,
+            'arrow': Marker.ARROW,
+        }
 
         # publish the markers
         self.env_publisher = rospy.Publisher(self.publish_topic, MarkerArray, queue_size=1)
@@ -44,7 +40,7 @@ class EnvPublisher:
             marker.header.frame_id = "world"
             marker.ns = "env"
             marker.id = i
-            marker.type = typeDict[self.obstacle_args[i]['type']]
+            marker.type = self.typeDict[self.obstacle_args[i]['type']]
             marker.action = Marker.ADD
 
             # shape parameters

@@ -1,2 +1,2 @@
-
+env_publisher
 -DCATKIN_DEVEL_PREFIX=/home/jun/pHRI_Shared_Control/devel -DCMAKE_INSTALL_PREFIX=/home/jun/pHRI_Shared_Control/install -G Unix Makefiles
