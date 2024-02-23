@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import sys
-import os
 
 sys.path.append("src/env_publisher/scripts") # the path relative to ROS workspace
 

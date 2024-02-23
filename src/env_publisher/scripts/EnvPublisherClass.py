@@ -57,15 +57,26 @@ class EnvPublisher:
 
     def updateObstacles(self, data, args):
         i = args['id']
-        self.obstacles[i].pose.position.x = data.transform.translation.x
-        self.obstacles[i].pose.position.y = data.transform.translation.y
-        self.obstacles[i].pose.position.z = data.transform.translation.z
-        self.obstacles[i].pose.orientation.x = data.transform.rotation.x
-        self.obstacles[i].pose.orientation.y = data.transform.rotation.y
-        self.obstacles[i].pose.orientation.z = data.transform.rotation.z
-        self.obstacles[i].pose.orientation.w = data.transform.rotation.w
+        # self.obstacles[i].pose.position.x = data.transform.translation.x
+        # self.obstacles[i].pose.position.y = data.transform.translation.y
+        # self.obstacles[i].pose.position.z = data.transform.translation.z
+        # self.obstacles[i].pose.orientation.x = data.transform.rotation.x
+        # self.obstacles[i].pose.orientation.y = data.transform.rotation.y
+        # self.obstacles[i].pose.orientation.z = data.transform.rotation.z
+        # self.obstacles[i].pose.orientation.w = data.transform.rotation.w
+
+        self.obstacles[i].pose.position.x = 1
+        self.obstacles[i].pose.position.y = 1
+        self.obstacles[i].pose.position.z = 1
+        self.obstacles[i].pose.orientation.x = 1
+        self.obstacles[i].pose.orientation.y = 0
+        self.obstacles[i].pose.orientation.z = 0
+        self.obstacles[i].pose.orientation.w = 0
 
     def run(self):
+        # test Rviz
+        self.updateObstacles(None, {'id': 0})
+
         while not rospy.is_shutdown():
             self.env_publisher.publish(self.obstacles)
             self.rate.sleep()
