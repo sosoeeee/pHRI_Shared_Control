@@ -1,0 +1,7 @@
+<!-- workspace.launch -->
+
+<launch>
+  <include file="$(find env_publisher)/launch/env_publisher.launch"/>
+  <!-- Add more include statements for other packages -->
+</launch>
+
