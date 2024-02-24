@@ -24,13 +24,7 @@ class EnvPublisher:
             rospy.Subscriber(topic, TransformStamped, self.updateObstacles, args, queue_size=1)
 
         # publish the transform between the map and the VICON frame
-        br = tf.TransformBroadcaster()
-        br.sendTransform((self.VICON_transform['x'], self.VICON_transform['y'], self.VICON_transform['z']),
-                         (self.VICON_transform['qx'], self.VICON_transform['qy'], self.VICON_transform['qz'],
-                          self.VICON_transform['qw']),
-                         rospy.Time.now(),
-                         "VICON",
-                         "world")
+        self.br = tf.TransformBroadcaster()
 
         # initialize the obstacles
         self.typeDict = {
@@ -83,4 +77,12 @@ class EnvPublisher:
 
         while not rospy.is_shutdown():
             self.env_publisher.publish(self.obstacles)
+
+            self.br.sendTransform((self.VICON_transform['x'], self.VICON_transform['y'], self.VICON_transform['z']),
+                    (self.VICON_transform['qx'], self.VICON_transform['qy'], self.VICON_transform['qz'],
+                    self.VICON_transform['qw']),
+                    rospy.Time.now(),
+                    "VICON",
+                    "world")
+
             self.rate.sleep()
