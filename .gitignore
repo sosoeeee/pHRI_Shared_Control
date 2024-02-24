@@ -1,3 +1,5 @@
 # ros complie
 /build
 /devel
+/.catkin_tools
+/logs

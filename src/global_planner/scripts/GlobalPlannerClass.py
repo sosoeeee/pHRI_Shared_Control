@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import rospy
 from visualization_msgs.msg import MarkerArray
 from global_planner.srv import GlobalPlanning, GlobalPlanningResponse
@@ -53,7 +55,7 @@ class GlobalPlanner:
 
     def updateObstacles(self, obstacleSet):
         self.obstacles = []
-        for obstacle in obstacleSet:
+        for obstacle in obstacleSet.markers:
             self.obstacles.append(obstacle)
 
     # visualization for debugging
