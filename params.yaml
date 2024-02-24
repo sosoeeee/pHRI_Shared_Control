@@ -1,3 +1,5 @@
+world_frame: "world"
+
 ## env publisher params
 env_publisher:
   publish_rate: 10
@@ -7,3 +9,28 @@ env_publisher:
   VICON_transform: {x: 0, y: 1, z: 2, qx: 0, qy: 0, qz: 0, qw: 1}
   obstacle_args:
     - {id: 0, type: "sphere", radius: 0.5}
+
+## Global planner params
+global_planner:
+  publish_rate: 10
+  publish_topic: "global_plan"
+  obstacles_dilate: 0.03
+  goal_tolerance: 0.5
+
+RRT_planner:
+    max_iter: 10000
+    step_size: 0.5
+    greedy_prob: 0.3
+    optimize_path: true
+    search_space:
+      x:
+        - 2
+        - -2
+      y:
+        - 2
+        - -2
+      z:
+        - 2
+        - -2
+
+

@@ -1,5 +1,4 @@
 <launch>
   <node name="env_publisher" pkg="env_publisher" type="main.py">
-     <rosparam file="params.yaml" command="load"/>
   </node>
 </launch>

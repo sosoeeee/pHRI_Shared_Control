@@ -1,0 +1,9 @@
+# This service allows to plan a path from a start to a goal position in the map
+
+geometry_msgs/Point start
+geometry_msgs/Point goal
+
+---
+
+float32[] path
+

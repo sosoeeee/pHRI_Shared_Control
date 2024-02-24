@@ -15,6 +15,7 @@ class EnvPublisher:
         self.obstacle_args = rospy.get_param('~env_publisher/obstacle_args', [])
         self.publish_rate = rospy.get_param('~env_publisher/publish_rate', 10)
         self.publish_topic = rospy.get_param('~env_publisher/publish_topic', 'env_obstacles')
+        self.world_frame = rospy.get_param('/world_frame', 'map')
 
         if len(self.VICON_topics) != len(self.obstacle_args):
             raise Exception('Number of VICON topics and obstacle arguments do not match')
@@ -79,10 +80,10 @@ class EnvPublisher:
             self.env_publisher.publish(self.obstacles)
 
             self.br.sendTransform((self.VICON_transform['x'], self.VICON_transform['y'], self.VICON_transform['z']),
-                    (self.VICON_transform['qx'], self.VICON_transform['qy'], self.VICON_transform['qz'],
-                    self.VICON_transform['qw']),
-                    rospy.Time.now(),
-                    "VICON",
-                    "world")
+                                  (self.VICON_transform['qx'], self.VICON_transform['qy'], self.VICON_transform['qz'],
+                                   self.VICON_transform['qw']),
+                                  rospy.Time.now(),
+                                  "VICON",
+                                  self.world_frame)
 
             self.rate.sleep()

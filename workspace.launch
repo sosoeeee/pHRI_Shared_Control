@@ -1,7 +1,9 @@
 <!-- workspace.launch -->
 
 <launch>
+  <rosparam file="params.yaml" command="load"/>
   <include file="$(find env_publisher)/launch/env_publisher.launch"/>
+  <include file="$(find global_planner)/launch/global_planner.launch"/>
   <!-- Add more include statements for other packages -->
 </launch>
 
