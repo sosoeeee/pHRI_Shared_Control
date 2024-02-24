@@ -3,11 +3,15 @@
 import rospy
 from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import TransformStamped
+import tf
+
 
 class EnvPublisher:
     def __init__(self):
         # get the parameters
         self.VICON_topics = rospy.get_param('~env_publisher/VICON_topics', [])
+        self.VICON_transform = rospy.get_param('~env_publisher/VICON_transform',
+                                               {'x': 0, 'y': 0, 'z': 0, 'qx': 0, 'qy': 0, 'qz': 0, 'qw': 1})
         self.obstacle_args = rospy.get_param('~env_publisher/obstacle_args', [])
         self.publish_rate = rospy.get_param('~env_publisher/publish_rate', 10)
         self.publish_topic = rospy.get_param('~env_publisher/publish_topic', 'env_obstacles')
@@ -18,6 +22,15 @@ class EnvPublisher:
         # subscribe to the VICON data
         for topic, args in zip(self.VICON_topics, self.obstacle_args):
             rospy.Subscriber(topic, TransformStamped, self.updateObstacles, args, queue_size=1)
+
+        # publish the transform between the map and the VICON frame
+        br = tf.TransformBroadcaster()
+        br.sendTransform((self.VICON_transform['x'], self.VICON_transform['y'], self.VICON_transform['z']),
+                         (self.VICON_transform['qx'], self.VICON_transform['qy'], self.VICON_transform['qz'],
+                          self.VICON_transform['qw']),
+                         rospy.Time.now(),
+                         "VICON",
+                         "world")
 
         # initialize the obstacles
         self.typeDict = {
@@ -36,7 +49,7 @@ class EnvPublisher:
     def initObstacles(self, num):
         for i in range(num):
             marker = Marker()
-            marker.header.frame_id = "map" # need create a frame for visual(map is defaulf one)
+            marker.header.frame_id = "VICON"
             marker.ns = "env"
             marker.id = i
             marker.type = self.typeDict[self.obstacle_args[i]['type']]

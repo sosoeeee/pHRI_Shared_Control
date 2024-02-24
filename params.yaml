@@ -4,5 +4,6 @@ env_publisher:
   publish_topic: "env_obstacles"
   VICON_topics:
     - "/vicon/Obstacle_1/Obstacle_1"
+  VICON_transform: {x: 0, y: 0, z: 0, qx: 0, qy: 0, qz: 0, qw: 1}
   obstacle_args:
     - {id: 0, type: "sphere", radius: 0.5}
