@@ -9,6 +9,7 @@ sys.path.append(os.path.dirname(__file__))
 
 from GlobalPlannerClass import GlobalPlanner
 import numpy as np
+import time
 
 from visualization_msgs.msg import Marker
 import rospy
@@ -16,12 +17,14 @@ import rospy
 
 class RRTPlanner(GlobalPlanner):
     def __init__(self):
-        super(RRTPlanner, self).__init__()
         self.optimizePath = None
         self.maxIterNum = None
         self.step = None
         self.searchSpace = None
         self.greedyProb = None
+
+        super(RRTPlanner, self).__init__()
+
 
     def initPlanner(self):
         # RRT搜索步长
@@ -39,11 +42,11 @@ class RRTPlanner(GlobalPlanner):
     # check if the point collides with the obstacles
     def pointCollisionDetection(self, point):
         # obstacle is a Marker message
-        for obstacle in self.obstacles:
+        for obstacle in self.obstacles.markers:
             if obstacle.type == Marker.SPHERE:
                 # check if the point is in the sphere
                 if np.linalg.norm(
-                        np.array([obstacle.pose.position.x, obstacle.pose.position.y, obstacle.pose.position.z])
+                        np.array([obstacle.pose.position.x, obstacle.pose.position.y, obstacle.pose.position.z]).reshape((3, 1)) 
                         - point) <= obstacle.scale.x + self.obstacles_dilate:
                     return True
 
@@ -55,7 +58,7 @@ class RRTPlanner(GlobalPlanner):
             raise Exception('The shape of startPoint and endPoint must be (3, 1).')
 
         checkVector = p_s - p_e
-        checkStep = self.step / 5         # 5 is the number of check points in the line segment
+        checkStep = self.step / 8        # 5 is the number of check points in the line segment
         checkNum = int(np.linalg.norm(checkVector) / checkStep)
 
         for i in range(checkNum):
@@ -68,8 +71,9 @@ class RRTPlanner(GlobalPlanner):
     def planPath(self):
         # RRT算法
         # optimize：是否进行路径优化
-        startPoint = np.array([self.start.x, self.start.y, self.start.z])
-        endPoint = np.array([self.goal.x, self.goal.y, self.goal.z])
+        startTime = time.time()
+        startPoint = np.array([self.start.x, self.start.y, self.start.z]).reshape((3, 1)) 
+        endPoint = np.array([self.goal.x, self.goal.y, self.goal.z]).reshape((3, 1)) 
 
         if self.pointCollisionDetection(startPoint):
             rospy.logerr("Start point is in the obstacle")
@@ -79,8 +83,6 @@ class RRTPlanner(GlobalPlanner):
 
         while iterTime < self.maxIterNum:
             iterTime += 1
-
-            # startTime = time.time()
 
             # 按概率生成随机点
             if np.random.rand() > self.greedyProb:
@@ -128,8 +130,8 @@ class RRTPlanner(GlobalPlanner):
                 break
 
             # debug
-            # if iterTime % 500 == 0:
-            #     print("Distance to end:", np.linalg.norm(newPoint - self.endPoint))
+            if iterTime % 500 == 0:
+                rospy.loginfo("Distance to end:",+ str(np.linalg.norm(newPoint - endPoint)))
             #     print("RRT searching")
 
         if iterTime == self.maxIterNum:
@@ -150,6 +152,10 @@ class RRTPlanner(GlobalPlanner):
         # 路径优化
         if self.optimizePath:
             self.pathOptimization()
+
+        endTime = time.time()
+        rospy.loginfo("RTT finished: " + str(endTime - startTime))
+            
 
     def pathOptimization(self):
         # 贪婪优化，去除冗余点
@@ -173,7 +179,7 @@ class RRTPlanner(GlobalPlanner):
                 detectTimes = self.path.shape[1] - 1 - startIndex
 
         # 设置点之间的最大距离，如果超过这个距离则等分起始点和终止点之间的距离，同时保持路径点的顺序
-        extendPath = np.array([self.start.x, self.start.y, self.start.z])
+        extendPath = np.array([self.start.x, self.start.y, self.start.z]).reshape((3, 1)) 
         maxDistance = self.step * 3
         for i in range(greedyPath.shape[1] - 1):
             startPoint = greedyPath[:, i].reshape((3, 1))

@@ -9,12 +9,12 @@ import tf
 class EnvPublisher:
     def __init__(self):
         # get the parameters
-        self.VICON_topics = rospy.get_param('~env_publisher/VICON_topics', [])
-        self.VICON_transform = rospy.get_param('~env_publisher/VICON_transform',
+        self.VICON_topics = rospy.get_param('/env_publisher/VICON_topics', [])
+        self.VICON_transform = rospy.get_param('/env_publisher/VICON_transform',
                                                {'x': 0, 'y': 0, 'z': 0, 'qx': 0, 'qy': 0, 'qz': 0, 'qw': 1})
-        self.obstacle_args = rospy.get_param('~env_publisher/obstacle_args', [])
-        self.publish_rate = rospy.get_param('~env_publisher/publish_rate', 10)
-        self.publish_topic = rospy.get_param('~env_publisher/publish_topic', 'env_obstacles')
+        self.obstacle_args = rospy.get_param('/env_publisher/obstacle_args', [])
+        self.publish_rate = rospy.get_param('/env_publisher/publish_rate', 10)
+        self.publish_topic = rospy.get_param('env_publisher/publish_topic', 'env_obstacles')
         self.world_frame = rospy.get_param('/world_frame', 'map')
 
         if len(self.VICON_topics) != len(self.obstacle_args):
@@ -34,7 +34,8 @@ class EnvPublisher:
             'cylinder': Marker.CYLINDER,
             'arrow': Marker.ARROW,
         }
-        self.obstacles = []
+        self.obstacles = MarkerArray()
+        self.obstacles.markers = []
         self.initObstacles(len(self.VICON_topics))
 
         # publish the markers
@@ -60,17 +61,17 @@ class EnvPublisher:
             marker.color.g = 0
             marker.color.b = 0
             marker.color.a = 1
-            self.obstacles.append(marker)
+            self.obstacles.markers.append(marker)
 
     def updateObstacles(self, data, args):
         i = args['id']
-        self.obstacles[i].pose.position.x = data.transform.translation.x
-        self.obstacles[i].pose.position.y = data.transform.translation.y
-        self.obstacles[i].pose.position.z = data.transform.translation.z
-        self.obstacles[i].pose.orientation.x = data.transform.rotation.x
-        self.obstacles[i].pose.orientation.y = data.transform.rotation.y
-        self.obstacles[i].pose.orientation.z = data.transform.rotation.z
-        self.obstacles[i].pose.orientation.w = data.transform.rotation.w
+        self.obstacles.markers[i].pose.position.x = data.transform.translation.x
+        self.obstacles.markers[i].pose.position.y = data.transform.translation.y
+        self.obstacles.markers[i].pose.position.z = data.transform.translation.z
+        self.obstacles.markers[i].pose.orientation.x = data.transform.rotation.x
+        self.obstacles.markers[i].pose.orientation.y = data.transform.rotation.y
+        self.obstacles.markers[i].pose.orientation.z = data.transform.rotation.z
+        self.obstacles.markers[i].pose.orientation.w = data.transform.rotation.w
 
     # debug function
     def generateRandomObstacles(self, num):
@@ -78,9 +79,9 @@ class EnvPublisher:
         vertex2 = np.array([5, 5, 5])
         for i in range(num):
             random_vertex = np.random.rand(3) * (vertex2 - vertex1) + vertex1
-            self.obstacles[i].pose.position.x = random_vertex[0]
-            self.obstacles[i].pose.position.y = random_vertex[1]
-            self.obstacles[i].pose.position.z = random_vertex[2]
+            self.obstacles.markers[i].pose.position.x = random_vertex[0]
+            self.obstacles.markers[i].pose.position.y = random_vertex[1]
+            self.obstacles.markers[i].pose.position.z = random_vertex[2]
 
     def run(self):
         # test Rviz
@@ -100,10 +101,10 @@ class EnvPublisher:
                                   self.world_frame)
 
             # debug
-            index += 1
-            if index % 100 == 0:
+            if index % 1000 == 0:
                 self.generateRandomObstacles(len(self.VICON_topics))
                 index = 0
+            index += 1
 
             self.rate.sleep()
 

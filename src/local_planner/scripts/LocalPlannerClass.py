@@ -8,10 +8,11 @@ import time
 class LocalPlanner:
     def __init__(self):
         # add service to plan the local trajectory
-        self.local_planner_service = rospy.Service('local_planner', LocalPlanner, self.local_planner_callback)
+        # self.local_planner_service = rospy.Service('local_planner', LocalPlanner, self.local_planner_callback)
 
         # deubgging
         # self.rate = rospy.Rate(1)  # 1hz
+        pass
 
     def local_planner_callback(self, request):
         print("Received request: ", request)
@@ -31,13 +32,14 @@ class LocalPlanner:
         vertex1 = np.array([0, 0, 0])
         vertex2 = np.array([5, 5, 5])
         while not rospy.is_shutdown():
-            start = np.random.rand(3) * (vertex2 - vertex1) + vertex1
-            goal = np.random.rand(3) * (vertex2 - vertex1) + vertex1
-            rospy.loginfo("Start: " + str(start))
-            rospy.loginfo("Goal: " + str(goal))
+            # start = np.random.rand(3) * (vertex2 - vertex1) + vertex1
+            # goal = np.random.rand(3) * (vertex2 - vertex1) + vertex1
+            start = vertex1
+            goal = vertex2
+            rospy.loginfo("req planning")
             path = self.global_planner_client(self.Array2Point(start), self.Array2Point(goal))
             # self.rate.sleep()
-            time.sleep(5)
+            time.sleep(2)
 
     def Array2Point(self, array):
         point = Point()

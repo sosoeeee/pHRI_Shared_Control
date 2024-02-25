@@ -8,6 +8,8 @@ from global_planner.srv import GlobalPlanning, GlobalPlanningResponse
 from nav_msgs.msg import Path
 from geometry_msgs.msg import PoseStamped
 
+import time
+
 
 class GlobalPlanner:
     def __init__(self):
@@ -46,6 +48,10 @@ class GlobalPlanner:
         self.goal = req.goal
         self.start = req.start
 
+        # wait until the env obstacles is ready
+        if self.obstacles is None:
+            time.sleep(0.1)
+        
         # plan the path
         self.planPath()
 
@@ -55,9 +61,7 @@ class GlobalPlanner:
         return res
 
     def updateObstacles(self, obstacleSet):
-        self.obstacles = []
-        for obstacle in obstacleSet.markers:
-            self.obstacles.append(obstacle)
+        self.obstacles = obstacleSet
 
     # visualization for debugging
     def Array2Pose(self, point):
@@ -76,12 +80,12 @@ class GlobalPlanner:
     def run(self):
         # visualization for debugging
         while not rospy.is_shutdown():
-            if self.path_visual is None:
-                self.path_visual = Path()
-                self.path_visual.header.frame_id = self.world_frame
-                if self.path is not None:
-                    for point in self.path:
-                        self.path_visual.poses.append(self.Array2Pose(point))
+            self.path_visual = Path()
+            self.path_visual.header.frame_id = self.world_frame
+            if self.path is not None:
+                self.path = self.path.T
+                for point in self.path:
+                    self.path_visual.poses.append(self.Array2Pose(point))
 
             self.path_publisher.publish(self.path_visual)
             rospy.sleep(self.publish_rate)

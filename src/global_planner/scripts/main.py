@@ -5,13 +5,13 @@ import os
 sys.path.append(os.path.dirname(__file__)) # when using launch file, must be global path :( so directly use
 # "os.path.dirname(__file__)"
 
-from GlobalPlannerClass import GlobalPlanner
+from RRT_planner import RRTPlanner
 import rospy
 
 if __name__ == '__main__':
     try:
         rospy.init_node('global_planner', anonymous=False)
-        globalPlanner = GlobalPlanner()
+        globalPlanner = RRTPlanner()
         globalPlanner.run()
 
     except rospy.ROSInterruptException:

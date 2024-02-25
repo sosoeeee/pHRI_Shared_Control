@@ -13,12 +13,12 @@ env_publisher:
     - "/vicon/Obstacle_6/Obstacle_6"
   VICON_transform: {x: 0, y: 0, z: 0, qx: 0, qy: 0, qz: 0, qw: 1}
   obstacle_args:
-    - {id: 0, type: "sphere", radius: 0.5}
-    - {id: 1, type: "sphere", radius: 0.2}
-    - {id: 2, type: "sphere", radius: 0.2}
-    - {id: 3, type: "sphere", radius: 0.3}
-    - {id: 4, type: "sphere", radius: 0.8}
-    - {id: 5, type: "sphere", radius: 0.6}
+    - {id: 0, type: "sphere", radius: 2}
+    - {id: 1, type: "sphere", radius: 2}
+    - {id: 2, type: "sphere", radius: 2}
+    - {id: 3, type: "sphere", radius: 2}
+    - {id: 4, type: "sphere", radius: 2}
+    - {id: 5, type: "sphere", radius: 2}
 
 ## Global planner params
 global_planner:
@@ -28,10 +28,10 @@ global_planner:
   goal_tolerance: 0.5
 
 RRT_planner:
-    max_iter: 10000
+    max_iter: 50000
     step_size: 0.1
     greedy_prob: 0.3
-    optimize_path: true
+    optimize_path: False
     search_space:
       x:
         - 0
