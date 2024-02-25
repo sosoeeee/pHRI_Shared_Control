@@ -83,7 +83,6 @@ class GlobalPlanner:
             self.path_visual = Path()
             self.path_visual.header.frame_id = self.world_frame
             if self.path is not None:
-                self.path = self.path.T
                 for point in self.path:
                     self.path_visual.poses.append(self.Array2Pose(point))
 

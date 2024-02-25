@@ -29,8 +29,8 @@ class LocalPlanner:
 
     def run(self):
         # debugging
-        vertex1 = np.array([0, 0, 0])
-        vertex2 = np.array([5, 5, 5])
+        vertex1 = np.array([0.5, 0.5, 0.5])
+        vertex2 = np.array([7.5, 7.5, 7.5])
         while not rospy.is_shutdown():
             # start = np.random.rand(3) * (vertex2 - vertex1) + vertex1
             # goal = np.random.rand(3) * (vertex2 - vertex1) + vertex1
