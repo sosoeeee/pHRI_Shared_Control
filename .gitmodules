@@ -1,0 +1,3 @@
+[submodule "src/global_planner/scripts/rrt-algorithms"]
+	path = src/global_planner/scripts/rrt-algorithms
+	url = https://github.com/motion-planning/rrt-algorithms
