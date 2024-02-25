@@ -56,6 +56,11 @@ class EnvPublisher:
                 marker.scale.x = self.obstacle_args[i]['radius']
                 marker.scale.y = self.obstacle_args[i]['radius']
                 marker.scale.z = self.obstacle_args[i]['radius']
+            
+            if self.obstacle_args[i]['type'] == 'cube':
+                marker.scale.x = self.obstacle_args[i]['size_x']
+                marker.scale.y = self.obstacle_args[i]['size_y']
+                marker.scale.z = self.obstacle_args[i]['size_z']
 
             marker.color.r = 1
             marker.color.g = 0

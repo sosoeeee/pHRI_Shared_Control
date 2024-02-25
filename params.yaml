@@ -34,8 +34,14 @@ RRT_planner:
     check_goal_prob: 0.01
     optimize_path: False
     search_space:
-      x: (0, 8)
-      y: (0, 8)
-      z: (0, 8)
+      x:
+        - 0
+        - 8
+      y:
+        - 0
+        - 8
+      z:
+        - 0
+        - 8
 
 

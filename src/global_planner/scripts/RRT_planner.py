@@ -6,6 +6,7 @@ import sys
 import os
 
 sys.path.append(os.path.dirname(__file__))
+sys.path.append(os.path.dirname(__file__)+"/rrt-algorithms")
 
 from GlobalPlannerClass import GlobalPlanner
 import numpy as np
@@ -44,6 +45,7 @@ class RRTPlanner(GlobalPlanner):
         self.searchSpace = rospy.get_param('/RRT_planner/search_space', {'x': (0, 0), 'y': (0, 0), 'z': (0, 0)})
         self.searchSpace = np.array([self.searchSpace['x'], self.searchSpace['y'], self.searchSpace['z']])
 
+
     def obstaclsNormalizaion(self):
         self.normlizedObstacles = []
         for obstacle in self.obstacles.markers:
@@ -65,6 +67,9 @@ class RRTPlanner(GlobalPlanner):
 
         # update obstacles
         self.obstaclsNormalizaion()
+
+        # self.searchSpace = np.array([(0, 8), (0, 8), (0, 8)])  
+
         X = SearchSpace(self.searchSpace, self.normlizedObstacles)
 
         rrt = RRT(X, np.array([(self.step, 1)]), x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb)
