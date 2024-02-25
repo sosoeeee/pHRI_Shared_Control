@@ -6,9 +6,19 @@ env_publisher:
   publish_topic: "env_obstacles"
   VICON_topics:
     - "/vicon/Obstacle_1/Obstacle_1"
-  VICON_transform: {x: 0, y: 1, z: 2, qx: 0, qy: 0, qz: 0, qw: 1}
+    - "/vicon/Obstacle_2/Obstacle_2"
+    - "/vicon/Obstacle_3/Obstacle_3"
+    - "/vicon/Obstacle_4/Obstacle_4"
+    - "/vicon/Obstacle_5/Obstacle_5"
+    - "/vicon/Obstacle_6/Obstacle_6"
+  VICON_transform: {x: 0, y: 0, z: 0, qx: 0, qy: 0, qz: 0, qw: 1}
   obstacle_args:
     - {id: 0, type: "sphere", radius: 0.5}
+    - {id: 1, type: "sphere", radius: 0.2}
+    - {id: 2, type: "sphere", radius: 0.2}
+    - {id: 3, type: "sphere", radius: 0.3}
+    - {id: 4, type: "sphere", radius: 0.8}
+    - {id: 5, type: "sphere", radius: 0.6}
 
 ## Global planner params
 global_planner:
@@ -19,18 +29,18 @@ global_planner:
 
 RRT_planner:
     max_iter: 10000
-    step_size: 0.5
+    step_size: 0.1
     greedy_prob: 0.3
     optimize_path: true
     search_space:
       x:
-        - 2
-        - -2
+        - 0
+        - 5
       y:
-        - 2
-        - -2
+        - 0
+        - 5
       z:
-        - 2
-        - -2
+        - 0
+        - 5
 
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import numpy as np
 import rospy
 from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import TransformStamped
@@ -72,9 +72,22 @@ class EnvPublisher:
         self.obstacles[i].pose.orientation.z = data.transform.rotation.z
         self.obstacles[i].pose.orientation.w = data.transform.rotation.w
 
+    # debug function
+    def generateRandomObstacles(self, num):
+        vertex1 = np.array([0, 0, 0])
+        vertex2 = np.array([5, 5, 5])
+        for i in range(num):
+            random_vertex = np.random.rand(3) * (vertex2 - vertex1) + vertex1
+            self.obstacles[i].pose.position.x = random_vertex[0]
+            self.obstacles[i].pose.position.y = random_vertex[1]
+            self.obstacles[i].pose.position.z = random_vertex[2]
+
     def run(self):
         # test Rviz
         # self.updateObstacles(None, {'id': 0})
+
+        # debug
+        index = 0
 
         while not rospy.is_shutdown():
             self.env_publisher.publish(self.obstacles)
@@ -86,4 +99,11 @@ class EnvPublisher:
                                   "VICON",
                                   self.world_frame)
 
+            # debug
+            index += 1
+            if index % 100 == 0:
+                self.generateRandomObstacles(len(self.VICON_topics))
+                index = 0
+
             self.rate.sleep()
+

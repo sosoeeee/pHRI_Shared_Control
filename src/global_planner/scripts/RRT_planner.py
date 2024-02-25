@@ -85,8 +85,8 @@ class RRTPlanner(GlobalPlanner):
             # 按概率生成随机点
             if np.random.rand() > self.greedyProb:
                 randPoint = np.random.rand(3) * (self.searchSpace[:, 1] - self.searchSpace[:, 0]) + self.searchSpace[:, 0]
-                randPoint = randPoint.reshape((3, 1)) + startPoint
-                # randPoint = randPoint.reshape((3, 1)) # 使用绝对搜索空间
+                # randPoint = randPoint.reshape((3, 1)) + startPoint
+                randPoint = randPoint.reshape((3, 1))   # 使用绝对搜索空间
             else:
                 randPoint = endPoint
 

@@ -16,7 +16,7 @@ class GlobalPlanner:
         self.env_subscriber = rospy.Subscriber("/env_obstacles", MarkerArray, self.updateObstacles, queue_size=1)
 
         # add service to plan the path
-        self.plan_service = rospy.Service('plan_path', GlobalPlanning, self.handle_GlobalPlanning)
+        self.plan_service = rospy.Service('global_plan', GlobalPlanning, self.handle_GlobalPlanning)
 
         # initialize the planner
         self.obstacles_dilate = rospy.get_param('/global_planner/obstacles_dilate', 0.01)
@@ -30,6 +30,7 @@ class GlobalPlanner:
 
         # visualisation for debugging
         self.path_publisher = rospy.Publisher('global_path', Path, queue_size=1)
+        self.publish_rate = rospy.get_param('/global_planner/publish_rate', 10)
         self.path_visual = None  # type nav_msgs/Path
 
     # can be a virtual function
@@ -83,5 +84,5 @@ class GlobalPlanner:
                         self.path_visual.poses.append(self.Array2Pose(point))
 
             self.path_publisher.publish(self.path_visual)
-            rospy.sleep(1)
+            rospy.sleep(self.publish_rate)
 
