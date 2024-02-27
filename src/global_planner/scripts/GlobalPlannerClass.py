@@ -18,7 +18,7 @@ class GlobalPlanner:
         self.env_subscriber = rospy.Subscriber("/env_obstacles", MarkerArray, self.updateObstacles, queue_size=1)
 
         # add service to plan the path
-        self.plan_service = rospy.Service('global_plan', GlobalPlanning, self.handle_GlobalPlanning)
+        self.global_plan_service = rospy.Service('global_plan', GlobalPlanning, self.handle_GlobalPlanning)
 
         # initialize the planner
         self.obstacles_dilate = rospy.get_param('/global_planner/obstacles_dilate', 0.01)
@@ -26,9 +26,9 @@ class GlobalPlanner:
         self.world_frame = rospy.get_param('/world_frame', 'map')
         self.initPlanner()
 
-        self.start = None         # type geometry_msgs/Point
-        self.goal = None          # type geometry_msgs/Point
-        self.path = None          # type np.ndarray, shape (3, N)
+        self.start = None         # type float32[3], shape is [x, y, z]
+        self.goal = None          # type float32[3], shape is [x, y, z]
+        self.path = None          # type np.ndarray, shape (N, 3)
 
         # visualisation for debugging
         self.path_publisher = rospy.Publisher('global_path', Path, queue_size=1)

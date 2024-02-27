@@ -1,0 +1,22 @@
+# This service allows to plan a path from a start to a goal position in the map
+
+float32[] start_pos
+float32[] start_vel
+float32[] start_acc
+
+float32[] goal_pos
+float32[] goal_vel
+float32[] goal_acc
+
+float32 max_vel
+float32 max_acc
+
+float32 total_time
+
+float32 control_frequency
+
+
+---
+
+float32[] trajectory
+

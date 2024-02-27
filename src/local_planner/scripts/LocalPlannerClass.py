@@ -1,22 +1,50 @@
 import numpy as np
 import rospy
 from global_planner.srv import *
+from local_planner.srv import LocalPlanning, LocalPlanningResponse
 from geometry_msgs.msg import Point
 
 import time
 
+
 class LocalPlanner:
     def __init__(self):
         # add service to plan the local trajectory
-        # self.local_planner_service = rospy.Service('local_planner', LocalPlanner, self.local_planner_callback)
+        self.local_planner_service = rospy.Service('local_planner', LocalPlanning, self.hadle_LocalPlanning)
+
+        # initialize the planner
+        self.start_pos = None
+        self.start_vel = None
+        self.start_acc = None
+        self.goal_pos = None
+        self.goal_vel = None
+        self.goal_acc = None
+        self.max_vel = None
+        self.max_acc = None
+        self.total_time = None
+        self.control_frequency = None
+
+        self.refPath = None
 
         # deubgging
         # self.rate = rospy.Rate(1)  # 1hz
-        pass
 
-    def local_planner_callback(self, request):
-        print("Received request: ", request)
-        return True
+    def hadle_LocalPlanning(self, req):
+        # get the request
+        self.start_pos = req.start_pos
+        self.start_vel = req.start_vel
+        self.start_acc = req.start_acc
+        self.goal_pos = req.goal_pos
+        self.goal_vel = req.goal_vel
+        self.goal_acc = req.goal_acc
+        self.max_vel = req.max_vel
+        self.max_acc = req.max_acc
+        self.total_time = req.total_time
+        self.control_frequency = req.control_frequency
+
+        pass
+        # res.path = self.path.flatten().tolist()  # switch to float32[]
+        # return res
 
     def global_planner_client(self, start, goal):
         rospy.wait_for_service('global_plan')
