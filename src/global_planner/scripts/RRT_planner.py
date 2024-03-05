@@ -69,7 +69,7 @@ class RRTPlanner(GlobalPlanner):
 
         X = SearchSpace(self.searchSpace, self.normlizedObstacles)
 
-        rrt = RRT(X, np.array([(self.step, 1)]), x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb)
+        rrt = RRT(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb)
 
         self.path = np.array(rrt.rrt_search())
 
