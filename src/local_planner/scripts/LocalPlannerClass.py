@@ -5,6 +5,7 @@ from local_planner.srv import LocalPlanning, LocalPlanningResponse
 from geometry_msgs.msg import Point
 
 import time
+from abc import abstractmethod
 
 
 class LocalPlanner:
@@ -31,11 +32,11 @@ class LocalPlanner:
         # deubgging
         # self.rate = rospy.Rate(1)  # 1hz
 
-    # can be a virtual function
+    @abstractmethod
     def initPlanner(self):
         pass
 
-    # can be a virtual function
+    @abstractmethod
     def planTrajectory(self):
         return np.array([])
 

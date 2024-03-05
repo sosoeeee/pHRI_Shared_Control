@@ -53,8 +53,11 @@ class MinimumLocalPlanner(LocalPlanner):
                 self.polyTrajectorys[i].arrangeTime(self.ts)
 
         for i in range(self.dim):
-            coeffs, cost = self.computeSingleAxisTraj(self.refPath[i], self.start_vel[i], self.start_acc[i],
-                                                      self.goal_vel[i], self.goal_acc[i])
+            coeffs, _ = self.computeSingleAxisTraj(self.refPath[i],
+                                                   self.start_vel[i] * self.total_time,
+                                                   self.start_acc[i] * self.total_time ** 2,
+                                                   self.goal_vel[i] * self.total_time,
+                                                   self.goal_acc[i] * self.total_time ** 2)
             self.polyTrajectorys[i].setCoeff(coeffs)
 
         # compute the discrete trajectory (with Time Normalization)
@@ -158,12 +161,15 @@ class MinimumLocalPlanner(LocalPlanner):
                 Q[j - 1, i - 1] = Q[i - 1, j - 1]
 
         return Q
-    
+
     def computeCost(self):
         cost_all = 0
         for i in range(self.dim):
-            _, cost = self.computeSingleAxisTraj(self.refPath[i], self.start_vel[i], self.start_acc[i],
-                                                 self.goal_vel[i], self.goal_acc[i])
+            _, cost = self.computeSingleAxisTraj(self.refPath[i],
+                                                 self.start_vel[i] * self.total_time,
+                                                 self.start_acc[i] * self.total_time ** 2,
+                                                 self.goal_vel[i] * self.total_time,
+                                                 self.goal_acc[i] * self.total_time ** 2)
             cost_all += cost
         return cost_all
 
@@ -238,6 +244,3 @@ class MinimumLocalPlanner(LocalPlanner):
         cost = p.T.dot(Q).dot(p)[0, 0]
 
         return ploys, cost
-
-
- 

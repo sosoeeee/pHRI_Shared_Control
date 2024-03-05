@@ -42,6 +42,9 @@ class PolyTrajectory:
                 lower = idx
             else:
                 upper = idx
+
+        # idx_ = np.where(self.Ts<=t_)[0]
+
         return lower
 
     def getPos(self, t):

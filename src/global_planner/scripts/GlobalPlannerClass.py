@@ -9,6 +9,7 @@ from nav_msgs.msg import Path
 from geometry_msgs.msg import PoseStamped
 
 import time
+from abc import abstractmethod
 
 
 class GlobalPlanner:
@@ -35,11 +36,11 @@ class GlobalPlanner:
         self.publish_rate = rospy.get_param('/global_planner/publish_rate', 10)
         self.path_visual = None  # type nav_msgs/Path
 
-    # can be a virtual function
+    @abstractmethod
     def initPlanner(self):
         pass
 
-    # can be a virtual function
+    @abstractmethod
     def planPath(self):
         pass
 
