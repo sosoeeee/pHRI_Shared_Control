@@ -25,14 +25,13 @@ global_planner:
   publish_rate: 10
   publish_topic: "global_plan"
   obstacles_dilate: 0.03
-  goal_tolerance: 0.5
 
 RRT_planner:
     max_iter: 10000
     step_size: 0.5
     line_collision_check_resolution: 2
     check_goal_prob: 0.01
-    optimize_path: False
+    optimize_path: false
     search_space:
       x:
         - 0
@@ -43,5 +42,11 @@ RRT_planner:
       z:
         - 0
         - 8
+
+## Local planner params
+MinimumLocalPlanner:
+  opt_order: 4
+  order: 5
+  optimizeT: true
 
 

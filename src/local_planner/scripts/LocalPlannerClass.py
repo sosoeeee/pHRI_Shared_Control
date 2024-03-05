@@ -24,10 +24,20 @@ class LocalPlanner:
         self.total_time = None
         self.control_frequency = None
 
-        self.refPath = None
+        self.refPath = None         # type float32[]
+
+        self.initPlanner()
 
         # deubgging
         # self.rate = rospy.Rate(1)  # 1hz
+
+    # can be a virtual function
+    def initPlanner(self):
+        pass
+
+    # can be a virtual function
+    def planTrajectory(self):
+        return np.array([])
 
     def hadle_LocalPlanning(self, req):
         # get the request
@@ -42,7 +52,13 @@ class LocalPlanner:
         self.total_time = req.total_time
         self.control_frequency = req.control_frequency
 
-        pass
+        # request the global path
+        self.global_planner_client(self.start_pos, self.goal_pos)
+
+        # plan the trajectory
+        res = LocalPlanningResponse()
+        res.trajectory = self.planTrajectory().flatten().tolist()
+
         # res.path = self.path.flatten().tolist()  # switch to float32[]
         # return res
 
@@ -50,8 +66,7 @@ class LocalPlanner:
         rospy.wait_for_service('global_plan')
         try:
             plan_path = rospy.ServiceProxy('global_plan', GlobalPlanning)
-            resp = plan_path(start, goal)
-            return resp.path
+            self.refPath = plan_path(start, goal)
         except rospy.ServiceException as e:
             print("Service call failed: %s" % e)
 
@@ -65,7 +80,7 @@ class LocalPlanner:
             start = vertex1
             goal = vertex2
             rospy.loginfo("req planning")
-            path = self.global_planner_client(self.Array2Point(start), self.Array2Point(goal))
+            self.global_planner_client(self.Array2Point(start), self.Array2Point(goal))
             # self.rate.sleep()
             time.sleep(2)
 
