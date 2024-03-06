@@ -12,7 +12,7 @@ import time
 from abc import abstractmethod
 
 
-class GlobalPlanner:
+class BaseGlobalPlanner:
     def __init__(self):
         # env_obstacles
         self.obstacles = None
@@ -62,6 +62,7 @@ class GlobalPlanner:
         return res
 
     def updateObstacles(self, obstacleSet):
+        # 需要转换obstacles的坐标系到world_frame
         self.obstacles = obstacleSet
 
     # visualization for debugging

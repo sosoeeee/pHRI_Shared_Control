@@ -46,7 +46,20 @@ RRT_planner:
 ## Local planner params
 MinimumLocalPlanner:
   opt_order: 4
+  conti_order: 3
   order: 5
   optimizeT: true
 
+## controller params
+controller_type: "Impedance"
 
+controller:
+  control_frequency: 10
+
+impedance_controller:
+  M: 5
+  C: 75
+
+## actuator params
+actuator:
+  initJointPos: {q1: -1.0912, q2: -1.0999, q3: 1.16505, q4: 1.8945, q5: -1.2382, q6: -1.0227, q7: -0.2546}

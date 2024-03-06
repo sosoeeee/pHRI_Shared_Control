@@ -1,0 +1,8 @@
+# This service allow controller to check whether the robot has initialized its states
+
+# No request parameter
+
+---
+
+# when robot has initialized, isReady becomes True
+bool isReady

@@ -1,4 +1,4 @@
-# This service allows to plan a path from a start to a goal position in the map
+# This service allows to plan a path from a start to a goal position in the ‘map’ frame
 
 # start and goal position in the map, shape is [x, y, z]
 float32[] start

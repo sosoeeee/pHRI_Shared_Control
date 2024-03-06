@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # This file is the implementation of the class of trajectory parameterized by piecewise-polynomials curve
-import numpy as np
 import math
 
 

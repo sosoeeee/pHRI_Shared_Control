@@ -8,7 +8,7 @@ import time
 from abc import abstractmethod
 
 
-class LocalPlanner:
+class BaseLocalPlanner:
     def __init__(self):
         # add service to plan the local trajectory
         self.local_planner_service = rospy.Service('local_planner', LocalPlanning, self.hadle_LocalPlanning)
@@ -51,7 +51,7 @@ class LocalPlanner:
         self.max_vel = req.max_vel
         self.max_acc = req.max_acc
         self.total_time = req.total_time
-        self.control_frequency = req.control_frequency
+        self.control_frequency = req.controlFrequency
 
         # request the global path
         self.global_planner_client(self.start_pos, self.goal_pos)
@@ -67,7 +67,7 @@ class LocalPlanner:
         rospy.wait_for_service('global_plan')
         try:
             plan_path = rospy.ServiceProxy('global_plan', GlobalPlanning)
-            self.refPath = plan_path(start, goal)
+            self.refPath = plan_path(start, goal).path
         except rospy.ServiceException as e:
             print("Service call failed: %s" % e)
 

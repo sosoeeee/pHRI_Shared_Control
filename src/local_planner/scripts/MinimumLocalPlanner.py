@@ -7,7 +7,7 @@ import os
 
 sys.path.append(os.path.dirname(__file__))
 
-from LocalPlannerClass import LocalPlanner
+from BaseLocalPlanner import BaseLocalPlanner
 from PolyTrajectory import PolyTrajectory
 import numpy as np
 import time
@@ -15,11 +15,12 @@ import time
 import rospy
 
 
-class MinimumLocalPlanner(LocalPlanner):
+class MinimumLocalPlanner(BaseLocalPlanner):
     def __init__(self):
         # private Planner parameters
         self.order = None
         self.opt_order = None
+        self.conti_order = None
         self.optimizeT = None
         # result trajectory parameters
         self.polyTrajectorys = None
@@ -33,6 +34,7 @@ class MinimumLocalPlanner(LocalPlanner):
         # get the parameters
         self.order = rospy.get_param("/MinimumLocalPlanner/order", 5)
         self.opt_order = rospy.get_param("/MinimumLocalPlanner/opt_order", 4)
+        self.conti_order = rospy.get_param("/MinimumLocalPlanner/conti_order", 3)
         self.optimizeT = rospy.get_param("/MinimumLocalPlanner/optimizeT", True)
 
     def planTrajectory(self):
@@ -190,7 +192,11 @@ class MinimumLocalPlanner(LocalPlanner):
             Tk[:, i] = self.ts ** i
 
         # compute A
-        n_continuous = 3  # 1:p  2:pv  3:pva  4:pvaj  5:pvajs
+        n_continuous = self.conti_order  # 1:p  2:pv  3:pva  4:pvaj  5:pvajs
+
+        if n_continuous * 2 != n_coef:
+            raise Exception("Try to set poly order to %d in order to satisfy the continuous constrain" % (n_coef - 1))
+
         A = np.zeros((n_continuous * 2 * n_seg, n_coef * n_seg))
         for i in range(1, n_seg + 1):
             for j in range(1, n_continuous + 1):
@@ -222,7 +228,8 @@ class MinimumLocalPlanner(LocalPlanner):
         df = np.hstack((path, np.array(v0).reshape(1, -1), np.array(a0).reshape(1, -1), np.array(vt).reshape(1, -1),
                         np.array(at).reshape(1, -1))).T
         fix_idx = np.array(range(1, num_d, n_continuous))
-        fix_idx = np.hstack((fix_idx, 2, 3, num_d - 1, num_d))
+        # add vel and acc constrain at start and end of Traj
+        fix_idx = np.hstack((fix_idx, 2, 3, num_d - n_continuous + 2, num_d - n_continuous + 3))
         free_idx = np.setdiff1d(range(1, num_d + 1), fix_idx)
         C = np.hstack((C[:, fix_idx - 1], C[:, free_idx - 1]))
 

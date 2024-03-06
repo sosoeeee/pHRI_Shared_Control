@@ -8,7 +8,7 @@ import os
 sys.path.append(os.path.dirname(__file__))
 sys.path.append(os.path.dirname(__file__) + "/rrt-algorithms")
 
-from GlobalPlannerClass import GlobalPlanner
+from BaseGlobalPlanner import BaseGlobalPlanner
 import numpy as np
 import time
 
@@ -20,7 +20,7 @@ from rrt_algorithms.rrt.rrt import RRT
 from rrt_algorithms.search_space.search_space import SearchSpace
 
 
-class RRTPlanner(GlobalPlanner):
+class RRTPlanner(BaseGlobalPlanner):
     def __init__(self):
         self.r = None
         self.checkGoalProb = None
@@ -42,7 +42,7 @@ class RRTPlanner(GlobalPlanner):
         self.r = rospy.get_param('/RRT_planner/line_collision_check_resolution', 1)
 
         # 搜索空间尺寸
-        self.searchSpace = rospy.get_param('/RRT_planner/search_space', {'x': (0, 0), 'y': (0, 0), 'z': (0, 0)})
+        self.searchSpace = rospy.get_param('/RRT_planner/search_space', {'x': [0, 0], 'y': [0, 0], 'z': [0, 0]})
         self.searchSpace = np.array([self.searchSpace['x'], self.searchSpace['y'], self.searchSpace['z']])
 
     def obstaclsNormalizaion(self):
