@@ -5,6 +5,8 @@
   <include file="$(find env_publisher)/launch/env_publisher.launch"/>
   <include file="$(find global_planner)/launch/global_planner.launch"/>
   <include file="$(find local_planner)/launch/local_planner.launch"/>
+  <include file="$(find actuator)/launch/actuator.launch"/>
+  <include file="$(find controller)/launch/controller.launch"/>
   <!-- Add more include statements for other packages -->
 </launch>
 

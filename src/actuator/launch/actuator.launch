@@ -1,0 +1,4 @@
+<launch>
+  <node name="actuator" pkg="actuator" type="main.py">
+  </node>
+</launch>
