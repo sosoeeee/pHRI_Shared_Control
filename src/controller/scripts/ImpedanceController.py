@@ -28,8 +28,8 @@ class ImpedanceController(BaseController):
 
     def initController(self):
         # read parameters
-        self.Md = rospy.rospy.get_param("/impedance_controller/M", 1)
-        self.Cd = rospy.rospy.get_param("/impedance_controller/C", 1)
+        self.Md = rospy.get_param("/impedance_controller/M", 1)
+        self.Cd = rospy.get_param("/impedance_controller/C", 1)
 
         # state space modelling
         Md_inv = np.linalg.inv(self.Md * np.eye(3))

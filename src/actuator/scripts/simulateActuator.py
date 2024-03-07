@@ -77,9 +77,10 @@ class simActuator:
 
         self.pubPosCmd.publish(pointCmd)
 
-    def pubStateTimer_callback(self):
+    def pubStateTimer_callback(self, event):
         poseState = PoseStamped()
         poseState.header.frame_id = self.world_frame
+        poseState.header.stamp = event.current_real
         poseState.pose.position.x = self.pos[0]
         poseState.pose.position.y = self.pos[1]
         poseState.pose.position.z = self.pos[2]
