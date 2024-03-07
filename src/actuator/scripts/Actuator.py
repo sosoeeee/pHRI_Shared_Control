@@ -106,7 +106,7 @@ class Actuator:
         self.currentJointVelocity = self.toArray(msg.velocity)
 
     def cartesianState_callBack(self, msg):
-        self.pubRobotState(msg.poseStamped)
+        self.pubRobotState.publish(msg.poseStamped)
 
     def run(self):
         self.initRobot()

@@ -61,5 +61,11 @@ impedance_controller:
   C: 75
 
 ## actuator params
+use_simulate: true
+
 actuator:
   initJointPos: {q1: -1.0912, q2: -1.0999, q3: 1.16505, q4: 1.8945, q5: -1.2382, q6: -1.0227, q7: -0.2546}
+
+simulate_actuator:
+  initPos: {x: 0, y: 0, z: 0}
+  pub_frequency: 100

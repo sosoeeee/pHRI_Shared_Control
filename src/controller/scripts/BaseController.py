@@ -12,7 +12,7 @@ import time
 class BaseController:
     def __init__(self):
         # subscribe human command
-        rospy.Subscriber("stickSignal", String, self.humanCmd_callback)
+        rospy.Subscriber("stickSignal", String, self.humanCmd_callback, queue_size=1)
         self.humanCmd = np.zeros((6, 1))
 
         # subscribe robot states from actuator
