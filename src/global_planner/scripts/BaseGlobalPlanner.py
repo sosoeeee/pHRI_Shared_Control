@@ -3,6 +3,7 @@
 import rospy
 from visualization_msgs.msg import MarkerArray
 from global_planner.srv import GlobalPlanning, GlobalPlanningResponse
+import tf
 
 # visualization for debugging
 from nav_msgs.msg import Path
@@ -62,8 +63,14 @@ class BaseGlobalPlanner:
         return res
 
     def updateObstacles(self, obstacleSet):
-        # 需要转换obstacles的坐标系到world_frame
-        self.obstacles = obstacleSet
+        listener = tf.TransformListener()
+        self.obstacles = obstacleSet.markers
+        # coordinate transformation
+        for obstacle in self.obstacles:
+            (trans, rot) = listener.lookupTransform(self.world_frame, obstacle.header.frame_id, rospy.Time(0))
+            obstacle.pose.position.x += trans[0]
+            obstacle.pose.position.y += trans[1]
+            obstacle.pose.position.z += trans[2]
 
     # visualization for debugging
     def Array2Pose(self, point):

@@ -27,7 +27,7 @@ class RRTPlanner(BaseGlobalPlanner):
         self.maxIterNum = None
         self.step = None
         self.searchSpace = None
-        self.normlizedObstacles = None
+        self.normalizedObstacles = None
 
         super(RRTPlanner, self).__init__()
 
@@ -45,16 +45,16 @@ class RRTPlanner(BaseGlobalPlanner):
         self.searchSpace = rospy.get_param('/RRT_planner/search_space', {'x': [0, 0], 'y': [0, 0], 'z': [0, 0]})
         self.searchSpace = np.array([self.searchSpace['x'], self.searchSpace['y'], self.searchSpace['z']])
 
-    def obstaclsNormalizaion(self):
-        self.normlizedObstacles = []
-        for obstacle in self.obstacles.markers:
+    def obstaclesNormalization(self):
+        self.normalizedObstacles = []
+        for obstacle in self.obstacles:
             if obstacle.type == Marker.CUBE:
-                self.normlizedObstacles.append([obstacle.pose.position.x - obstacle.scale.x / 2,
-                                                obstacle.pose.position.y - obstacle.scale.y / 2,
-                                                obstacle.pose.position.z - obstacle.scale.z / 2,
-                                                obstacle.pose.position.x + obstacle.scale.x / 2,
-                                                obstacle.pose.position.y + obstacle.scale.y / 2,
-                                                obstacle.pose.position.z + obstacle.scale.z / 2])
+                self.normalizedObstacles.append([obstacle.pose.position.x - obstacle.scale.x / 2,
+                                                 obstacle.pose.position.y - obstacle.scale.y / 2,
+                                                 obstacle.pose.position.z - obstacle.scale.z / 2,
+                                                 obstacle.pose.position.x + obstacle.scale.x / 2,
+                                                 obstacle.pose.position.y + obstacle.scale.y / 2,
+                                                 obstacle.pose.position.z + obstacle.scale.z / 2])
 
     def planPath(self):
         # RRT算法
@@ -65,9 +65,9 @@ class RRTPlanner(BaseGlobalPlanner):
         x_goal = (self.goal[0], self.goal[1], self.goal[2])
 
         # update obstacles
-        self.obstaclsNormalizaion()
+        self.obstaclesNormalization()
 
-        X = SearchSpace(self.searchSpace, self.normlizedObstacles)
+        X = SearchSpace(self.searchSpace, self.normalizedObstacles)
 
         rrt = RRT(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb)
 
