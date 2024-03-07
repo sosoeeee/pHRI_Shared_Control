@@ -48,6 +48,10 @@ class Actuator:
         self.initJointPose = rospy.get_param("/actuator/initJointPos", None)
 
     def initRobot(self):
+        while self.currentJointPosition is None:
+            rospy.loginfo("Can't receive robot state info, please check your connection")
+            rospy.sleep(0.5)
+
         if self.initJointPose is None:
             raise Exception("fail to get initial position of robot joints")
         else:
@@ -60,7 +64,16 @@ class Actuator:
             cmdJointPosition.position.a6 = self.initJointPose['q6']
             cmdJointPosition.position.a7 = self.initJointPose['q7']
             self.pubPoseCmd.publish(cmdJointPosition)
-            rospy.sleep(2)  # 等待机械臂到达初始位姿
+            
+            while abs(self.currentJointPosition[0] - self.initJointPose['q1']) > 0.01 or \
+                  abs(self.currentJointPosition[1] - self.initJointPose['q2']) > 0.01 or \
+                  abs(self.currentJointPosition[2] - self.initJointPose['q3']) > 0.01 or \
+                  abs(self.currentJointPosition[3] - self.initJointPose['q4']) > 0.01 or \
+                  abs(self.currentJointPosition[4] - self.initJointPose['q5']) > 0.01 or \
+                  abs(self.currentJointPosition[5] - self.initJointPose['q6']) > 0.01 or \
+                  abs(self.currentJointPosition[6] - self.initJointPose['q7']) > 0.01:
+                rospy.sleep(0.5)
+
             self.readyFlag = True
 
     def handle_isRobotReady(self, req):

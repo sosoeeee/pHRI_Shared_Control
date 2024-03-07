@@ -67,7 +67,7 @@ class BaseGlobalPlanner:
         self.obstacles = obstacleSet.markers
         # transform obstacles into world frame
         for obstacle in self.obstacles:
-            (trans, _) = self.tf_listener.lookupTransform("/"+self.world_frame, "/"+obstacle.header.frame_id, rospy.Time(0))
+            (trans, _) = self.tf_listener.lookupTransform(self.world_frame, obstacle.header.frame_id, rospy.Time(0))
             obstacle.pose.position.x += trans[0]
             obstacle.pose.position.y += trans[1]
             obstacle.pose.position.z += trans[2]
