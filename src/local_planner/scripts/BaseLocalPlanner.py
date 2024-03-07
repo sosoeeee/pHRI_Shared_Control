@@ -81,7 +81,7 @@ class BaseLocalPlanner:
             start = vertex1
             goal = vertex2
             rospy.loginfo("req planning")
-            self.global_planner_client(self.Array2Point(start), self.Array2Point(goal))
+            self.global_planner_client(start.tolist(), goal.tolist())
             # self.rate.sleep()
             time.sleep(2)
 

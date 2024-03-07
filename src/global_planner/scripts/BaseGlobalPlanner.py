@@ -18,6 +18,7 @@ class BaseGlobalPlanner:
         # env_obstacles
         self.obstacles = None
         self.env_subscriber = rospy.Subscriber("/env_obstacles", MarkerArray, self.updateObstacles, queue_size=1)
+        self.tf_listener = tf.TransformListener()
 
         # add service to plan the path
         self.global_plan_service = rospy.Service('global_plan', GlobalPlanning, self.handle_GlobalPlanning)
@@ -63,11 +64,10 @@ class BaseGlobalPlanner:
         return res
 
     def updateObstacles(self, obstacleSet):
-        listener = tf.TransformListener()
         self.obstacles = obstacleSet.markers
-        # coordinate transformation
+        # transform obstacles into world frame
         for obstacle in self.obstacles:
-            (trans, rot) = listener.lookupTransform(self.world_frame, obstacle.header.frame_id, rospy.Time(0))
+            (trans, _) = self.tf_listener.lookupTransform("/"+self.world_frame, "/"+obstacle.header.frame_id, rospy.Time(0))
             obstacle.pose.position.x += trans[0]
             obstacle.pose.position.y += trans[1]
             obstacle.pose.position.z += trans[2]
