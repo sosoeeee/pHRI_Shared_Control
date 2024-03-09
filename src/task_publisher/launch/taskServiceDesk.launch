@@ -1,0 +1,5 @@
+<launch>
+  <rosparam file="taskList.yaml" command="load"/>
+  <node name="taskServiceDesk" pkg="task_publisher" type="taskServiceDesk.py">
+  </node>
+</launch>

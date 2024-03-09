@@ -1,0 +1,12 @@
+# publish an moving point (Trajectory), which both human and robot aim to follow on their way to the final goal
+
+# Define the goal
+string file_path                # a file containing an array of discrete trajectory points sampled in a specified frequency
+int64 sample_frequency
+---
+# Define the result
+float32[] average_error         # the average of the distances to moving point measured at each sampling time
+float32[] human_force           # the interaction force during the task sampled in control_frequency
+---
+# Define a feedback message
+float32 current_error           # the current distance to moving point

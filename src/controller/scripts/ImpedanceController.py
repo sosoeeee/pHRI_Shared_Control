@@ -13,20 +13,20 @@ import numpy as np
 
 class ImpedanceController(BaseController):
     def __init__(self):
-        # controller parameters
+        super(ImpedanceController, self).__init__()
 
+        # controller parameters
         # Impedance Model
         self.Md = None
         self.Cd = None
-
         # discrete state space model
         self.Ad = None
         self.Brd = None
         self.Bhd = None
 
-        super(ImpedanceController, self).__init__()
+        self.loadParams()
 
-    def initController(self):
+    def loadParams(self):
         # read parameters
         self.Md = rospy.get_param("/impedance_controller/M", 1)
         self.Cd = rospy.get_param("/impedance_controller/C", 1)
@@ -55,9 +55,3 @@ class ImpedanceController(BaseController):
 
         return cmd_string
 
-    def run(self):
-        self.waitRobotReady()
-
-        while not rospy.is_shutdown():
-            self.pubControlCmd.publish(self.computeCmd())
-            rospy.Rate(self.controlFrequency).sleep()

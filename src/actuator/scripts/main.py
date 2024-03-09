@@ -10,7 +10,7 @@ import rospy
 
 if __name__ == '__main__':
     try:
-        rospy.init_node('env_publisher', anonymous=False)
+        rospy.init_node('actuator', anonymous=False)
         simulateFlag = rospy.get_param("/use_simulate", False)
         if simulateFlag:
             actuator = simActuator()

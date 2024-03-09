@@ -2,6 +2,7 @@
 import rospy
 from std_msgs.msg import String
 from geometry_msgs.msg import PoseStamped
+from task_publisher.msg import ReachGoal
 from actuator.srv import *
 
 from abc import abstractmethod
@@ -26,13 +27,19 @@ class BaseController:
         self.lastPos = np.zeros((3, 1))
 
         # publish control command to robot
-        self.pubControlCmd = rospy.Publisher('nextState', String, queue_size=10)
-
-        # private variables for controlling
         self.controlFrequency = rospy.get_param("/controller/control_frequency", 10)
+        self.pubControlCmd = rospy.Publisher('nextState', String, queue_size=10)
+        self.pubCmdTimer = rospy.Timer(rospy.Duration(1/self.controlFrequency), self.pubCmd_callback)
 
-        # initialize parameters in a specific controller
-        self.initController()
+        # subscribe task publisher (currently care about "ReachGoal" task only)
+        rospy.Subscriber('/task/reachGoal', ReachGoal, self.task_callBack, queue_size=1)
+        self.active = False  # only becomes True while task executing
+        self.goal = None
+        self.time_taken = None
+        self.tolerance = None
+
+        # wait actuator ready
+        self.waitRobotReady()
 
     def humanCmd_callback(self, msg):
         posAndForce = msg.data.split(',')
@@ -70,6 +77,22 @@ class BaseController:
                 self.currentStates[5] = 0
             self.lastPos = self.currentStates[:3]
 
+    def task_callBack(self, msg):
+        self.active = True
+        self.goal = np.array([msg.goal[0], msg.goal[1], msg.goal[2]])
+        self.time_taken = msg.time_taken
+        self.tolerance = msg.tolerance
+        rospy.loginfo("Controller is activated !")
+
+    def pubCmd_callback(self, event):
+        rospy.logdebug("real control frequency is %.2f" % (1/event.last_duration))
+
+        if self.robotReady and self.active:
+            cmd = self.computeCmd()
+            self.pubControlCmd.publish(cmd)
+        else:
+            return
+
     def getCurrentState(self):
         return self.currentStates
 
@@ -91,9 +114,9 @@ class BaseController:
                 rospy.sleep(0.1)
 
     @abstractmethod
-    def initController(self):
+    def loadParams(self):
         pass
 
     @abstractmethod
-    def run(self):
+    def computeCmd(self):
         pass

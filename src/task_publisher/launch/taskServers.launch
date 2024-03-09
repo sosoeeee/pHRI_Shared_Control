@@ -1,0 +1,4 @@
+<launch>
+  <node name="taskServers" pkg="task_publisher" type="main.py">
+  </node>
+</launch>

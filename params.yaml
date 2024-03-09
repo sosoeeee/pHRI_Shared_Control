@@ -55,7 +55,7 @@ MinimumLocalPlanner:
 controller_type: "Impedance"
 
 controller:
-  control_frequency: 10
+  control_frequency: 10 # must slower than the frequency of sampling the sensor data
 
 impedance_controller:
   M: 5
@@ -67,4 +67,4 @@ actuator:
 
 simulate_actuator:
   initPos: {x: 0, y: 0, z: 0}
-  pub_frequency: 100
+  pub_frequency: 100  # must faster than control_frequency
