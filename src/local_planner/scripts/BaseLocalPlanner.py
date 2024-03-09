@@ -11,7 +11,7 @@ from abc import abstractmethod
 class BaseLocalPlanner:
     def __init__(self):
         # add service to plan the local trajectory
-        self.local_planner_service = rospy.Service('local_planner', LocalPlanning, self.hadle_LocalPlanning)
+        self.local_planner_service = rospy.Service('local_planner', LocalPlanning, self.handle_LocalPlanning)
 
         # initialize the planner
         self.start_pos = None
@@ -40,7 +40,7 @@ class BaseLocalPlanner:
     def planTrajectory(self):
         return np.array([])
 
-    def hadle_LocalPlanning(self, req):
+    def handle_LocalPlanning(self, req):
         # get the request
         self.start_pos = req.start_pos
         self.start_vel = req.start_vel

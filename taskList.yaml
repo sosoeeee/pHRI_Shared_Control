@@ -1,2 +1,2 @@
 task_list:
-  - {task_id: 1, task_type: 'reachGoal', goal_x: 7.5, goal_y: 7.5, goal_z: 7.5, time_taken: 10, tolerance: 0.05}
+  - {task_id: 1, task_type: 'reachGoal', goal_x: 7.5, goal_y: 7.5, goal_z: 7.5, time_taken: 30, tolerance: 0.05}

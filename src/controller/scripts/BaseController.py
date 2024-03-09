@@ -79,7 +79,7 @@ class BaseController:
 
     def task_callBack(self, msg):
         self.active = True
-        self.goal = np.array([msg.goal[0], msg.goal[1], msg.goal[2]])
+        self.goal = [msg.goal[0], msg.goal[1], msg.goal[2]]
         self.time_taken = msg.time_taken
         self.tolerance = msg.tolerance
         rospy.loginfo("Controller is activated !")
@@ -90,6 +90,10 @@ class BaseController:
         if self.robotReady and self.active:
             cmd = self.computeCmd()
             self.pubControlCmd.publish(cmd)
+
+            # deactivate the controller when task is completed
+            if np.linalg.norm(self.currentStates[:3] - np.array(self.goal)) < self.tolerance:
+                self.active = False
         else:
             return
 

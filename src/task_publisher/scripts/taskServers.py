@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 import numpy as np
 import rospy
-from baseTaskServer import baseTaskServer
+from BaseTaskServer import BaseTaskServer
 import actionlib
 from task_publisher.action import *
 from task_publisher.msg import ReachGoal
@@ -9,7 +9,7 @@ from task_publisher.msg import ReachGoal
 import time
 
 
-class PubGoalActionServer(baseTaskServer):
+class PubGoalActionServer(BaseTaskServer):
     # create messages that are used to publish feedback/result
     _feedback = pubGoalFeedback()
     _result = pubGoalResult()

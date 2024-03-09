@@ -9,7 +9,7 @@ from abc import abstractmethod
 
 
 # used to subscribe system(human and robots) info for task executing
-class baseTaskServer(object):
+class BaseTaskServer(object):
     def __init__(self):
         # subscribe human force
         rospy.Subscriber("stickSignal", String, self.humanCmd_callback, queue_size=1)
