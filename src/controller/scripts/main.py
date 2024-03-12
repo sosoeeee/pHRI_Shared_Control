@@ -6,6 +6,7 @@ import os
 sys.path.append(os.path.dirname(__file__))
 
 import rospy
+from sharedController import SharedController
 from ImpedanceController import ImpedanceController
 
 if __name__ == '__main__':
@@ -14,6 +15,8 @@ if __name__ == '__main__':
         controller_type = rospy.get_param("/controller_type", "Impedance")
         if controller_type == "Impedance":
             controller = ImpedanceController()
+        if controller_type == "Shared":
+            controller = SharedController()
 
         rospy.spin()
 

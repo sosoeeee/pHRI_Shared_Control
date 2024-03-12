@@ -34,3 +34,11 @@ class BaseTaskServer(object):
     @abstractmethod
     def execute_cb(self, goal):
         pass
+
+    @abstractmethod
+    def updateInterface(self):
+        pass
+
+    @abstractmethod
+    def recordData(self):
+        pass

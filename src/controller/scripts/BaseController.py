@@ -92,6 +92,7 @@ class BaseController:
             # deactivate the controller when task is completed
             if np.linalg.norm(self.currentStates[:3] - np.array(self.goal)) < self.tolerance:
                 self.active = False
+                rospy.loginfo("Task has completed, controller is deactivated !")
             
             rospy.logdebug("real control frequency is %.2f" % (1/event.last_duration))
         else:

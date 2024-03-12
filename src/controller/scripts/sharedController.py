@@ -12,13 +12,14 @@ from visualization_msgs.msg import MarkerArray
 from visualization_msgs.msg import Marker
 import tf
 from local_planner.srv import *
+from controller.msg import VisualTraj
 
 import numpy as np
 
 
-class ImpedanceController(BaseController):
+class SharedController(BaseController):
     def __init__(self):
-        super(ImpedanceController, self).__init__()
+        super(SharedController, self).__init__()
 
         # controller parameters
         # Impedance Model
@@ -39,6 +40,7 @@ class ImpedanceController(BaseController):
         self.computeGlobalTraj = False
         self.robotGlobalTraj = None
         self.robotGlobalTrajLen = None
+        self.vis_pubRawTraj = rospy.Publisher('/controller/globalTraj', VisualTraj, queue_size=10)
 
         # predicted safety index
         self.lambda_ = None
@@ -179,7 +181,7 @@ class ImpedanceController(BaseController):
             obstacle.pose.position.y += trans[1]
             obstacle.pose.position.z += trans[2]
 
-        # low efficiency :(
+        # generate discrete points to represent obstacles, really low efficiency :(
         sample_step = 0.03
         for obstacle in self.obstacles:
             if self.obstaclesPoints is None:
@@ -279,6 +281,12 @@ class ImpedanceController(BaseController):
 
         return self.lambda_
 
+    def pubGlobalTraj(self):
+        visualTraj = VisualTraj()
+        visualTraj.dimension = len(self.goal)
+        visualTraj.trajectory = self.robotGlobalTraj[:len(self.goal), :].T.flatten().tolist()  # pub without velocity msg
+        self.vis_pubRawTraj.publish(visualTraj)
+
     def planGlobalTraj(self, curStates):
         startVel = np.array([0, 0, 0]).tolist()
         endVel = np.array([0, 0, 0]).tolist()
@@ -294,11 +302,14 @@ class ImpedanceController(BaseController):
                                                 -1, -1,
                                                 self.time_taken,
                                                 self.controlFrequency).trajectory
-            self.robotGlobalTraj = trajectoryFlatten.reshape(-1, 2 * len(self.goal)).T
+            self.robotGlobalTraj = np.array(trajectoryFlatten).reshape(-1, 2 * len(self.goal)).T
             self.robotGlobalTrajLen = self.robotGlobalTraj[1]
 
             if self.robotGlobalTraj.shape[0] != 6:
                 raise Exception("Error: The shape of global trajectory is wrong")
+
+            # visualization
+            self.pubGlobalTraj()
 
         except rospy.ServiceException as e:
             print("Service call failed: %s" % e)
@@ -365,6 +376,9 @@ class ImpedanceController(BaseController):
 
         # change global trajectory
         self.robotGlobalTraj[:, currentTrajIndex:(currentTrajIndex + self.replanLen)] = trajSet[miniEnergyIndex][:, :self.replanLen]
+
+        # visualization
+        self.pubGlobalTraj()
 
         return self.robotGlobalTraj
 
