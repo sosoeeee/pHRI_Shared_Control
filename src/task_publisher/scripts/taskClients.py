@@ -1,17 +1,23 @@
 #!/usr/bin/env python3
+import sys
+import os
+
+# Add the current directory to the path module
+sys.path.append(os.path.dirname(__file__))
+
 import rospy
 import actionlib
-from task_publisher.action import *
+from task_publisher.msg import pubGoalAction, pubGoalGoal
 
 
 # instantiate a specific reaching goal task
 class PubGoalActionClient:
     def __init__(self, args):
-        self.client = actionlib.SimpleActionClient('ReachGoal', PubGoalAction)
+        self.client = actionlib.SimpleActionClient('ReachGoal', pubGoalAction)
         self.client.wait_for_server()
 
         # create a goal instance
-        self.goal = PubGoalGoal()
+        self.goal = pubGoalGoal()
         self.goal.goal[0] = args['goal_x']
         self.goal.goal[1] = args['goal_y']
         self.goal.goal[2] = args['goal_z']

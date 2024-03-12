@@ -2,7 +2,7 @@
 import sys
 import os
 
-# Add the current directory to the path module, in order to import the LocalPlannerClass
+# Add the current directory to the path module
 sys.path.append(os.path.dirname(__file__))
 
 from taskServers import PubGoalActionServer

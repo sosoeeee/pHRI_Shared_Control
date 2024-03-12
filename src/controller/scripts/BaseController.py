@@ -85,8 +85,6 @@ class BaseController:
         rospy.loginfo("Controller is activated !")
 
     def pubCmd_callback(self, event):
-        rospy.logdebug("real control frequency is %.2f" % (1/event.last_duration))
-
         if self.robotReady and self.active:
             cmd = self.computeCmd()
             self.pubControlCmd.publish(cmd)
@@ -94,6 +92,8 @@ class BaseController:
             # deactivate the controller when task is completed
             if np.linalg.norm(self.currentStates[:3] - np.array(self.goal)) < self.tolerance:
                 self.active = False
+            
+            rospy.logdebug("real control frequency is %.2f" % (1/event.last_duration))
         else:
             return
 

@@ -51,17 +51,19 @@ class BaseGlobalPlanner:
     def smoothPath(self):
         step = np.sum((self.path[1] - self.path[0]) ** 2) ** 0.5
         if step > self.smooth_step:
-            return
+            return self.path
         else:
             n = math.ceil(self.smooth_step / step)
             iterations = int((self.path.shape[0] - 2) / n)  # remove start and end point
             smoothPath = np.zeros((iterations, self.path.shape[1]))
             averageVector = np.ones((1, n)) * (1 / n)
             for i in range(iterations):
-                smoothPath[i] = np.dot(averageVector, self.path[(1 + i*n):(i+1)*n, :])
+                smoothPath[i] = np.dot(averageVector, self.path[(1 + i*n):(i+1)*n + 1, :])
             # add start and end point
-            smoothPath = np.hstack(self.path[0], smoothPath)
-            smoothPath = np.hstack(smoothPath, self.path[-1])
+            smoothPath = np.vstack((self.path[0], smoothPath))
+            smoothPath = np.vstack((smoothPath, self.path[-1]))
+
+            rospy.loginfo("before smoothing points number: %d, after smoothing: %d" % (self.path.shape[0], smoothPath.shape[0]))
 
             return smoothPath
 
@@ -117,5 +119,6 @@ class BaseGlobalPlanner:
                     self.path_visual.poses.append(self.Array2Pose(point))
 
             self.path_publisher.publish(self.path_visual)
-            rospy.sleep(self.publish_rate)
+            
+            rospy.Rate(self.publish_rate).sleep()
 

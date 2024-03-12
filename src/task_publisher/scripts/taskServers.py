@@ -1,10 +1,17 @@
 #! /usr/bin/env python3
+import sys
+import os
+
+# Add the current directory to the path module
+sys.path.append(os.path.dirname(__file__))
+
 import numpy as np
 import rospy
 from BaseTaskServer import BaseTaskServer
 import actionlib
-from task_publisher.action import *
 from task_publisher.msg import ReachGoal
+from task_publisher.msg import pubGoalAction, pubGoalFeedback, pubGoalResult
+
 
 import time
 
@@ -17,7 +24,7 @@ class PubGoalActionServer(BaseTaskServer):
     def __init__(self, name):
         super().__init__()
         self._action_name = name
-        self._as = actionlib.SimpleActionServer(self._action_name, PubGoalAction,
+        self._as = actionlib.SimpleActionServer(self._action_name, pubGoalAction,
                                                 execute_cb=self.execute_cb, auto_start=False)
         self._pubGoal = rospy.Publisher('/task/reachGoal', ReachGoal, queue_size=10)
         self._as.start()
@@ -57,7 +64,7 @@ class PubGoalActionServer(BaseTaskServer):
             self._feedback.distance_to_goal = distanceToGoal
             self._as.publish_feedback(self._feedback)
 
-            Trajectory = np.hstack(Trajectory, self.currentStates)
+            Trajectory = np.hstack((Trajectory, self.currentStates))
 
             if distanceToGoal < goal.tolerance:
                 rospy.loginfo('%s: Completed' % self._action_name)

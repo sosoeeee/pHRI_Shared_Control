@@ -15,7 +15,7 @@ if __name__ == '__main__':
         if controller_type == "Impedance":
             controller = ImpedanceController()
 
-        controller.run()
+        rospy.spin()
 
     except rospy.ROSInterruptException:
         pass
