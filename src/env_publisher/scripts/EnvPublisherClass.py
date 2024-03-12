@@ -32,7 +32,6 @@ class EnvPublisher:
             'cube': Marker.CUBE,
             'sphere': Marker.SPHERE,
             'cylinder': Marker.CYLINDER,
-            'arrow': Marker.ARROW,
         }
         self.obstacles = MarkerArray()
         self.obstacles.markers = []

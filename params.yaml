@@ -23,9 +23,9 @@ env_publisher:
     - {id: 3, type: "cube", size_x: 2, size_y: 1, size_z: 1}
     - {id: 4, type: "cube", size_x: 1, size_y: 2, size_z: 1}
     - {id: 5, type: "cube", size_x: 1, size_y: 1, size_z: 2}
-    - {id: 6, type: "cube", size_x: 0.8, size_y: 1, size_z: 0.7}
-    - {id: 7, type: "cube", size_x: 0.8, size_y: 1, size_z: 0.7}
-    - {id: 8, type: "cube", size_x: 0.8, size_y: 1, size_z: 0.7}
+    - {id: 6, type: "sphere", radius: 1}
+    - {id: 7, type: "sphere", radius: 1}
+    - {id: 8, type: "sphere", radius: 1}
 
 ## Global planner params
 global_planner:

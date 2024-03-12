@@ -48,13 +48,15 @@ class RRTPlanner(BaseGlobalPlanner):
     def obstaclesNormalization(self):
         self.normalizedObstacles = []
         for obstacle in self.obstacles:
-            if obstacle.type == Marker.CUBE:
+            if obstacle.type == Marker.CUBE or obstacle.type == Marker.SPHERE: # treat sphere as cube
                 self.normalizedObstacles.append([obstacle.pose.position.x - obstacle.scale.x / 2 - self.obstacles_dilate,
                                                  obstacle.pose.position.y - obstacle.scale.y / 2 - self.obstacles_dilate,
                                                  obstacle.pose.position.z - obstacle.scale.z / 2 - self.obstacles_dilate,
                                                  obstacle.pose.position.x + obstacle.scale.x / 2 + self.obstacles_dilate,
                                                  obstacle.pose.position.y + obstacle.scale.y / 2 + self.obstacles_dilate,
                                                  obstacle.pose.position.z + obstacle.scale.z / 2 + self.obstacles_dilate])
+            else:
+                rospy.logerr("Obstacle type not supported: " + str(obstacle.type))
 
     def planPath(self):
         # RRT算法
