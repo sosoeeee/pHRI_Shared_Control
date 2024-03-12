@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import math
 
 import rospy
 from visualization_msgs.msg import MarkerArray
@@ -11,6 +12,7 @@ from geometry_msgs.msg import PoseStamped
 
 import time
 from abc import abstractmethod
+import numpy as np
 
 
 class BaseGlobalPlanner:
@@ -25,7 +27,7 @@ class BaseGlobalPlanner:
 
         # initialize the planner
         self.obstacles_dilate = rospy.get_param('/global_planner/obstacles_dilate', 0.01)
-        self.goal_tolerance = rospy.get_param('/global_planner/goal_tolerance', 0.1)
+        self.smooth_step = rospy.get_param('/global_planner/smooth_step', 0.1)
         self.world_frame = rospy.get_param('/world_frame', 'map')
         self.initPlanner()
 
@@ -46,6 +48,23 @@ class BaseGlobalPlanner:
     def planPath(self):
         pass
 
+    def smoothPath(self):
+        step = np.sum((self.path[1] - self.path[0]) ** 2) ** 0.5
+        if step > self.smooth_step:
+            return
+        else:
+            n = math.ceil(self.smooth_step / step)
+            iterations = int((self.path.shape[0] - 2) / n)  # remove start and end point
+            smoothPath = np.zeros((iterations, self.path.shape[1]))
+            averageVector = np.ones((1, n)) * (1 / n)
+            for i in range(iterations):
+                smoothPath[i] = np.dot(averageVector, self.path[(1 + i*n):(i+1)*n, :])
+            # add start and end point
+            smoothPath = np.hstack(self.path[0], smoothPath)
+            smoothPath = np.hstack(smoothPath, self.path[-1])
+
+            return smoothPath
+
     def handle_GlobalPlanning(self, req):
         # get the request
         self.goal = req.goal
@@ -55,8 +74,10 @@ class BaseGlobalPlanner:
         if self.obstacles is None:
             time.sleep(0.1)
         
-        # plan the path
+        # plan the path, self.path is (N, dimension)
         self.planPath()
+
+        self.path = self.smoothPath()
 
         # return the response
         res = GlobalPlanningResponse()
