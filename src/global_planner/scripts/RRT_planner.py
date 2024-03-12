@@ -49,12 +49,12 @@ class RRTPlanner(BaseGlobalPlanner):
         self.normalizedObstacles = []
         for obstacle in self.obstacles:
             if obstacle.type == Marker.CUBE:
-                self.normalizedObstacles.append([obstacle.pose.position.x - obstacle.scale.x / 2,
-                                                 obstacle.pose.position.y - obstacle.scale.y / 2,
-                                                 obstacle.pose.position.z - obstacle.scale.z / 2,
-                                                 obstacle.pose.position.x + obstacle.scale.x / 2,
-                                                 obstacle.pose.position.y + obstacle.scale.y / 2,
-                                                 obstacle.pose.position.z + obstacle.scale.z / 2])
+                self.normalizedObstacles.append([obstacle.pose.position.x - obstacle.scale.x / 2 - self.obstacles_dilate,
+                                                 obstacle.pose.position.y - obstacle.scale.y / 2 - self.obstacles_dilate,
+                                                 obstacle.pose.position.z - obstacle.scale.z / 2 - self.obstacles_dilate,
+                                                 obstacle.pose.position.x + obstacle.scale.x / 2 + self.obstacles_dilate,
+                                                 obstacle.pose.position.y + obstacle.scale.y / 2 + self.obstacles_dilate,
+                                                 obstacle.pose.position.z + obstacle.scale.z / 2 + self.obstacles_dilate])
 
     def planPath(self):
         # RRT算法
