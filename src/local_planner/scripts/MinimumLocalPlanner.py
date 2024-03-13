@@ -42,6 +42,10 @@ class MinimumLocalPlanner(BaseLocalPlanner):
         self.refPath = np.array(self.refPath).reshape(-1, self.dim).T
         self.polyTrajectories = [PolyTrajectory(self.order) for i in range(self.dim)]
 
+        if self.refPath.shape[1] > 15:
+            self.optimizeT = False
+            rospy.loginfo("path length %d is too long, fail to optimize Time params" % self.refPath.shape[1])
+
         # whether to optimize the time parameters
         if self.optimizeT:
             self.avr_arrangeTime()  # initialize ts
@@ -64,8 +68,8 @@ class MinimumLocalPlanner(BaseLocalPlanner):
 
         # compute the discrete trajectory (with Time Normalization)
         # traj only contains position and velocity info
-        traj = np.zeros((self.dim * 2, self.control_frequency * self.total_time))
-        for i in range(self.control_frequency * self.total_time):
+        traj = np.zeros((self.dim * 2, int(self.control_frequency * self.total_time)))
+        for i in range(int(self.control_frequency * self.total_time)):
             t_ = i / (self.control_frequency * self.total_time)  # Normalized Time t_
             for j in range(self.dim):
                 traj[j, i] = self.polyTrajectories[j].getPos(t_)
@@ -76,9 +80,14 @@ class MinimumLocalPlanner(BaseLocalPlanner):
     def optimizeTime(self):
         interation_N = 5
         for n in range(interation_N):
+
+            # rospy.loginfo("start time parameters optimization, iteration is %d" % n)
+
             # get duration of each segment
             self.durations = np.diff(self.ts)
             cost_T = self.computeCost()
+
+            # t1 = time.time()
 
             dt = 0.001
             # Calculate Gradient
@@ -90,6 +99,8 @@ class MinimumLocalPlanner(BaseLocalPlanner):
                 self.ts = np.hstack((0, np.cumsum(new_durations)))
                 cost_T_dDuration = self.computeCost()
                 grad[i] = (cost_T_dDuration - cost_T) / dt
+
+            # t2 = time.time()
 
             # Calculate exact Orientation Gradient
             max_grad = 0
@@ -106,6 +117,8 @@ class MinimumLocalPlanner(BaseLocalPlanner):
                 if abs(direction_grad) > max_grad:
                     d_duration = d_duration / np.sum(d_duration ** 2) ** 0.5
                     grad_des_direction = d_duration * (-direction_grad / abs(direction_grad))
+
+            # t3 = time.time()
 
             # backtracking linear search
             step = 0.02
@@ -125,6 +138,12 @@ class MinimumLocalPlanner(BaseLocalPlanner):
                     step *= beta
                 else:
                     break
+
+            # t4 = time.time()
+
+            # rospy.loginfo("part1 time takes:" + str(t2 - t1))
+            # rospy.loginfo("part2 time takes:" + str(t3 - t2))
+            # rospy.loginfo("part3 time takes:" + str(t4 - t3))
 
             # update time parameters
             self.durations = self.durations + grad_des_direction * step
