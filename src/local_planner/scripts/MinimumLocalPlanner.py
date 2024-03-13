@@ -23,7 +23,7 @@ class MinimumLocalPlanner(BaseLocalPlanner):
         self.conti_order = None
         self.optimizeT = None
         # result trajectory parameters
-        self.polyTrajectorys = None
+        self.polyTrajectories = None
         self.ts = None
         self.durations = None
         self.dim = None
@@ -40,7 +40,7 @@ class MinimumLocalPlanner(BaseLocalPlanner):
     def planTrajectory(self):
         self.dim = len(self.start_vel)
         self.refPath = np.array(self.refPath).reshape(-1, self.dim).T
-        self.polyTrajectorys = [PolyTrajectory(self.order) for i in range(self.dim)]
+        self.polyTrajectories = [PolyTrajectory(self.order) for i in range(self.dim)]
 
         # whether to optimize the time parameters
         if self.optimizeT:
@@ -48,11 +48,11 @@ class MinimumLocalPlanner(BaseLocalPlanner):
             self.optimizeTime()
             # update the time parameters
             for i in range(self.dim):
-                self.polyTrajectorys[i].arrangeTime(self.ts)
+                self.polyTrajectories[i].arrangeTime(self.ts)
         else:
             self.avr_arrangeTime()
             for i in range(self.dim):
-                self.polyTrajectorys[i].arrangeTime(self.ts)
+                self.polyTrajectories[i].arrangeTime(self.ts)
 
         for i in range(self.dim):
             coeffs, _ = self.computeSingleAxisTraj(self.refPath[i],
@@ -60,7 +60,7 @@ class MinimumLocalPlanner(BaseLocalPlanner):
                                                    self.start_acc[i] * self.total_time ** 2,
                                                    self.goal_vel[i] * self.total_time,
                                                    self.goal_acc[i] * self.total_time ** 2)
-            self.polyTrajectorys[i].setCoeff(coeffs)
+            self.polyTrajectories[i].setCoeff(coeffs)
 
         # compute the discrete trajectory (with Time Normalization)
         # traj only contains position and velocity info
@@ -68,8 +68,8 @@ class MinimumLocalPlanner(BaseLocalPlanner):
         for i in range(self.control_frequency * self.total_time):
             t_ = i / (self.control_frequency * self.total_time)  # Normalized Time t_
             for j in range(self.dim):
-                traj[j, i] = self.polyTrajectorys[j].getPos(t_)
-                traj[j + self.dim, i] = self.polyTrajectorys[j].getVel(t_) * (1 / self.total_time)
+                traj[j, i] = self.polyTrajectories[j].getPos(t_)
+                traj[j + self.dim, i] = self.polyTrajectories[j].getVel(t_) * (1 / self.total_time)
 
         return traj
 

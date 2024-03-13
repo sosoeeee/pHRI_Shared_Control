@@ -13,6 +13,7 @@ if __name__ == '__main__':
     try:
         rospy.init_node('task_servers', anonymous=False)
         pubGoalActionServer = PubGoalActionServer('ReachGoal')
+        rospy.spin()
 
     except rospy.ROSInterruptException:
         pass

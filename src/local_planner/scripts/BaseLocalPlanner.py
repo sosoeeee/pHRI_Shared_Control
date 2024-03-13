@@ -53,7 +53,7 @@ class BaseLocalPlanner:
         self.total_time = req.total_time
         self.control_frequency = req.controlFrequency
 
-        # request the global path
+        # request the global path (block function)
         self.global_planner_client(self.start_pos, self.goal_pos)
 
         # plan the trajectory
@@ -73,21 +73,22 @@ class BaseLocalPlanner:
 
     def run(self):
         # debugging
-        vertex1 = np.array([0.5, 0.5, 0.5])
-        vertex2 = np.array([7.5, 7.5, 7.5])
-        while not rospy.is_shutdown():
-            # start = np.random.rand(3) * (vertex2 - vertex1) + vertex1
-            # goal = np.random.rand(3) * (vertex2 - vertex1) + vertex1
-            start = vertex1
-            goal = vertex2
-            rospy.loginfo("req planning")
-            self.global_planner_client(start.tolist(), goal.tolist())
-            # self.rate.sleep()
-            time.sleep(2)
+        # vertex1 = np.array([0.5, 0.5, 0.5])
+        # vertex2 = np.array([7.5, 7.5, 7.5])
+        # while not rospy.is_shutdown():
+        #     # start = np.random.rand(3) * (vertex2 - vertex1) + vertex1
+        #     # goal = np.random.rand(3) * (vertex2 - vertex1) + vertex1
+        #     start = vertex1
+        #     goal = vertex2
+        #     rospy.loginfo("req planning")
+        #     self.global_planner_client(start.tolist(), goal.tolist())
+        #     # self.rate.sleep()
+        #     time.sleep(2)
+        rospy.spin()
 
-    def Array2Point(self, array):
-        point = Point()
-        point.x = array[0]
-        point.y = array[1]
-        point.z = array[2]
-        return point
+    # def Array2Point(self, array):
+    #     point = Point()
+    #     point.x = array[0]
+    #     point.y = array[1]
+    #     point.z = array[2]
+    #     return point
