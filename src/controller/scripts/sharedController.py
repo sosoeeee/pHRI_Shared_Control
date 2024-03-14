@@ -104,22 +104,22 @@ class SharedController(BaseController):
         C = np.zeros((3, 6))
         C[:, 0:3] = np.eye(3)
 
-        # T = 1 / self.controlFrequency
-        # self.Ad = np.eye(6) + A * T
-        # self.Brd = Br * T
-        # self.Bhd = Bh * T
-        # transition matrix
         T = 1 / self.controlFrequency
-        tmp1 = math.exp(- self.Cd * T / self.Md)
-        tmp2 = 1 - tmp1
-        self.Ad = np.zeros((6, 6))
-        self.Ad[0:3, 0:3] = np.eye(3)
-        self.Ad[0:3, 3:6] = np.eye(3) * self.Md * tmp2 / self.Cd
-        self.Ad[3:6, 3:6] = np.eye(3) * tmp1
-        self.Bhd = np.zeros((6, 3))
-        self.Bhd[0:3, :] = np.eye(3) * (T / self.Cd - self.Md / (self.Cd ** 2) * tmp2)
-        self.Bhd[3:6, :] = np.eye(3) * tmp2 / self.Cd
-        self.Brd = self.Bhd
+        self.Ad = np.eye(6) + A * T
+        self.Brd = Br * T
+        self.Bhd = Bh * T
+        # transition matrix
+        # T = 1 / self.controlFrequency
+        # tmp1 = math.exp(- self.Cd * T / self.Md)
+        # tmp2 = 1 - tmp1
+        # self.Ad = np.zeros((6, 6))
+        # self.Ad[0:3, 0:3] = np.eye(3)
+        # self.Ad[0:3, 3:6] = np.eye(3) * self.Md * tmp2 / self.Cd
+        # self.Ad[3:6, 3:6] = np.eye(3) * tmp1
+        # self.Bhd = np.zeros((6, 3))
+        # self.Bhd[0:3, :] = np.eye(3) * (T / self.Cd - self.Md / (self.Cd ** 2) * tmp2)
+        # self.Bhd[3:6, :] = np.eye(3) * tmp2 / self.Cd
+        # self.Brd = self.Bhd
 
         # 控制器参数设置
         phi = np.zeros((3 * self.localLen, 6))
@@ -170,7 +170,7 @@ class SharedController(BaseController):
             # compute global trajectory
             self.planGlobalTraj(curStates)
 
-        if self.curIdx == self.robotGlobalTrajLen - self.replanLen:
+        if self.curIdx == self.robotGlobalTrajLen - self.localLen:
             return None
         else:
             self.ctr += 1
@@ -179,6 +179,9 @@ class SharedController(BaseController):
             if self.ctr > self.controlFrequency / self.replanFreq and self.humanIntent == 2:
                 self.ctr = 0
                 self.changeGlobalTraj(self.curIdx, humCmd)
+            
+            self.curIdx += 1
+
             return self.computeLocalTraj(self.curIdx, humCmd, curStates)
 
     def updateObstacles(self, obstacleSet):
@@ -274,6 +277,8 @@ class SharedController(BaseController):
         desiredPos = self.robotGlobalTraj[0:3, index].reshape((3, 1))
 
         # need to optimaize in future works
+        if self.obstaclesPoints is None: # if obstacles is updating, use last lambda value
+            return self.lambda_
         d_res = min(np.linalg.norm(desiredPos - self.obstaclesPoints, axis=0))
 
         # when obstacles are relative sparse, the value of 'd_res' may be really large 
@@ -302,7 +307,6 @@ class SharedController(BaseController):
     def pubGlobalTraj(self):
         visualTraj = VisualTraj()
         visualTraj.dimension = len(self.goal)
-        rospy.loginfo(str(self.robotGlobalTraj[:len(self.goal), :].T.shape))
         visualTraj.trajectory = self.robotGlobalTraj[:len(self.goal), :].T.flatten().tolist()  # pub without velocity msg
         self.vis_pubRawTraj.publish(visualTraj)
 
@@ -435,18 +439,19 @@ class SharedController(BaseController):
         k_r2 = H_r - np.dot(L_r.dot(self.theta_hg), H_h)
         k_r = np.linalg.pinv(k_r1).dot(k_r2)
 
-        # k_h1 = np.eye(3 * self.localLen) - np.dot(L_h.dot(self.theta_rg), L_r.dot(self.theta_hg))
-        # k_h2 = H_h - np.dot(L_h.dot(self.theta_rg), H_r)
-        # k_h = np.linalg.pinv(k_h1).dot(k_h2)
+        k_h1 = np.eye(3 * self.localLen) - np.dot(L_h.dot(self.theta_rg), L_r.dot(self.theta_hg))
+        k_h2 = H_h - np.dot(L_h.dot(self.theta_rg), H_r)
+        k_h = np.linalg.pinv(k_h1).dot(k_h2)
 
         k_0 = np.zeros((3, 3 * self.localLen))
         k_0[:3, :3] = np.eye(3)
 
         u_r = np.dot(k_0, k_r.dot(wx))
-        # u_h = np.dot(k_0, k_h.dot(wx))
+        u_h = np.dot(k_0, k_h.dot(wx))
 
-        w_next = self.Ad.dot(curStates) + self.Brd.dot(u_r) + self.Bhd.dot(humCmd[3:])
-        cmd_string = str(w_next[0, 0] * 100000) + ',' + str(w_next[1, 0]) + ',' + str(w_next[2, 0]) + ',' + str(w_next[3, 0]) + ',' + str(w_next[4, 0]) + ',' + str(w_next[5, 0])
+        # w_next = self.Ad.dot(curStates) + self.Brd.dot(u_r) + self.Bhd.dot(humCmd[3:])
+        w_next = self.Ad.dot(curStates) + self.Brd.dot(u_r) + self.Bhd.dot(u_h)
+        cmd_string = str(w_next[0, 0]) + ',' + str(w_next[1, 0]) + ',' + str(w_next[2, 0]) + ',' + str(w_next[3, 0]) + ',' + str(w_next[4, 0]) + ',' + str(w_next[5, 0])
 
         return cmd_string
 

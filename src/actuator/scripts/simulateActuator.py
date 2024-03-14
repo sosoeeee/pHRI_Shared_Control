@@ -20,7 +20,7 @@ import numpy as np
 class simActuator:
     def __init__(self):
         # publish cmd to Rviz
-        self.pubPosCmd = rospy.Publisher('/simulate_actuator/pos', PointStamped, queue_size=10)
+        # self.pubPosCmd = rospy.Publisher('/simulate_actuator/pos', PointStamped, queue_size=10)
 
         # publish simulate point state to controller
         self.pubRobotState = rospy.Publisher('/actuator/robotState', StateVector, queue_size=10)
@@ -76,13 +76,13 @@ class simActuator:
         self.vel[1] = vy
         self.vel[2] = vz
 
-        pointCmd = PointStamped()
-        pointCmd.point.x = self.pos[0]
-        pointCmd.point.y = self.pos[1]
-        pointCmd.point.z = self.pos[2]
-        pointCmd.header.frame_id = self.world_frame
+        # pointCmd = PointStamped()
+        # pointCmd.point.x = self.pos[0]
+        # pointCmd.point.y = self.pos[1]
+        # pointCmd.point.z = self.pos[2]
+        # pointCmd.header.frame_id = self.world_frame
 
-        self.pubPosCmd.publish(pointCmd)
+        # self.pubPosCmd.publish(pointCmd)
 
     def pubStateTimer_callback(self, event):
         stateVector = StateVector()
