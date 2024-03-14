@@ -8,6 +8,9 @@
   <include file="$(find actuator)/launch/actuator.launch"/>
   <include file="$(find controller)/launch/controller.launch"/>
   <include file="$(find task_publisher)/launch/taskServers.launch"/>
+
+  
+
   <!-- Add more include statements for other packages -->
 </launch>
 
