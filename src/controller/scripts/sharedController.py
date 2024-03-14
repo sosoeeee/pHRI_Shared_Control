@@ -93,10 +93,10 @@ class SharedController(BaseController):
         self.replanFreq = rospy.get_param("/shared_controller/replan_freq", 1)
 
         # state space model
-        Md_inv = np.linalg.inv(self.Md)
+        Md_inv = np.linalg.inv(self.Md * np.eye(3))
         A = np.zeros((6, 6))
         A[0:3, 3:6] = np.eye(3)
-        A[3:6, 3:6] = -Md_inv.dot(self.Cd)
+        A[3:6, 3:6] = -Md_inv.dot(self.Cd * np.eye(3))
         Br = np.zeros((6, 3))
         Br[3:6, :] = Md_inv
         Bh = np.zeros((6, 3))
@@ -158,7 +158,6 @@ class SharedController(BaseController):
         if self.computeGlobalTraj is False:
             # compute global trajectory
             self.planGlobalTraj(curStates)
-            self.computeGlobalTraj = True
 
         if self.curIdx == self.robotGlobalTrajLen - self.replanLen:
             return None
@@ -263,7 +262,15 @@ class SharedController(BaseController):
         index = np.argmin(np.linalg.norm(self.robotGlobalTraj[:3, :] - endEffectorPos, axis=0))
         desiredPos = self.robotGlobalTraj[0:3, index].reshape((3, 1))
 
+        # need to optimaize in future works
         d_res = min(np.linalg.norm(desiredPos - self.obstaclesPoints, axis=0))
+
+        # when obstacles are relative sparse, the value of 'd_res' may be really large 
+        # it will lead to overflow error when calculating d_sat
+        # so we will set a limits to d_res
+        if d_res > 0.1:
+            d_res = 0.1
+
         d = np.linalg.norm(endEffectorPos - desiredPos)
         d_max = min(d, d_res)
 
@@ -284,26 +291,28 @@ class SharedController(BaseController):
     def pubGlobalTraj(self):
         visualTraj = VisualTraj()
         visualTraj.dimension = len(self.goal)
+        rospy.loginfo(str(self.robotGlobalTraj[:len(self.goal), :].T.shape))
         visualTraj.trajectory = self.robotGlobalTraj[:len(self.goal), :].T.flatten().tolist()  # pub without velocity msg
         self.vis_pubRawTraj.publish(visualTraj)
 
     def planGlobalTraj(self, curStates):
-        startVel = np.array([0, 0, 0]).tolist()
-        endVel = np.array([0, 0, 0]).tolist()
-        startAcc = np.array([0, 0, 0]).tolist()
-        endAcc = np.array([0, 0, 0]).tolist()
+        startVel = [0, 0, 0]
+        endVel = [0, 0, 0]
+        startAcc = [0, 0, 0]
+        endAcc = [0, 0, 0]
 
         # generate trajectory
         rospy.wait_for_service('local_planner')
         try:
             plan_trajectory = rospy.ServiceProxy('local_planner', LocalPlanning)
-            trajectoryFlatten = plan_trajectory(curStates[:3].tolist(), startVel, startAcc,
+            trajectoryFlatten = plan_trajectory(curStates.flatten()[:3].tolist(), startVel, startAcc,
                                                 self.goal, endVel, endAcc,
                                                 -1, -1,
                                                 self.time_taken,
                                                 self.controlFrequency).trajectory
             self.robotGlobalTraj = np.array(trajectoryFlatten).reshape(-1, 2 * len(self.goal)).T
-            self.robotGlobalTrajLen = self.robotGlobalTraj[1]
+            self.robotGlobalTrajLen = self.robotGlobalTraj.shape[1]
+            self.computeGlobalTraj = True
 
             if self.robotGlobalTraj.shape[0] != 6:
                 raise Exception("Error: The shape of global trajectory is wrong")
@@ -426,7 +435,7 @@ class SharedController(BaseController):
         # u_h = np.dot(k_0, k_h.dot(wx))
 
         w_next = self.Ad.dot(curStates) + self.Brd.dot(u_r) + self.Bhd.dot(humCmd[3:])
-        cmd_string = str(w_next[0, 0]) + ',' + str(w_next[1, 0]) + ',' + str(w_next[2, 0]) + ',' + str(w_next[3, 0]) + ',' + str(w_next[4, 0]) + ',' + str(w_next[5, 0])
+        cmd_string = str(w_next[0, 0] * 100000) + ',' + str(w_next[1, 0]) + ',' + str(w_next[2, 0]) + ',' + str(w_next[3, 0]) + ',' + str(w_next[4, 0]) + ',' + str(w_next[5, 0])
 
         return cmd_string
 

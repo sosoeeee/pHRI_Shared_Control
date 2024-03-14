@@ -73,6 +73,8 @@ class BaseController:
             cmd = self.computeCmd()
             self.pubControlCmd.publish(cmd)
 
+            rospy.loginfo('cmd' + cmd)
+
             # deactivate the controller when task is completed
             if np.linalg.norm(self.currentStates[:3] - np.array(self.goal)) < self.tolerance:
                 self.active = False
@@ -98,6 +100,7 @@ class BaseController:
                 print("Service call failed: %s" % e)
 
             if self.robotReady:
+                rospy.loginfo("Actuator finish initialization, Robot is ready!")
                 break
             else:
                 rospy.sleep(0.1)

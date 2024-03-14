@@ -38,7 +38,7 @@ class BaseLocalPlanner:
 
     @abstractmethod
     def planTrajectory(self):
-        return np.array([])
+        pass
 
     def handle_LocalPlanning(self, req):
         # get the request
@@ -51,17 +51,22 @@ class BaseLocalPlanner:
         self.max_vel = req.max_vel
         self.max_acc = req.max_acc
         self.total_time = req.total_time
-        self.control_frequency = req.controlFrequency
+        self.control_frequency = req.control_frequency
 
         # request the global path (block function)
         self.global_planner_client(self.start_pos, self.goal_pos)
 
         # plan the trajectory
         res = LocalPlanningResponse()
-        res.trajectory = self.planTrajectory().flatten().tolist()
+        
+        s = time.time()
+        res.trajectory = self.planTrajectory().T.flatten().tolist()
+        e = time.time()
+        rospy.loginfo("Minisnap traj finished: " + str(e - s))
+        rospy.loginfo("traj length: %d" % (len(res.trajectory)/(len(self.start_pos)*2)))
 
         # res.path = self.path.flatten().tolist()  # switch to float32[]
-        # return res
+        return res
 
     def global_planner_client(self, start, goal):
         rospy.wait_for_service('global_plan')

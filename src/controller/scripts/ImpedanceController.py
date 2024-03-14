@@ -35,7 +35,7 @@ class ImpedanceController(BaseController):
         Md_inv = np.linalg.inv(self.Md * np.eye(3))
         A = np.zeros((6, 6))
         A[0:3, 3:6] = np.eye(3)
-        A[3:6, 3:6] = -Md_inv.dot(self.Md * np.eye(3))
+        A[3:6, 3:6] = -Md_inv.dot(self.Cd * np.eye(3))
         Br = np.zeros((6, 3))
         Br[3:6, :] = Md_inv
         Bh = np.zeros((6, 3))

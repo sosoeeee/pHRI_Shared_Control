@@ -28,10 +28,8 @@ if __name__ == '__main__':
         # check task status
         while not rospy.is_shutdown():
             rospy.sleep(0.1)
-            for client in clientList:
-                if client.isDone() is not True:
-                    continue
-            break
+            if all([client.isDone() for client in clientList]):
+                break
 
         rospy.loginfo("All task is Done!")
 

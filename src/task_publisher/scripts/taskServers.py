@@ -16,6 +16,7 @@ from task_publisher.msg import pubGoalAction, pubGoalFeedback, pubGoalResult
 # visualization
 from geometry_msgs.msg import PointStamped, PoseStamped
 from visualization_msgs.msg import Marker
+from geometry_msgs.msg import Point
 from nav_msgs.msg import Path
 from controller.msg import VisualTraj
 
@@ -39,9 +40,9 @@ class PubGoalActionServer(BaseTaskServer):
         self.realTraj = None
 
         # visual publisher
-        self.vis_pubGoal = rospy.Publisher('/task/visual/goal', PointStamped)
-        self.vis_pubHuman = rospy.Publisher('/task/visual/humanForce', Marker)
-        self.vis_pubPos = rospy.Publisher('/task/visual/curPos', PointStamped)
+        self.vis_pubGoal = rospy.Publisher('/task/visual/goal', PointStamped, queue_size=1)
+        self.vis_pubHuman = rospy.Publisher('/task/visual/humanForce', Marker, queue_size=1)
+        self.vis_pubPos = rospy.Publisher('/task/visual/curPos', PointStamped, queue_size=1)
         self.vis_pubTraj = rospy.Publisher('/task/visual/Traj', Path, queue_size=1)
 
         # visual data
@@ -49,7 +50,7 @@ class PubGoalActionServer(BaseTaskServer):
         self.vis_goal = PointStamped()
         self.vis_goal.header.frame_id = self.world_frame
 
-        self.vis_human = Marker
+        self.vis_human = Marker()
         self.vis_human.header.frame_id = self.world_frame
         self.vis_human.action = Marker.ADD
         self.vis_human.ns = 'task'
@@ -74,17 +75,17 @@ class PubGoalActionServer(BaseTaskServer):
 
         # initialize feedback and result msg
         self._feedback.distance_to_goal = 0
-        self.realTraj = np.array([0, 0, 0])
+        self.realTraj = np.array([0, 0, 0]).reshape(3, 1)
         self._result.real_time_taken = 0
 
         # publish info to the console for the user
-        rospy.loginfo('%s: Executing, the goal is (%d, %d, %d)' %
+        rospy.loginfo('%s: Executing, the goal is (%.2f, %.2f, %.2f)' %
                       (self._action_name, goal.goal[0], goal.goal[1], goal.goal[2]))
 
         # publish goal to controller
         reachGoal = ReachGoal()
         reachGoal.goal = goal.goal
-        reachGoal.max_time_taken = goal.max_time_taken
+        reachGoal.time_taken = goal.time_taken
         reachGoal.tolerance = goal.tolerance
         self._pubGoal.publish(reachGoal)
 
@@ -119,7 +120,7 @@ class PubGoalActionServer(BaseTaskServer):
                 rospy.loginfo('%s: Completed' % self._action_name)
                 endTime = time.time()
                 self._result.real_time_taken = endTime - startTime
-                self._feedback.trajectory = self.realTraj[:, 1:].flatten().tolist()
+                self._feedback.trajectory = self.realTraj[:, 1:].T.flatten().tolist()
                 self._as.set_succeeded(self._result)
 
             r.sleep()
@@ -129,6 +130,7 @@ class PubGoalActionServer(BaseTaskServer):
         self.vis_pubGoal.publish(self.vis_goal)
 
         # human force
+        self.vis_human.points = [Point(), Point()]
         self.vis_human.points[0].x = self.currentStates[0]
         self.vis_human.points[0].y = self.currentStates[1]
         self.vis_human.points[0].z = self.currentStates[2]
@@ -147,9 +149,10 @@ class PubGoalActionServer(BaseTaskServer):
         self.vis_pubTraj.publish(self.vis_traj)
 
     def updateVis_traj(self, msg):
-        pathArray = np.array(msg.trajectory).reshape(-1, msg.dimesion)
+        pathArray = np.array(msg.trajectory).reshape(-1, msg.dimension)
         self.vis_traj.poses = []
         for point in pathArray:
+            # rospy.loginfo("vis traj append point (%.2f, %.2f, %.2f)" % (point[0], point[1], point[2]))
             self.vis_traj.poses.append(self.Array2Pose(point))
 
     def Array2Pose(self, point):
@@ -166,4 +169,4 @@ class PubGoalActionServer(BaseTaskServer):
         return pose
 
     def recordData(self):
-        self.realTraj = np.hstack((self.realTraj, self.currentStates))
+        self.realTraj = np.hstack((self.realTraj, self.currentStates)) # shape is (dim, N)
