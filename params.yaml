@@ -31,13 +31,13 @@ env_publisher:
 global_planner:
   publish_rate: 10
   publish_topic: "global_plan"
-  obstacles_dilate: 0.03
+  obstacles_dilate: 0.06
   smooth_step: 0.1
 
 RRT_planner:
     max_iter: 10000
     step_size: 0.05
-    line_collision_check_resolution: 2
+    line_collision_check_resolution: 0.05
     check_goal_prob: 0.01
     optimize_path: false
     search_space:

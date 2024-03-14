@@ -1,4 +1,6 @@
 <launch>
   <node name="taskServers" pkg="task_publisher" type="main.py">
   </node>
+
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find task_publisher)/rviz/first_person_view.rviz" />
 </launch>

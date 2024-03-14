@@ -38,8 +38,8 @@ class RRTPlanner(BaseGlobalPlanner):
         self.maxIterNum = rospy.get_param('/RRT_planner/max_iter', 10000)
         # 检查是否可以连接到目标点的概率
         self.checkGoalProb = rospy.get_param('/RRT_planner/check_goal_prob', 0.01)
-        # 在检查线段是否与障碍物相撞的时候，采样的点数
-        self.r = rospy.get_param('/RRT_planner/line_collision_check_resolution', 1)
+        # 在检查线段是否与障碍物相撞的时候，采样的点间距
+        self.r = rospy.get_param('/RRT_planner/line_collision_check_resolution', 0.1)
 
         # 搜索空间尺寸
         self.searchSpace = rospy.get_param('/RRT_planner/search_space', {'x': [0, 0], 'y': [0, 0], 'z': [0, 0]})

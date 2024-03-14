@@ -6,6 +6,7 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
+        - /PointStamped1
         - /PointStamped2
         - /Marker1
       Splitter Ratio: 0.5
@@ -93,7 +94,7 @@ Visualization Manager:
       History Length: 1
       Name: PointStamped
       Queue Size: 10
-      Radius: 0.20000000298023224
+      Radius: 0.10000000149011612
       Topic: /task/visual/curPos
       Unreliable: false
       Value: true
@@ -104,7 +105,7 @@ Visualization Manager:
       History Length: 1
       Name: PointStamped
       Queue Size: 10
-      Radius: 0.20000000298023224
+      Radius: 0.05000000074505806
       Topic: /task/visual/goal
       Unreliable: false
       Value: true
@@ -113,7 +114,7 @@ Visualization Manager:
       Marker Topic: /task/visual/humanForce
       Name: Marker
       Namespaces:
-        {}
+        task: true
       Queue Size: 100
       Value: true
   Enabled: true
@@ -144,7 +145,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 14.014684677124023
+      Distance: 6.955156326293945
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -160,9 +161,9 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.3899996280670166
+      Pitch: 0.25999900698661804
       Target Frame: camera
-      Yaw: 3.6699893474578857
+      Yaw: 3.9749879837036133
     Saved: ~
 Window Geometry:
   Displays:
