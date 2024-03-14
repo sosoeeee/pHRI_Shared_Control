@@ -1,6 +1,8 @@
 # publish an array of key points (path), which both human and robot aim to navigate through on their way to the final goal
 
 # Define the goal
+float32[] end_point            # when point reach the destination, this task is regarded as finished
+float32 tolerance
 string file_path                 # a file containing an array of key points
 ---
 # Define the result

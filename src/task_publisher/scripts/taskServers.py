@@ -11,10 +11,11 @@ from BaseTaskServer import BaseTaskServer
 import actionlib
 from task_publisher.msg import ReachGoal
 from task_publisher.msg import pubGoalAction, pubGoalFeedback, pubGoalResult
+from task_publisher.msg import pubPathAction, pubPathFeedback, pubPathResult
 
 # visualization
 from geometry_msgs.msg import PointStamped, PoseStamped
-from visualization_msgs.msg import Marker
+from visualization_msgs.msg import Marker, MarkerArray
 from geometry_msgs.msg import Point
 from nav_msgs.msg import Path
 from controller.msg import VisualTraj
@@ -37,7 +38,7 @@ class PubGoalActionServer(BaseTaskServer):
         self._as.start()
 
         # recorded data (customize by yourself)
-        self.realTraj = None
+        self.data_realTraj = None
 
         # visual publisher
         self.vis_pubGoal = rospy.Publisher('/task/visual/goal', PointStamped, queue_size=1)
@@ -76,7 +77,7 @@ class PubGoalActionServer(BaseTaskServer):
 
         # initialize feedback and result msg
         self._feedback.distance_to_goal = 0
-        self.realTraj = np.array([0, 0, 0]).reshape(3, 1)
+        self.data_realTraj = np.array([0, 0, 0]).reshape(3, 1)
         self._result.real_time_taken = 0
 
         # publish info to the console for the user
@@ -121,7 +122,7 @@ class PubGoalActionServer(BaseTaskServer):
                 rospy.loginfo('%s: Completed' % self._action_name)
                 endTime = time.time()
                 self._result.real_time_taken = endTime - startTime
-                self._result.trajectory = self.realTraj[:, 1:].T.flatten().tolist()
+                self._result.trajectory = self.data_realTraj[:, 1:].T.flatten().tolist()
                 self._as.set_succeeded(self._result)
                 break
 
@@ -156,6 +157,9 @@ class PubGoalActionServer(BaseTaskServer):
         # planned trajectory (if controller have)
         self.vis_pubTraj.publish(self.vis_traj)
 
+    def recordData(self):
+        self.data_realTraj = np.hstack((self.data_realTraj, self.currentStates)) # shape is (dim, N)
+
     def updateVis_traj(self, msg):
         pathArray = np.array(msg.trajectory).reshape(-1, msg.dimension)
         self.vis_traj.poses = []
@@ -176,5 +180,117 @@ class PubGoalActionServer(BaseTaskServer):
         pose.pose.orientation.w = 1
         return pose
 
+
+class PubPathActionServer(BaseTaskServer):
+    # create messages that are used to publish feedback/result
+    _feedback = pubPathFeedback()
+    _result = pubPathResult()
+
+    def __init__(self, name):
+        super().__init__()
+        self._action_name = name
+        self._as = actionlib.SimpleActionServer(self._action_name, pubPathAction,
+                                                execute_cb=self.execute_cb, auto_start=False)
+        self._as.start()
+
+        # recorded data (customize by yourself)
+        self.data_reachError = None
+        self.data_humanForce = None
+        self.pathPoints = None
+
+        # visual publisher
+        self.vis_pubPath = rospy.Publisher('/task/visual/followPath', MarkerArray, queue_size=1)
+        self.vis_updateFlag = False
+
+        # visual data
+        self.world_frame = rospy.get_param('/world_frame', 'map')
+
+        self.vis_PathPoints = MarkerArray()
+        self.vis_PathPoints.markers = []
+
+    def execute_cb(self, goal):
+        # local variables
+        controlFrequency = rospy.get_param("/controller/control_frequency", 10)
+        r = rospy.Rate(controlFrequency)  # update rate
+
+        # initialize feedback and result msg
+        self.pathPoints = np.loadtxt(goal.file_path)
+        if self.pathPoints.shape[1] is not 3:
+            raise Exception("check your path points txt file! Each line only contains one point")
+        endPoint = np.array(goal.end_point).reshape(3, 1)  # generally same as goal in task "ReachGoal"
+        self._feedback.distance_to_path = 0
+        self.data_reachError = [np.inf for _ in range(self.pathPoints.shape[0])]
+        self.data_humanForce = np.array([0, 0, 0]).reshape(3, 1)
+
+        # publish info to the console for the user
+        rospy.loginfo('%s: Executing, the end point is (%.2f, %.2f, %.2f)' %
+                      (self._action_name, goal.end_point[0], goal.end_point[1], goal.end_point[2]))
+
+        # execute task
+        while True:
+            # check that preempt has not been requested by the client
+            if self._as.is_preempt_requested():
+                rospy.loginfo('%s: Preempted' % self._action_name)
+                self._as.set_preempted()
+                break
+
+            # update recorded data (used for data analysis)
+            self.recordData()
+
+            # update monitor data (used for visualization)
+            self.updateInterface()
+
+            # send feedback to client
+            distanceToEnd = np.sum((self.currentStates - endPoint) ** 2)
+            # the minimum among the distances from the current point to all points on the path.
+            self._feedback.distance_to_path = np.min(self.data_reachError)
+            self._as.publish_feedback(self._feedback)
+
+            # check end and send result to client
+            if distanceToEnd < goal.tolerance:
+                rospy.loginfo('%s: Completed' % self._action_name)
+                self._result.reach_error = self.data_reachError
+                self._result.human_force = self.data_humanForce.T.flatten().tolist()
+                self._as.set_succeeded(self._result)
+                break
+
+            r.sleep()
+
+    def updateInterface(self):
+        # path point (only once)
+        if self.vis_updateFlag is False:
+            _id = 0
+            for point in self.pathPoints:
+                marker = Marker()
+                marker.header.frame_id = self.world_frame
+                marker.ns = "task"
+                marker.id = _id
+                _id += 1
+                marker.type = Marker.POINTS
+                marker.action = Marker.ADD
+
+                # shape parameters
+                marker.scale.x = 0.05
+                marker.scale.y = 0.05
+
+                marker.pose.position.x = point[0]
+                marker.pose.position.y = point[1]
+                marker.pose.position.z = point[2]
+
+                marker.color.r = 0
+                marker.color.g = 1
+                marker.color.b = 0
+                marker.color.a = 1
+                self.vis_PathPoints.markers.append(marker)
+            self.vis_pubPath.publish(self.vis_PathPoints)
+            self.vis_updateFlag = True
+
     def recordData(self):
-        self.realTraj = np.hstack((self.realTraj, self.currentStates)) # shape is (dim, N)
+        # collect interact force
+        self.data_humanForce = np.hstack((self.data_humanForce, self.humanForce))  # shape is (dim, N)
+        # compute error in real time
+        for i in range(len(self.data_reachError)):
+            error = np.linalg.norm(self.currentStates - self.pathPoints[i].reshape(3, 1))
+            if error < self.data_reachError[i]:
+                self.data_reachError[i] = error
+

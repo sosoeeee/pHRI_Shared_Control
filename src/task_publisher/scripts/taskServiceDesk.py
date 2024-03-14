@@ -21,6 +21,8 @@ if __name__ == '__main__':
         for task in taskList:
             if task['task_type'] == 'reachGoal':
                 clientList.append(PubGoalActionClient(task))
+            if task['task_type'] == 'followPath':
+                clientList.append(PubPathActionClient(task))
 
         for client in clientList:
             client.sendReq()
