@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import math
 import sys
 import os
 
@@ -43,11 +44,18 @@ class ImpedanceController(BaseController):
         C = np.zeros((3, 6))
         C[:, 0:3] = np.eye(3)
 
-        # discretization
+        # transition matrix
         T = 1 / self.controlFrequency
-        self.Ad = np.eye(6) + A * T
-        self.Brd = Br * T
-        self.Bhd = Bh * T
+        tmp1 = math.exp(- self.Cd * T / self.Md)
+        tmp2 = 1 - tmp1
+        self.Ad = np.zeros((6, 6))
+        self.Ad[0:3, 0:3] = np.eye(3)
+        self.Ad[0:3, 3:6] = np.eye(3) * self.Md * tmp2 / self.Cd
+        self.Ad[3:6, 3:6] = np.eye(3) * tmp1
+        self.Bhd = np.zeros((6, 3))
+        self.Bhd[0:3, :] = np.eye(3) * (T / self.Cd - self.Md / (self.Cd ** 2) * tmp2)
+        self.Bhd[3:6, :] = np.eye(3) * tmp2 / self.Cd
+        self.Brd = self.Bhd
 
     def computeCmd(self):
         nextState = self.Ad.dot(self.currentStates) + self.Brd.dot(np.zeros((3, 1))) + self.Bhd.dot(self.humanCmd[3:])

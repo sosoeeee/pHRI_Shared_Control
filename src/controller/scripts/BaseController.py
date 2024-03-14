@@ -1,14 +1,12 @@
 #!/usr/bin/env python3
 import rospy
 from std_msgs.msg import String
-from geometry_msgs.msg import PoseStamped
 from task_publisher.msg import ReachGoal
 from actuator.srv import *
 from actuator.msg import StateVector
 
 from abc import abstractmethod
 import numpy as np
-import time
 
 
 class BaseController:
