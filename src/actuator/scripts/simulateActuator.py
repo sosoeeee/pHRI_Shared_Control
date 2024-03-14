@@ -10,17 +10,20 @@ import rospy
 from std_msgs.msg import String
 from geometry_msgs.msg import PoseStamped, PointStamped
 from actuator.srv import isRobotReady, isRobotReadyResponse
+from actuator.msg import StateVector
+
 
 import numpy as np
 
 
+# No dynamics simulation
 class simActuator:
     def __init__(self):
         # publish cmd to Rviz
         self.pubPosCmd = rospy.Publisher('/simulate_actuator/pos', PointStamped, queue_size=10)
 
         # publish simulate point state to controller
-        self.pubRobotState = rospy.Publisher('/actuator/robotState', PoseStamped, queue_size=10)
+        self.pubRobotState = rospy.Publisher('/actuator/robotState', StateVector, queue_size=10)
         self.pubStateFreq = rospy.get_param("/simulate_actuator/pub_frequency", 100)
         self.pubStateTimer = rospy.Timer(rospy.Duration(1/self.pubStateFreq), self.pubStateTimer_callback)
 
@@ -29,6 +32,7 @@ class simActuator:
 
         # simulate point variable
         self.pos = np.zeros((3, 1))
+        self.vel = np.zeros((3, 1))
 
         # private variables
         self.world_frame = rospy.get_param('/world_frame', 'map')
@@ -68,6 +72,9 @@ class simActuator:
         self.pos[0] = x
         self.pos[1] = y
         self.pos[2] = z
+        self.vel[0] = vx
+        self.vel[1] = vy
+        self.vel[2] = vz
 
         pointCmd = PointStamped()
         pointCmd.point.x = self.pos[0]
@@ -78,14 +85,15 @@ class simActuator:
         self.pubPosCmd.publish(pointCmd)
 
     def pubStateTimer_callback(self, event):
-        poseState = PoseStamped()
-        poseState.header.frame_id = self.world_frame
-        poseState.header.stamp = event.current_real
-        poseState.pose.position.x = self.pos[0]
-        poseState.pose.position.y = self.pos[1]
-        poseState.pose.position.z = self.pos[2]
+        stateVector = StateVector()
+        stateVector.x = self.pos[0]
+        stateVector.y = self.pos[1]
+        stateVector.z = self.pos[2]
+        stateVector.dx = self.vel[0]
+        stateVector.dy = self.vel[1]
+        stateVector.dz = self.vel[2]
 
-        self.pubRobotState.publish(poseState)
+        self.pubRobotState.publish(stateVector)
 
     def run(self):
         self.initRobot()

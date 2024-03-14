@@ -12,11 +12,12 @@ from iiwa_msgs.msg import CartesianPose
 from iiwa_msgs.msg import JointVelocity
 from iiwa_msgs.msg import JointPositionVelocity
 from std_msgs.msg import String
-from geometry_msgs.msg import PoseStamped
 from actuator.srv import isRobotReady, isRobotReadyResponse
+from actuator.msg import StateVector
+
 
 import numpy as np
-
+import time
 from Jacobian import Jacobian
 
 
@@ -27,10 +28,14 @@ class Actuator:
         self.pubVelCmd = rospy.Publisher('/iiwa/command/JointVelocity', JointVelocity, queue_size=10)
 
         # publish robot state to controller
-        self.pubRobotState = rospy.Publisher('/actuator/robotState', PoseStamped, queue_size=10)
+        self.pubRobotState = rospy.Publisher('/actuator/robotState', StateVector, queue_size=10)
 
         # subscribe controller cmd
         rospy.Subscriber('/nextState', String, self.controlCmd_callback, queue_size=1)
+        self.firstSubFlag = True
+        self.startTime = None
+        self.endTime = None
+        self.lastPos = None
 
         # subscribe joint states
         rospy.Subscriber('/iiwa/state/JointPositionVelocity', JointPositionVelocity, self.jointState_callback, queue_size=1)
@@ -119,7 +124,32 @@ class Actuator:
         self.currentJointVelocity = self.toArray(msg.velocity)
 
     def cartesianState_callBack(self, msg):
-        self.pubRobotState.publish(msg.poseStamped)
+        stateVector = StateVector()
+        stateVector.x = msg.pose.position.x
+        stateVector.y = msg.pose.position.y
+        stateVector.z = msg.pose.position.z
+
+        if self.firstSubFlag:
+            self.lastPos = np.array([stateVector.x, stateVector.y, stateVector.z])
+            self.startTime = time.time()
+            self.firstSubFlag = False
+        else:
+            self.endTime = time.time()
+            deltaT = self.endTime - self.startTime
+            self.startTime = time.time()
+            # update vel
+            stateVector.dx = (msg.pose.position.x - self.lastPos[0]) / deltaT
+            stateVector.dy = (msg.pose.position.y - self.lastPos[1]) / deltaT
+            stateVector.dz = (msg.pose.position.z - self.lastPos[2]) / deltaT
+            if stateVector.dx < 0.0001:
+                stateVector.dx = 0
+            if stateVector.dy < 0.0001:
+                stateVector.dy = 0
+            if stateVector.dz < 0.0001:
+                stateVector.dz = 0
+            self.lastPos = np.array([stateVector.x, stateVector.y, stateVector.z])
+
+        self.pubRobotState.publish(stateVector)
 
     def run(self):
         self.initRobot()

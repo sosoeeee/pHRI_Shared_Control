@@ -4,6 +4,7 @@ from std_msgs.msg import String
 from geometry_msgs.msg import PoseStamped
 from task_publisher.msg import ReachGoal
 from actuator.srv import *
+from actuator.msg import StateVector
 
 from abc import abstractmethod
 import numpy as np
@@ -17,7 +18,7 @@ class BaseController:
         self.humanCmd = np.zeros((6, 1))
 
         # subscribe robot states from actuator
-        rospy.Subscriber('/actuator/robotState', PoseStamped, self.cartesianState_callBack, queue_size=1)
+        rospy.Subscriber('/actuator/robotState', StateVector, self.cartesianState_callBack, queue_size=1)
         self.robotReady = False
         self.currentStates = np.zeros((6, 1))  # pos (x, y, z) and vel (dx, dy, dz) in Cartesian Space(task space)
         # variables used to compute velocity by position differentiating
@@ -53,29 +54,12 @@ class BaseController:
         self.humanCmd[5] = float(posAndForce[5])
 
     def cartesianState_callBack(self, msg):
-        self.currentStates[0] = msg.pose.position.x
-        self.currentStates[1] = msg.pose.position.y
-        self.currentStates[2] = msg.pose.position.z
-
-        if self.firstSubFlag:
-            self.lastPos = self.currentStates[:3]
-            self.startTime = time.time()
-            self.firstSubFlag = False
-        else:
-            self.endTime = time.time()
-            deltaT = self.endTime - self.startTime
-            self.startTime = time.time()
-            # update vel
-            self.currentStates[3] = (self.currentStates[0] - self.lastPos[0]) / deltaT
-            self.currentStates[4] = (self.currentStates[1] - self.lastPos[1]) / deltaT
-            self.currentStates[5] = (self.currentStates[2] - self.lastPos[2]) / deltaT
-            if self.currentStates[3] < 0.0001:
-                self.currentStates[3] = 0
-            if self.currentStates[4] < 0.0001:
-                self.currentStates[4] = 0
-            if self.currentStates[5] < 0.0001:
-                self.currentStates[5] = 0
-            self.lastPos = self.currentStates[:3]
+        self.currentStates[0] = msg.x
+        self.currentStates[1] = msg.y
+        self.currentStates[2] = msg.z
+        self.currentStates[3] = msg.dx
+        self.currentStates[4] = msg.dy
+        self.currentStates[5] = msg.dz
 
     def task_callBack(self, msg):
         self.active = True

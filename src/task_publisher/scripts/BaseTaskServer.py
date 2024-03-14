@@ -2,7 +2,8 @@
 
 import rospy
 from std_msgs.msg import String
-from geometry_msgs.msg import PoseStamped
+from actuator.msg import StateVector
+
 
 import numpy as np
 from abc import abstractmethod
@@ -16,7 +17,7 @@ class BaseTaskServer(object):
         self.humanForce = np.zeros((3, 1))
 
         # subscribe robot states from actuator
-        rospy.Subscriber('/actuator/robotState', PoseStamped, self.cartesianState_callBack, queue_size=1)
+        rospy.Subscriber('/actuator/robotState', StateVector, self.cartesianState_callBack, queue_size=1)
         self.currentStates = np.zeros((3, 1))  # pos (x, y, z) in Cartesian Space(task space)
 
     def humanCmd_callback(self, msg):
@@ -27,9 +28,9 @@ class BaseTaskServer(object):
         self.humanForce[2] = float(posAndForce[5])
 
     def cartesianState_callBack(self, msg):
-        self.currentStates[0] = msg.pose.position.x
-        self.currentStates[1] = msg.pose.position.y
-        self.currentStates[2] = msg.pose.position.z
+        self.currentStates[0] = msg.x
+        self.currentStates[1] = msg.y
+        self.currentStates[2] = msg.z
 
     @abstractmethod
     def execute_cb(self, goal):
