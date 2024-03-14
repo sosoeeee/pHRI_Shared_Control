@@ -120,8 +120,9 @@ class PubGoalActionServer(BaseTaskServer):
                 rospy.loginfo('%s: Completed' % self._action_name)
                 endTime = time.time()
                 self._result.real_time_taken = endTime - startTime
-                self._feedback.trajectory = self.realTraj[:, 1:].T.flatten().tolist()
+                self._result.trajectory = self.realTraj[:, 1:].T.flatten().tolist()
                 self._as.set_succeeded(self._result)
+                break
 
             r.sleep()
 
