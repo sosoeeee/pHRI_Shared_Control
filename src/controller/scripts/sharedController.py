@@ -171,18 +171,18 @@ class SharedController(BaseController):
             self.planGlobalTraj(curStates)
 
         if self.curIdx == self.robotGlobalTrajLen - self.localLen:
-            return None
-        else:
-            self.ctr += 1
-            self.updateHumanLocalTraj(self.curIdx, humCmd, curStates)
-            self.computeLambda(curStates)
-            if self.ctr > self.controlFrequency / self.replanFreq and self.humanIntent == 2:
-                self.ctr = 0
-                self.changeGlobalTraj(self.curIdx, humCmd)
-            
-            self.curIdx += 1
+            self.extendGlobalTraj()
 
-            return self.computeLocalTraj(self.curIdx, humCmd, curStates)
+        self.ctr += 1
+        self.updateHumanLocalTraj(self.curIdx, humCmd, curStates)
+        self.computeLambda(curStates)
+        if self.ctr > self.controlFrequency / self.replanFreq and self.humanIntent == 2:
+            self.ctr = 0
+            self.changeGlobalTraj(self.curIdx, humCmd)
+
+        self.curIdx += 1
+
+        return self.computeLocalTraj(self.curIdx, humCmd, curStates)
 
     def updateObstacles(self, obstacleSet):
         self.obstacles = obstacleSet.markers
@@ -337,6 +337,12 @@ class SharedController(BaseController):
 
         except rospy.ServiceException as e:
             print("Service call failed: %s" % e)
+
+    def extendGlobalTraj(self):
+        exd_block = np.zeros((2 * len(self.goal), self.localLen))
+        exd_block[0:3, :] = np.array(self.goal).reshape(3, 1)
+        self.robotGlobalTraj = np.hstack((self.robotGlobalTraj, exd_block))
+        self.robotGlobalTrajLen = self.robotGlobalTraj.shape[1]
 
     def changeGlobalTraj(self, currentTrajIndex, humCmd):
         startPoint = self.robotGlobalTraj[:3, currentTrajIndex].tolist()
