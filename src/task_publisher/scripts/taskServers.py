@@ -12,13 +12,13 @@ import actionlib
 from task_publisher.msg import ReachGoal
 from task_publisher.msg import pubGoalAction, pubGoalFeedback, pubGoalResult
 
-
 # visualization
 from geometry_msgs.msg import PointStamped, PoseStamped
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Point
 from nav_msgs.msg import Path
 from controller.msg import VisualTraj
+import tf
 
 import time
 
@@ -44,6 +44,7 @@ class PubGoalActionServer(BaseTaskServer):
         self.vis_pubHuman = rospy.Publisher('/task/visual/humanForce', Marker, queue_size=1)
         self.vis_pubPos = rospy.Publisher('/task/visual/curPos', PointStamped, queue_size=1)
         self.vis_pubTraj = rospy.Publisher('/task/visual/Traj', Path, queue_size=1)
+        self.br = tf.TransformBroadcaster()
 
         # visual data
         self.world_frame = rospy.get_param('/world_frame', 'map')
@@ -145,6 +146,12 @@ class PubGoalActionServer(BaseTaskServer):
         self.vis_curPos.point.y = self.currentStates[1]
         self.vis_curPos.point.z = self.currentStates[2]
         self.vis_pubPos.publish(self.vis_curPos)
+
+        self.br.sendTransform((self.vis_curPos.point.x, self.vis_curPos.point.y, self.vis_curPos.point.z),
+                              (0, 0, 0, 1),
+                              rospy.Time.now(),
+                              "camera",
+                              self.world_frame)
 
         # planned trajectory (if controller have)
         self.vis_pubTraj.publish(self.vis_traj)
