@@ -95,6 +95,12 @@ class PubPathActionClient:
         rospy.loginfo("FollowPath task (id: %d) is done!" % self._id)
 
         # store data
+        controller_type = rospy.get_param("/controller_type", "Impedance")
+
+        np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/pathError.txt" %
+                   controller_type, np.array(res.reach_error).reshape(-1, 1))
+        np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/humanForce.txt" %
+                   controller_type, np.array(res.human_force).reshape(-1, 3))
 
         self.done = True
 
