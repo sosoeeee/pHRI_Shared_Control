@@ -36,9 +36,10 @@ class PubGoalActionServer(BaseTaskServer):
                                                 execute_cb=self.execute_cb, auto_start=False)
         self._pubGoal = rospy.Publisher('/task/reachGoal', ReachGoal, queue_size=10)
         self._as.start()
+        self.startTime = None
 
         # recorded data (customize by yourself)
-        self.data_realTraj = None
+        self.data_actualTraj = None
 
         # visual publisher
         self.vis_pubGoal = rospy.Publisher('/task/visual/goal', PointStamped, queue_size=1)
@@ -76,8 +77,7 @@ class PubGoalActionServer(BaseTaskServer):
         r = rospy.Rate(controlFrequency)
 
         # initialize feedback and result msg
-        self._feedback.distance_to_goal = 0
-        self.data_realTraj = np.array([0, 0, 0]).reshape(3, 1)
+        self.data_actualTraj = np.array([0, 0, 0]).reshape(3, 1)
         self._result.real_time_taken = 0
 
         # publish info to the console for the user
@@ -96,7 +96,7 @@ class PubGoalActionServer(BaseTaskServer):
         self.vis_goal.point.y = goal.goal[1]
         self.vis_goal.point.z = goal.goal[2]
 
-        startTime = time.time()
+        self.startTime = time.time()
 
         # execute task
         while True:
@@ -112,17 +112,13 @@ class PubGoalActionServer(BaseTaskServer):
             # update monitor data (used for visualization)
             self.updateInterface()
 
-            # send feedback to client
-            distanceToGoal = np.sum((self.currentStates - np.array(goal.goal).reshape(3, 1)) ** 2)
-            self._feedback.distance_to_goal = distanceToGoal
-            self._as.publish_feedback(self._feedback)
-
             # check end and send result to client
+            distanceToGoal = np.sum((self.currentStates - np.array(goal.goal).reshape(3, 1)) ** 2)
             if distanceToGoal < goal.tolerance:
                 rospy.loginfo('%s: Completed' % self._action_name)
                 endTime = time.time()
-                self._result.real_time_taken = endTime - startTime
-                self._result.trajectory = self.data_realTraj[:, 1:].T.flatten().tolist()
+                self._result.real_time_taken = endTime - self.startTime
+                self._result.actualTraj = self.data_actualTraj[:, 1:].T.flatten().tolist()
                 self._as.set_succeeded(self._result)
                 break
 
@@ -158,7 +154,7 @@ class PubGoalActionServer(BaseTaskServer):
         self.vis_pubTraj.publish(self.vis_traj)
 
     def recordData(self):
-        self.data_realTraj = np.hstack((self.data_realTraj, self.currentStates)) # shape is (dim, N)
+        self.data_actualTraj = np.hstack((self.data_actualTraj, self.currentStates))  # shape is (dim, N)
 
     def updateVis_traj(self, msg):
         pathArray = np.array(msg.trajectory).reshape(-1, msg.dimension)
@@ -166,6 +162,11 @@ class PubGoalActionServer(BaseTaskServer):
         for point in pathArray:
             # rospy.loginfo("vis traj append point (%.2f, %.2f, %.2f)" % (point[0], point[1], point[2]))
             self.vis_traj.poses.append(self.Array2Pose(point))
+
+        # send feedback to clients
+        self._feedback.robotTraj = msg.trajectory
+        self._feedback.time = time.time() - self.startTime
+        self._as.publish_feedback(self._feedback)
 
     def Array2Pose(self, point):
         pose = PoseStamped()

@@ -2,12 +2,13 @@
 
 # Define the goal
 float32[] goal                          # goal coordinates in 3d space
-float32 time_taken                  # max time taken to reach the goal
+float32 time_taken                      # max time taken to reach the goal
 float32 tolerance                       # when the distance to the goal falls within tolerance, the task is considered completed
 ---
 # Define the result
 float32 real_time_taken
-float32[] trajectory                    # sampled in control_frequency
+float32[] actualTraj                    # sampled in control_frequency
 ---
 # Define a feedback message
-float32 distance_to_goal
+float32[] robotTraj                     # the trajectory planned by robot
+float32 time                            # the moment of finishing traj planning

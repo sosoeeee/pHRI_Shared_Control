@@ -31,6 +31,9 @@ class PubGoalActionClient:
 
         self.done = False
 
+        # data collection
+        self.robotTrajSet = []
+
     def sendReq(self):
         self.client.send_goal(self.goal, done_cb=self.done_callback, feedback_cb=self.feedback_callback)
 
@@ -42,12 +45,19 @@ class PubGoalActionClient:
         rospy.loginfo("ReachGoal task (id: %d) is done! Time cost %.2f" % (self._id, res.real_time_taken))
 
         # store data
-        realTraj = np.array(res.trajectory).reshape(-1, 3)
-
+        controller_type = rospy.get_param("/controller_type", "Impedance")
+        actualTraj = np.array(res.trajectory).reshape(-1, 3)
+        np.savetxt("data/%s/actualTraj.txt" % controller_type, actualTraj)
+        k = 1
+        for traj in self.robotTrajSet:
+            np.savetxt("data/%s/robotTraj_%d_%.2f" % (controller_type, k, traj['time']), traj['path'])
+            k += 1
         self.done = True
 
     def feedback_callback(self, feedback):
-        pass
+        # default traj dimension is three :(
+        traj = {'path': np.array(feedback.robotTraj).reshape(-1, 3), 'time': feedback.time}
+        self.robotTrajSet.append(traj)
 
 
 # instantiate a specific following path task
