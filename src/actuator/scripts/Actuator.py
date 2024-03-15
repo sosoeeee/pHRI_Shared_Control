@@ -12,7 +12,7 @@ from iiwa_msgs.msg import CartesianPose
 from iiwa_msgs.msg import JointVelocity
 from iiwa_msgs.msg import JointPositionVelocity
 from std_msgs.msg import String
-from actuator.srv import isRobotReady, isRobotReadyResponse
+from actuator.srv import isRobotReady, isRobotReadyResponse, initRobot, initRobotResponse
 from actuator.msg import StateVector
 
 
@@ -48,6 +48,7 @@ class Actuator:
 
         # add service to check whether robot has initialized
         self.isReady_service = rospy.Service('isRobotReady', isRobotReady, self.handle_isRobotReady)
+        self.initRobot_service = rospy.Service('initRobot', initRobot, self.handle_initRobot)
 
         self.readyFlag = False
         self.initJointPose = rospy.get_param("/actuator/initJointPos", None)
@@ -86,6 +87,10 @@ class Actuator:
         res = isRobotReadyResponse()
         res.isReady = self.readyFlag
         return res
+
+    def handle_initRobot(self, req):
+        self.initRobot()
+        return True
 
     def controlCmd_callback(self, msg):
         cmd = msg.data

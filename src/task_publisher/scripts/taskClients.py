@@ -53,10 +53,12 @@ class PubGoalActionClient:
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-        np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/actualTraj_timecost_%.3f.txt" % (controller_type, res.real_time_taken), actualTraj)
+        np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/actualTraj_timecost_%.3f.txt" %
+                    (controller_type, res.real_time_taken), actualTraj)
         k = 1
         for traj in self.robotTrajSet:
-            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/robotTraj_%d_%.3f" % (controller_type, k, traj['time']), traj['path'])
+            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/robotTraj_%d_%.3f" %
+                        (controller_type, k, traj['time']), traj['path'])
             k += 1
         self.done = True
 

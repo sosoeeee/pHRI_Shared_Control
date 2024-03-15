@@ -1,0 +1,8 @@
+# This service allow task publisher to call for initializing task
+
+# No request parameter
+
+---
+
+# when robot has initialized, isReady becomes True
+bool isReady

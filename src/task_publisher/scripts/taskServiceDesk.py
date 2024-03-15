@@ -7,6 +7,7 @@ sys.path.append(os.path.dirname(__file__))
 
 import rospy
 from taskClients import *
+from actuator.srv import *
 
 
 # read task from yaml file, and instantiate them all
@@ -15,25 +16,42 @@ if __name__ == '__main__':
         rospy.init_node('task_service_desk', anonymous=False)
 
         taskList = rospy.get_param("/task_list", [])
-        clientList = []
 
-        # initial clients
+        taskPoolSet = []          # tasks sharing the same id will in the same task pool
+        curId = 1
+        taskPool = []
         for task in taskList:
-            if task['task_type'] == 'reachGoal':
-                clientList.append(PubGoalActionClient(task))
-            if task['task_type'] == 'followPath':
-                clientList.append(PubPathActionClient(task))
+            if task['task_id'] != curId:
+                taskPoolSet.append(taskPool)
+                taskPool = []
+            else:
+                taskPool.append(task)
 
-        for client in clientList:
-            client.sendReq()
+        for taskPool in taskPoolSet:
+            k = 1
+            for task in taskPool:
+                # run task
+                if task['task_type'] == 'initRobot':
+                    rospy.wait_for_service('initRobot')
+                    res = rospy.ServiceProxy('initRobot', initRobot)
+                    rospy.sleep(task['sleep_time'])
 
-        # check task status
-        while not rospy.is_shutdown():
-            rospy.sleep(0.1)
-            if all([client.isDone() for client in clientList]):
-                break
+                # following task types can run in parallel
+                clientList = []
+                if task['task_type'] == 'reachGoal':
+                    clientList.append(PubGoalActionClient(task))
+                if task['task_type'] == 'followPath':
+                    clientList.append(PubPathActionClient(task))
+                for client in clientList:
+                    client.sendReq()
 
-        rospy.loginfo("All task is Done!")
+                # check task status
+                while not rospy.is_shutdown():
+                    rospy.sleep(0.1)
+                    if all([client.isDone() for client in clientList]):
+                        rospy.loginfo("All tasks in task pool %d is Done!" % k)
+                        k += 1
+                        break
 
     except rospy.ROSInterruptException:
         pass

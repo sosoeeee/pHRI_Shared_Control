@@ -9,7 +9,7 @@ sys.path.append(os.path.dirname(__file__))
 import rospy
 from std_msgs.msg import String
 from geometry_msgs.msg import PoseStamped, PointStamped
-from actuator.srv import isRobotReady, isRobotReadyResponse
+from actuator.srv import isRobotReady, isRobotReadyResponse, initRobot, initRobotResponse
 from actuator.msg import StateVector
 
 
@@ -39,6 +39,7 @@ class simActuator:
 
         # add service to check whether robot has initialized
         self.isReady_service = rospy.Service('isRobotReady', isRobotReady, self.handle_isRobotReady)
+        self.initRobot_service = rospy.Service('initRobot', initRobot, self.handle_initRobot)
 
         self.readyFlag = False
         self.initPos = rospy.get_param("/simulate_actuator/initPos", None)
@@ -58,6 +59,10 @@ class simActuator:
         res = isRobotReadyResponse()
         res.isReady = self.readyFlag
         return res
+
+    def handle_initRobot(self, req):
+        self.initRobot()
+        return True
 
     def controlCmd_callback(self, msg):
         cmd = msg.data
