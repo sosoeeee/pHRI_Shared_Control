@@ -53,10 +53,10 @@ class PubGoalActionClient:
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-        np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/actualTraj.txt" % controller_type, actualTraj)
+        np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/actualTraj_timecost_%.3f.txt" % (controller_type, res.real_time_taken), actualTraj)
         k = 1
         for traj in self.robotTrajSet:
-            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/robotTraj_%d_%.2f" % (controller_type, k, traj['time']), traj['path'])
+            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/robotTraj_%d_%.3f" % (controller_type, k, traj['time']), traj['path'])
             k += 1
         self.done = True
 
@@ -92,7 +92,7 @@ class PubPathActionClient:
         return self.done
 
     def done_callback(self, status, res):
-        rospy.loginfo("FollowPath task (id: %d) is done!")
+        rospy.loginfo("FollowPath task (id: %d) is done!" % self._id)
 
         # store data
 
