@@ -46,11 +46,17 @@ class PubGoalActionClient:
 
         # store data
         controller_type = rospy.get_param("/controller_type", "Impedance")
-        actualTraj = np.array(res.trajectory).reshape(-1, 3)
-        np.savetxt("data/%s/actualTraj.txt" % controller_type, actualTraj)
+        actualTraj = np.array(res.actualTraj).reshape(-1, 3)
+        
+        # because we need launch nodes by roslaunch, so we have to use absolute path here
+        directory = "/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s" % controller_type
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+        np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/actualTraj.txt" % controller_type, actualTraj)
         k = 1
         for traj in self.robotTrajSet:
-            np.savetxt("data/%s/robotTraj_%d_%.2f" % (controller_type, k, traj['time']), traj['path'])
+            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/robotTraj_%d_%.2f" % (controller_type, k, traj['time']), traj['path'])
             k += 1
         self.done = True
 
@@ -67,7 +73,7 @@ class PubPathActionClient:
         self.client.wait_for_server()
 
         # create a goal instance
-        self.goal = pubGoalGoal()
+        self.goal = pubPathGoal()
         self.goal.end_point.append(args['goal_x'])
         self.goal.end_point.append(args['goal_y'])
         self.goal.end_point.append(args['goal_z'])

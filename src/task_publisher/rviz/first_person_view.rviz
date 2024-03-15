@@ -9,6 +9,7 @@ Panels:
         - /PointStamped1
         - /PointStamped2
         - /Marker1
+        - /Marker2
       Splitter Ratio: 0.5
     Tree Height: 719
   - Class: rviz/Selection
@@ -114,6 +115,14 @@ Visualization Manager:
       Marker Topic: /task/visual/humanForce
       Name: Marker
       Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /task/visual/followPath
+      Name: Marker
+      Namespaces:
         task: true
       Queue Size: 100
       Value: true
@@ -145,7 +154,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 6.955156326293945
+      Distance: 11.953648567199707
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -153,17 +162,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.5
       Focal Point:
-        X: 0
-        Y: 0
-        Z: 0
+        X: 0.14436468482017517
+        Y: 0.14285306632518768
+        Z: 0.7019355893135071
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.25999900698661804
+      Pitch: 0.2349986732006073
       Target Frame: camera
-      Yaw: 3.9749879837036133
+      Yaw: 3.91996693611145
     Saved: ~
 Window Geometry:
   Displays:
@@ -182,4 +191,4 @@ Window Geometry:
     collapsed: false
   Width: 1848
   X: 72
-  Y: 27
+  Y: 0

@@ -7,6 +7,7 @@ sys.path.append(os.path.dirname(__file__))
 
 import numpy as np
 import rospy
+import rospkg
 from BaseTaskServer import BaseTaskServer
 import actionlib
 from task_publisher.msg import ReachGoal
@@ -15,7 +16,7 @@ from task_publisher.msg import pubPathAction, pubPathFeedback, pubPathResult
 
 # visualization
 from geometry_msgs.msg import PointStamped, PoseStamped
-from visualization_msgs.msg import Marker, MarkerArray
+from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Point
 from nav_msgs.msg import Path
 from controller.msg import VisualTraj
@@ -200,14 +201,23 @@ class PubPathActionServer(BaseTaskServer):
         self.pathPoints = None
 
         # visual publisher
-        self.vis_pubPath = rospy.Publisher('/task/visual/followPath', MarkerArray, queue_size=1)
+        self.vis_pubPath = rospy.Publisher('/task/visual/followPath', Marker, queue_size=1)
         self.vis_updateFlag = False
 
         # visual data
         self.world_frame = rospy.get_param('/world_frame', 'map')
 
-        self.vis_PathPoints = MarkerArray()
-        self.vis_PathPoints.markers = []
+        self.vis_PathPoints = Marker()
+        self.vis_PathPoints.header.frame_id = self.world_frame
+        self.vis_PathPoints.ns = "task"
+        self.vis_PathPoints.type = Marker.POINTS
+        self.vis_PathPoints.action = Marker.ADD
+        self.vis_PathPoints.scale.x = 0.1
+        self.vis_PathPoints.scale.y = 0.1
+        self.vis_PathPoints.color.r = 0
+        self.vis_PathPoints.color.g = 1
+        self.vis_PathPoints.color.b = 0
+        self.vis_PathPoints.color.a = 1
 
     def execute_cb(self, goal):
         # local variables
@@ -215,8 +225,9 @@ class PubPathActionServer(BaseTaskServer):
         r = rospy.Rate(controlFrequency)  # update rate
 
         # initialize feedback and result msg
-        self.pathPoints = np.loadtxt(goal.file_path)
-        if self.pathPoints.shape[1] is not 3:
+        rospack = rospkg.RosPack()
+        self.pathPoints = np.loadtxt(rospack.get_path('task_publisher') + '/' + goal.file_path)
+        if self.pathPoints.shape[1] != 3:
             raise Exception("check your path points txt file! Each line only contains one point")
         endPoint = np.array(goal.end_point).reshape(3, 1)  # generally same as goal in task "ReachGoal"
         self._feedback.distance_to_path = 0
@@ -259,32 +270,14 @@ class PubPathActionServer(BaseTaskServer):
 
     def updateInterface(self):
         # path point (only once)
-        if self.vis_updateFlag is False:
-            _id = 0
-            for point in self.pathPoints:
-                marker = Marker()
-                marker.header.frame_id = self.world_frame
-                marker.ns = "task"
-                marker.id = _id
-                _id += 1
-                marker.type = Marker.POINTS
-                marker.action = Marker.ADD
-
-                # shape parameters
-                marker.scale.x = 0.05
-                marker.scale.y = 0.05
-
-                marker.pose.position.x = point[0]
-                marker.pose.position.y = point[1]
-                marker.pose.position.z = point[2]
-
-                marker.color.r = 0
-                marker.color.g = 1
-                marker.color.b = 0
-                marker.color.a = 1
-                self.vis_PathPoints.markers.append(marker)
-            self.vis_pubPath.publish(self.vis_PathPoints)
-            self.vis_updateFlag = True
+        self.vis_PathPoints.points = []
+        for point in self.pathPoints:
+            p = Point()
+            p.x = point[0]
+            p.y = point[1]
+            p.z = point[2]
+            self.vis_PathPoints.points.append(p)
+        self.vis_pubPath.publish(self.vis_PathPoints)
 
     def recordData(self):
         # collect interact force
