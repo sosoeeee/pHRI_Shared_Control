@@ -12,8 +12,8 @@ from ImpedanceController import ImpedanceController
 if __name__ == '__main__':
     try:
         rospy.init_node('controller', anonymous=False)
-        controller_type = rospy.get_param("/controller_type", "Impedance")
-        if controller_type == "Impedance":
+        controller_type = rospy.get_param("/controller_type", "Admittance")
+        if controller_type == "Admittance":
             controller = ImpedanceController()
         if controller_type == "Shared":
             controller = SharedController()
