@@ -32,8 +32,8 @@ global_planner:
   publish_rate: 10
   publish_topic: "global_plan"
   obstacles_dilate: 0.06
-  smooth_step: 0.1
-
+  smooth_step: 0.2
+  
 RRT_planner:
     max_iter: 10000
     step_size: 0.05

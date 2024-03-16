@@ -340,6 +340,7 @@ class SharedController(BaseController):
         self.vis_pubRawTraj.publish(visualTraj)
 
     def planGlobalTraj(self, curStates):
+        
         # keep the first-planned trajectory consistent among all users (In User Study)
         if self.loadTraj:
             rospack = rospkg.RosPack()
@@ -352,6 +353,8 @@ class SharedController(BaseController):
 
             # visualization
             self.pubGlobalTraj()
+
+            return
 
         startVel = [0, 0, 0]
         endVel = [0, 0, 0]
@@ -368,11 +371,11 @@ class SharedController(BaseController):
                                                 self.time_taken,
                                                 self.controlFrequency).trajectory
             self.robotGlobalTraj = np.array(trajectoryFlatten).reshape(-1, 2 * len(self.goal)).T
-            self.robotGlobalTrajLen = self.robotGlobalTraj.shape[1]
-            self.computeGlobalTraj = True
-
             if self.robotGlobalTraj.shape[0] != 6:
                 raise Exception("Error: The shape of global trajectory is wrong")
+
+            self.robotGlobalTrajLen = self.robotGlobalTraj.shape[1]
+            self.computeGlobalTraj = True
 
             # visualization
             self.pubGlobalTraj()
