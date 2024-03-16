@@ -7,6 +7,7 @@ import os
 sys.path.append(os.path.dirname(__file__))
 
 import rospy
+import rospkg
 from BaseController import BaseController
 from visualization_msgs.msg import MarkerArray
 from visualization_msgs.msg import Marker
@@ -41,6 +42,7 @@ class SharedController(BaseController):
         self.robotGlobalTraj = None
         self.robotGlobalTrajLen = None
         self.vis_pubRawTraj = rospy.Publisher('/controller/globalTraj', VisualTraj, queue_size=10)
+        self.loadTraj = False
 
         # predicted safety index
         self.lambda_ = None
@@ -115,6 +117,7 @@ class SharedController(BaseController):
         self.weight_r = rospy.get_param("/shared_controller/weight_r", 10)
         self.weight_tracking = rospy.get_param("/shared_controller/weight_tracking", 10000)
         self.replanFreq = rospy.get_param("/shared_controller/replan_freq", 1)
+        self.loadTraj = rospy.get_param("/shared_controller/load_traj", False)
 
         # state space model
         # Md_inv = np.linalg.inv(self.Md * np.eye(3))
@@ -337,6 +340,19 @@ class SharedController(BaseController):
         self.vis_pubRawTraj.publish(visualTraj)
 
     def planGlobalTraj(self, curStates):
+        # keep the first-planned trajectory consistent among all users (In User Study)
+        if self.loadTraj:
+            rospack = rospkg.RosPack()
+            self.robotGlobalTraj = np.loadtxt(rospack.get_path('controller') + '/loadTraj/globalTraj.txt').T
+            if self.robotGlobalTraj.shape[0] != 6:
+                raise Exception("check your globalTraj file, trajectory need to be (6, N), currently is (%d, %d)" 
+                                % (self.robotGlobalTraj.shape[0],self.robotGlobalTraj.shape[1]))
+            self.robotGlobalTrajLen = self.robotGlobalTraj.shape[1]     
+            self.computeGlobalTraj = True
+
+            # visualization
+            self.pubGlobalTraj()
+
         startVel = [0, 0, 0]
         endVel = [0, 0, 0]
         startAcc = [0, 0, 0]

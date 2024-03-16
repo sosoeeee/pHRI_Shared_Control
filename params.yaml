@@ -79,6 +79,7 @@ shared_controller:
   weight_r: 1
   weight_h: 10
   weight_tracking: 10000
+  load_traj: false
 
 
 ## actuator params

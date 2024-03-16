@@ -78,7 +78,7 @@ class PubGoalActionServer(BaseTaskServer):
         r = rospy.Rate(controlFrequency)
 
         # initialize feedback and result msg
-        self.data_actualTraj = np.array([0, 0, 0]).reshape(3, 1)
+        self.data_actualTraj = np.array([0, 0, 0]).reshape(6, 1)
         self._result.real_time_taken = 0
 
         # publish info to the console for the user
@@ -114,7 +114,7 @@ class PubGoalActionServer(BaseTaskServer):
             self.updateInterface()
 
             # check end and send result to client
-            distanceToGoal = np.sum((self.currentStates - np.array(goal.goal).reshape(3, 1)) ** 2)
+            distanceToGoal = np.sum((self.currentStates[:3, :] - np.array(goal.goal).reshape(3, 1)) ** 2)
             if distanceToGoal < goal.tolerance:
                 rospy.loginfo('%s: Completed' % self._action_name)
                 endTime = time.time()
@@ -155,7 +155,7 @@ class PubGoalActionServer(BaseTaskServer):
         self.vis_pubTraj.publish(self.vis_traj)
 
     def recordData(self):
-        self.data_actualTraj = np.hstack((self.data_actualTraj, self.currentStates))  # shape is (dim, N)
+        self.data_actualTraj = np.hstack((self.data_actualTraj, self.currentStates))  # shape is (2*dim, N)
 
     def updateVis_traj(self, msg):
         pathArray = np.array(msg.trajectory).reshape(-1, msg.dimension)
@@ -253,7 +253,7 @@ class PubPathActionServer(BaseTaskServer):
             self.updateInterface()
 
             # send feedback to client
-            distanceToEnd = np.sum((self.currentStates - endPoint) ** 2)
+            distanceToEnd = np.sum((self.currentStates[:3, :] - endPoint) ** 2)
             # the minimum among the distances from the current point to all points on the path.
             self._feedback.distance_to_path = np.min(self.data_reachError)
             self._as.publish_feedback(self._feedback)
@@ -284,7 +284,7 @@ class PubPathActionServer(BaseTaskServer):
         self.data_humanForce = np.hstack((self.data_humanForce, self.humanForce))  # shape is (dim, N)
         # compute error in real time
         for i in range(len(self.data_reachError)):
-            error = np.linalg.norm(self.currentStates - self.pathPoints[i].reshape(3, 1))
+            error = np.linalg.norm(self.currentStates[:3, :] - self.pathPoints[i].reshape(3, 1))
             if error < self.data_reachError[i]:
                 self.data_reachError[i] = error
 

@@ -46,7 +46,7 @@ class PubGoalActionClient:
 
         # store data
         controller_type = rospy.get_param("/controller_type", "Impedance")
-        actualTraj = np.array(res.actualTraj).reshape(-1, 3)
+        actualTraj = np.array(res.actualTraj).reshape(-1, 6)
         
         # because we need launch nodes by roslaunch, so we have to use absolute path here
         directory = "/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s" % controller_type
