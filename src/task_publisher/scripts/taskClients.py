@@ -53,12 +53,12 @@ class PubGoalActionClient:
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-        np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/actualTraj_timecost_%.3f.txt" %
-                    (controller_type, res.real_time_taken), actualTraj)
+        np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/actualTraj_id%d_timecost_%.3f.txt" %
+                    (controller_type, self._id, res.real_time_taken), actualTraj)
         k = 1
         for traj in self.robotTrajSet:
-            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/robotTraj_%d_%.3f" %
-                        (controller_type, k, traj['time']), traj['path'])
+            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/robotTraj_id%d_%d_%.3f" %
+                        (controller_type, self._id, k, traj['time']), traj['path'])
             k += 1
         self.done = True
 
@@ -99,10 +99,10 @@ class PubPathActionClient:
         # store data
         controller_type = rospy.get_param("/controller_type", "Impedance")
 
-        np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/pathError.txt" %
-                   controller_type, np.array(res.reach_error).reshape(-1, 1))
-        np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/humanForce.txt" %
-                   controller_type, np.array(res.human_force).reshape(-1, 3))
+        np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/pathError_id%d.txt" %
+                   (controller_type, self._id), np.array(res.reach_error).reshape(-1, 1))
+        np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/humanForce_id%d.txt" %
+                   (controller_type, self._id), np.array(res.human_force).reshape(-1, 3))
 
         self.done = True
 
