@@ -10,6 +10,7 @@ Panels:
         - /PointStamped2
         - /Marker1
         - /Marker2
+        - /Axes1
       Splitter Ratio: 0.5
     Tree Height: 719
   - Class: rviz/Selection
@@ -24,7 +25,6 @@ Panels:
   - Class: rviz/Views
     Expanded:
       - /Current View1
-      - /Current View1/Focal Point1
     Name: Views
     Splitter Ratio: 0.6319702863693237
   - Class: rviz/Time
@@ -115,7 +115,7 @@ Visualization Manager:
       Marker Topic: /task/visual/humanForce
       Name: Marker
       Namespaces:
-        {}
+        task: true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -126,6 +126,24 @@ Visualization Manager:
         task: true
       Queue Size: 100
       Value: true
+    - Alpha: 1
+      Class: rviz/Axes
+      Enabled: true
+      Length: 1
+      Name: Axes
+      Radius: 0.10000000149011612
+      Reference Frame: camera
+      Show Trail: false
+      Value: true
+    - Alpha: 1
+      Class: rviz/Axes
+      Enabled: false
+      Length: 1
+      Name: Axes
+      Radius: 0.10000000149011612
+      Reference Frame: world
+      Show Trail: false
+      Value: false
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -153,26 +171,25 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Class: rviz/Orbit
-      Distance: 11.953648567199707
+      Class: rviz/FrameAligned
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
-      Field of View: 0.5
-      Focal Point:
-        X: 0.14436468482017517
-        Y: 0.14285306632518768
-        Z: 0.7019355893135071
-      Focal Shape Fixed Size: true
-      Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
+      Lock Camera: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.2349986732006073
+      Pitch: 0
+      Point towards: +x axis
+      Position:
+        X: -6
+        Y: 0
+        Z: 0
+      Roll: 0
       Target Frame: camera
-      Yaw: 3.91996693611145
+      Yaw: 0
     Saved: ~
 Window Geometry:
   Displays:

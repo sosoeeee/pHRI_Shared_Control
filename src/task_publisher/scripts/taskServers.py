@@ -48,6 +48,7 @@ class PubGoalActionServer(BaseTaskServer):
         self.vis_pubPos = rospy.Publisher('/task/visual/curPos', PointStamped, queue_size=1)
         self.vis_pubTraj = rospy.Publisher('/task/visual/Traj', Path, queue_size=1)
         self.br = tf.TransformBroadcaster()
+        self.q = [0, 0, 0, 1]
 
         # visual data
         self.world_frame = rospy.get_param('/world_frame', 'map')
@@ -146,11 +147,12 @@ class PubGoalActionServer(BaseTaskServer):
         self.vis_curPos.point.z = self.currentStates[2]
         self.vis_pubPos.publish(self.vis_curPos)
 
-        q = self.getQuaternion([1, 1, 1], self.humanForce[:3].flatten())
-        rospy.loginfo("quaternion: (%.2f, %.2f, %.2f, %.2f)" % (q[0], q[1], q[2], q[3]))
+        if np.linalg.norm(self.humanForce) != 0:
+            self.q  = self.getQuaternion([1, 0, 0], self.humanForce[:3].flatten())
+            # rospy.loginfo("quaternion: (%.2f, %.2f, %.2f, %.2f)" % (self.q [0], self.q [1], self.q [2], self.q [3]))
 
         self.br.sendTransform((self.vis_curPos.point.x, self.vis_curPos.point.y, self.vis_curPos.point.z),
-                              (0, 0, 0, 1),
+                              (self.q [0], self.q [1], self.q [2], self.q [3]),
                               rospy.Time.now(),
                               "camera",
                               self.world_frame)
