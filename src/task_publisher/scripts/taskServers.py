@@ -78,7 +78,7 @@ class PubGoalActionServer(BaseTaskServer):
         r = rospy.Rate(controlFrequency)
 
         # initialize feedback and result msg
-        self.data_actualTraj = np.array([0, 0, 0]).reshape(6, 1)
+        self.data_actualTraj = np.zeros((6, 1))
         self._result.real_time_taken = 0
 
         # publish info to the console for the user
@@ -232,7 +232,7 @@ class PubPathActionServer(BaseTaskServer):
         endPoint = np.array(goal.end_point).reshape(3, 1)  # generally same as goal in task "ReachGoal"
         self._feedback.distance_to_path = 0
         self.data_reachError = [np.inf for _ in range(self.pathPoints.shape[0])]
-        self.data_humanForce = np.array([0, 0, 0]).reshape(3, 1)
+        self.data_humanForce = np.zeros((3, 1))
 
         # publish info to the console for the user
         rospy.loginfo('%s: Executing, the end point is (%.2f, %.2f, %.2f)' %

@@ -31,9 +31,9 @@ class BaseTaskServer(object):
         self.currentStates[0] = msg.x
         self.currentStates[1] = msg.y
         self.currentStates[2] = msg.z
-        self.currentStates[3] = msg.vx
-        self.currentStates[4] = msg.vy
-        self.currentStates[5] = msg.vz
+        self.currentStates[3] = msg.dx
+        self.currentStates[4] = msg.dy
+        self.currentStates[5] = msg.dz
     
     @abstractmethod
     def execute_cb(self, goal):
