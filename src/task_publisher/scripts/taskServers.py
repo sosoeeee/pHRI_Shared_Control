@@ -145,6 +145,9 @@ class PubGoalActionServer(BaseTaskServer):
         self.vis_curPos.point.z = self.currentStates[2]
         self.vis_pubPos.publish(self.vis_curPos)
 
+        q = self.getQuaternion([1, 1, 1], self.humanForce[:3].flatten())
+        rospy.loginfo("quaternion: (%.2f, %.2f, %.2f, %.2f)" % (q[0], q[1], q[2], q[3]))
+
         self.br.sendTransform((self.vis_curPos.point.x, self.vis_curPos.point.y, self.vis_curPos.point.z),
                               (0, 0, 0, 1),
                               rospy.Time.now(),
@@ -181,6 +184,15 @@ class PubGoalActionServer(BaseTaskServer):
         pose.pose.orientation.z = 0
         pose.pose.orientation.w = 1
         return pose
+  
+    def getQuaternion(self, ori_vec, loc_vec):
+        ori_vec = np.array(ori_vec)
+        loc_vec = np.array(loc_vec)              
+        ori_vec = ori_vec / np.linalg.norm(ori_vec)
+        loc_vec = loc_vec / np.linalg.norm(loc_vec)
+        axis = np.cross(ori_vec, loc_vec)
+        angle = np.arccos(np.dot(ori_vec, loc_vec))
+        return tf.transformations.quaternion_about_axis(angle, axis)
 
 
 class PubPathActionServer(BaseTaskServer):
