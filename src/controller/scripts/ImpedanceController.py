@@ -57,6 +57,9 @@ class ImpedanceController(BaseController):
         self.Bhd[3:6, :] = np.eye(3) * tmp2 / self.Cd
         self.Brd = self.Bhd
 
+    def reInitial(self):
+        pass
+
     def computeCmd(self):
         nextState = self.Ad.dot(self.currentStates) + self.Brd.dot(np.zeros((3, 1))) + self.Bhd.dot(self.humanCmd[3:])
         cmd_string = str(nextState[0, 0]) + ',' + str(nextState[1, 0]) + ',' + str(nextState[2, 0]) + ',' + str(nextState[3, 0]) + ',' + str(nextState[4, 0]) + ',' + str(nextState[5, 0])

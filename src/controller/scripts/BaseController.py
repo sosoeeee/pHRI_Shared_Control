@@ -19,11 +19,6 @@ class BaseController:
         rospy.Subscriber('/actuator/robotState', StateVector, self.cartesianState_callBack, queue_size=1)
         self.robotReady = False
         self.currentStates = np.zeros((6, 1))  # pos (x, y, z) and vel (dx, dy, dz) in Cartesian Space(task space)
-        # variables used to compute velocity by position differentiating
-        self.firstSubFlag = True
-        self.startTime = 0
-        self.endTime = 0
-        self.lastPos = np.zeros((3, 1))
 
         # publish control command to robot
         self.controlFrequency = rospy.get_param("/controller/control_frequency", 10)
@@ -71,11 +66,12 @@ class BaseController:
             cmd = self.computeCmd()
             self.pubControlCmd.publish(cmd)
 
-            rospy.loginfo('cmd' + cmd)
+            # rospy.loginfo('cmd' + cmd)
 
             # deactivate the controller when task is completed
             if np.linalg.norm(self.currentStates[:3] - np.array(self.goal)) < self.tolerance:
                 self.active = False
+                self.reInitial()
                 rospy.loginfo("Task has completed, controller is deactivated !")
             
             rospy.logdebug("real control frequency is %.2f" % (1/event.last_duration))
@@ -109,4 +105,8 @@ class BaseController:
 
     @abstractmethod
     def computeCmd(self):
+        pass
+
+    @abstractmethod
+    def reInitial(self):
         pass

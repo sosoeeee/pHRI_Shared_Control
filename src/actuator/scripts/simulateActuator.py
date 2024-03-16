@@ -51,6 +51,9 @@ class simActuator:
             self.pos[0] = self.initPos['x']
             self.pos[1] = self.initPos['y']
             self.pos[2] = self.initPos['z']
+            self.vel[0] = 0
+            self.vel[1] = 0
+            self.vel[2] = 0
             rospy.sleep(2)
             self.readyFlag = True
 

@@ -23,35 +23,45 @@ if __name__ == '__main__':
         for task in taskList:
             if task['task_id'] != curId:
                 taskPoolSet.append(taskPool)
-                taskPool = []
+                taskPool = [task]
+                curId += 1
             else:
                 taskPool.append(task)
+        taskPoolSet.append(taskPool)
 
+        poolIdx = 1
         for taskPool in taskPoolSet:
-            k = 1
+            clientList = []
             for task in taskPool:
                 # run task
                 if task['task_type'] == 'initRobot':
                     rospy.wait_for_service('initRobot')
-                    res = rospy.ServiceProxy('initRobot', initRobot)
-                    rospy.sleep(task['sleep_time'])
+                    try:
+                        init = rospy.ServiceProxy('initRobot', initRobot)
+                        res = init().isReady
+                    except rospy.ServiceException as e:
+                        rospy.loginfo("Service call failed: %s" % e)
 
                 # following task types can run in parallel
-                clientList = []
                 if task['task_type'] == 'reachGoal':
                     clientList.append(PubGoalActionClient(task))
                 if task['task_type'] == 'followPath':
                     clientList.append(PubPathActionClient(task))
-                for client in clientList:
-                    client.sendReq()
 
-                # check task status
-                while not rospy.is_shutdown():
-                    rospy.sleep(0.1)
-                    if all([client.isDone() for client in clientList]):
-                        rospy.loginfo("All tasks in task pool %d is Done!" % k)
-                        k += 1
-                        break
+            for client in clientList:
+                client.sendReq()
+
+            # check task status
+            while not rospy.is_shutdown():
+                rospy.sleep(0.1)
+                if all([client.isDone() for client in clientList]):
+                    rospy.loginfo("All tasks in task pool %d is Done!" % poolIdx)
+                    poolIdx += 1
+                    break
+    
+            rospy.sleep(3) # wait controller switch to deactivating mode
+            
+        # rospy.spin()
 
     except rospy.ROSInterruptException:
         pass

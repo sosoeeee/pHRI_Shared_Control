@@ -79,6 +79,30 @@ class SharedController(BaseController):
 
         self.loadParams()
 
+    def reInitial(self):
+        # local desired trajectory
+        self.robotLocalTraj = None  # 3*localLen
+        self.humanLocalTraj = None  # 3*localLen
+
+        # global robot desired trajectory
+        self.computeGlobalTraj = False
+        self.robotGlobalTraj = None
+        self.robotGlobalTrajLen = None
+
+        # predicted safety index
+        self.lambda_ = None
+        self.obstacles = None
+        self.obstaclesPoints = None
+
+        # the intensity of human intent
+        self.humanIntent = 0
+
+        # params for trajectory re-planning
+        self.ctr = 0
+
+        self.curIdx = 0
+
+
     def loadParams(self):
         # read parameters
         self.Md = rospy.get_param("/shared_controller/M", 1)
@@ -93,16 +117,16 @@ class SharedController(BaseController):
         self.replanFreq = rospy.get_param("/shared_controller/replan_freq", 1)
 
         # state space model
-        Md_inv = np.linalg.inv(self.Md * np.eye(3))
-        A = np.zeros((6, 6))
-        A[0:3, 3:6] = np.eye(3)
-        A[3:6, 3:6] = -Md_inv.dot(self.Cd * np.eye(3))
-        Br = np.zeros((6, 3))
-        Br[3:6, :] = Md_inv
-        Bh = np.zeros((6, 3))
-        Bh[3:6, :] = Md_inv
-        C = np.zeros((3, 6))
-        C[:, 0:3] = np.eye(3)
+        # Md_inv = np.linalg.inv(self.Md * np.eye(3))
+        # A = np.zeros((6, 6))
+        # A[0:3, 3:6] = np.eye(3)
+        # A[3:6, 3:6] = -Md_inv.dot(self.Cd * np.eye(3))
+        # Br = np.zeros((6, 3))
+        # Br[3:6, :] = Md_inv
+        # Bh = np.zeros((6, 3))
+        # Bh[3:6, :] = Md_inv
+        # C = np.zeros((3, 6))
+        # C[:, 0:3] = np.eye(3)
 
         # T = 1 / self.controlFrequency
         # self.Ad = np.eye(6) + A * T
@@ -120,6 +144,8 @@ class SharedController(BaseController):
         self.Bhd[0:3, :] = np.eye(3) * (T / self.Cd - self.Md / (self.Cd ** 2) * tmp2)
         self.Bhd[3:6, :] = np.eye(3) * tmp2 / self.Cd
         self.Brd = self.Bhd
+        C = np.zeros((3, 6))
+        C[:, 0:3] = np.eye(3)
 
         # 控制器参数设置
         phi = np.zeros((3 * self.localLen, 6))
