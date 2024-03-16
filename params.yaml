@@ -59,14 +59,14 @@ MinimumLocalPlanner:
   optimizeT: true
 
 ## controller params
-controller_type: "Shared"  # Admittance, Shared
+controller_type: "Admittance"  # Admittance, Shared
 
 controller:
   control_frequency: 10 # must slower than the frequency of sampling the sensor data
 
 impedance_controller:
-  M: 5
-  C: 75
+  M: 2
+  C: 10
 
 shared_controller:
   M: 5

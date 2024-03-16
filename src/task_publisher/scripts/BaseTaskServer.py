@@ -23,9 +23,9 @@ class BaseTaskServer(object):
     def humanCmd_callback(self, msg):
         posAndForce = msg.data.split(',')
         # interactive force (x, y, z) between human and remote haptic device
-        self.humanForce[0] = float(posAndForce[3])
-        self.humanForce[1] = float(posAndForce[4])
-        self.humanForce[2] = float(posAndForce[5])
+        self.humanForce[0] = -float(posAndForce[3])     
+        self.humanForce[1] = float(posAndForce[5])
+        self.humanForce[2] = -float(posAndForce[4])
 
     def cartesianState_callBack(self, msg):
         self.currentStates[0] = msg.x

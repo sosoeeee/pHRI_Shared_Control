@@ -42,9 +42,9 @@ class BaseController:
         self.humanCmd[1] = float(posAndForce[1])
         self.humanCmd[2] = float(posAndForce[2])
         # interactive force (x, y, z) between human and remote haptic device
-        self.humanCmd[3] = float(posAndForce[3])
-        self.humanCmd[4] = float(posAndForce[4])
-        self.humanCmd[5] = float(posAndForce[5])
+        self.humanCmd[3] = -float(posAndForce[3])
+        self.humanCmd[4] = float(posAndForce[5])
+        self.humanCmd[5] = -float(posAndForce[4])
 
     def cartesianState_callBack(self, msg):
         self.currentStates[0] = msg.x
