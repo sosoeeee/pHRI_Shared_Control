@@ -47,7 +47,7 @@ class BaseController:
         self.rawBuffer[:, 2] = self.rawBuffer[:, 1]
         self.rawBuffer[:, 1] = self.rawBuffer[:, 0]
         self.rawBuffer[:, 0] = np.array([float(posAndForce[0]), float(posAndForce[1]), float(posAndForce[2]),
-                                         -float(posAndForce[3]), float(posAndForce[5]), -float(posAndForce[4])]).reshape(6, 1)
+                                         -float(posAndForce[3]), float(posAndForce[5]), -float(posAndForce[4])])
         # update filter buffer
         self.filterBuffer[:, 2] = self.filterBuffer[:, 1]
         self.filterBuffer[:, 1] = self.filterBuffer[:, 0]

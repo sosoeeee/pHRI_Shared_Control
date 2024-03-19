@@ -31,7 +31,7 @@ class BaseTaskServer(object):
         # update raw buffer
         self.rawBuffer[:, 2] = self.rawBuffer[:, 1]
         self.rawBuffer[:, 1] = self.rawBuffer[:, 0]
-        self.rawBuffer[:, 0] = np.array([-float(posAndForce[3]), float(posAndForce[5]), -float(posAndForce[4])]).reshape(3, 1)
+        self.rawBuffer[:, 0] = np.array([-float(posAndForce[3]), float(posAndForce[5]), -float(posAndForce[4])])
         # update filter buffer
         self.filterBuffer[:, 2] = self.filterBuffer[:, 1]
         self.filterBuffer[:, 1] = self.filterBuffer[:, 0]
