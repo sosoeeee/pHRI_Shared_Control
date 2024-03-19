@@ -225,7 +225,7 @@ class PubPathActionServer(BaseTaskServer):
         self.vis_PathPoints = Marker()
         self.vis_PathPoints.header.frame_id = self.world_frame
         self.vis_PathPoints.ns = "task"
-        self.vis_PathPoints.type = Marker.POINTS
+        self.vis_PathPoints.type = Marker.SPHERE_LIST
         self.vis_PathPoints.action = Marker.ADD
         self.vis_PathPoints.scale.x = 0.1
         self.vis_PathPoints.scale.y = 0.1
