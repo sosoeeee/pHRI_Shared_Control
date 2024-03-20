@@ -43,7 +43,7 @@ class PubGoalActionServer(BaseTaskServer):
         self.data_actualTraj = None
 
         # visual publisher
-        self.vis_pubGoal = rospy.Publisher('/task/visual/goal', PointStamped, queue_size=1)
+        self.vis_pubGoal = rospy.Publisher('/task/visual/goal', Marker, queue_size=1)
         self.vis_pubHuman = rospy.Publisher('/task/visual/humanForce', Marker, queue_size=1)
         self.vis_pubPos = rospy.Publisher('/task/visual/curPos', PointStamped, queue_size=1)
         self.vis_pubTraj = rospy.Publisher('/task/visual/Traj', Path, queue_size=1)
@@ -52,8 +52,18 @@ class PubGoalActionServer(BaseTaskServer):
 
         # visual data
         self.world_frame = rospy.get_param('/world_frame', 'map')
-        self.vis_goal = PointStamped()
+        self.vis_goal = Marker()
         self.vis_goal.header.frame_id = self.world_frame
+        self.vis_goal.action = Marker.ADD
+        self.vis_goal.ns = 'task'
+        self.vis_goal.type = Marker.SPHERE
+        self.vis_goal.scale.x = 0.4
+        self.vis_goal.scale.y = 0.4
+        self.vis_goal.scale.z = 0.4
+        self.vis_goal.color.r = 1
+        self.vis_goal.color.g = 1
+        self.vis_goal.color.b = 0
+        self.vis_goal.color.a = 0.5
 
         self.vis_human = Marker()
         self.vis_human.header.frame_id = self.world_frame
@@ -95,9 +105,9 @@ class PubGoalActionServer(BaseTaskServer):
         self._pubGoal.publish(reachGoal)
 
         # initial goal
-        self.vis_goal.point.x = goal.goal[0]
-        self.vis_goal.point.y = goal.goal[1]
-        self.vis_goal.point.z = goal.goal[2]
+        self.vis_goal.pose.position.x = goal.goal[0]
+        self.vis_goal.pose.position.y = goal.goal[1]
+        self.vis_goal.pose.position.z = goal.goal[2]
 
         self.startTime = time.time()
 

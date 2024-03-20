@@ -16,7 +16,7 @@ class BaseController:
         self.humanCmd = np.zeros((6, 1))
         self.rawBuffer = np.zeros((6, 3))
         self.filterBuffer = np.zeros((6, 3))
-        # Cutoff Frequency is 10Hz
+        # Cutoff Frequency is 10Hz (in 100Hz sample freq)
         self.filter_b = [0.0675, 0.1349, 0.0675]
         self.filter_a = [1, -1.1430, 0.4128]
 

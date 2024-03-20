@@ -45,7 +45,7 @@ class SharedController(BaseController):
         self.loadTraj = False
 
         # predicted safety index
-        self.lambda_ = None
+        self.lambda_ = 1
         rospy.Subscriber("/env_obstacles", MarkerArray, self.updateObstacles, queue_size=1)
         self.world_frame = rospy.get_param('/world_frame', 'map')
         self.tf_listener = tf.TransformListener()
@@ -112,6 +112,7 @@ class SharedController(BaseController):
         self.localLen = rospy.get_param("/shared_controller/local_len", 50)
         self.thresholdForce = rospy.get_param("/shared_controller/threshold_force", 3.5)
         self.replanLen = rospy.get_param("/shared_controller/replan_len", 250)
+        self.replanPathNum = rospy.get_param("/shared_controller/replan_len_num", 10)
         self.alpha = rospy.get_param("/shared_controller/alpha", 100)
         self.weight_h = rospy.get_param("/shared_controller/weight_h", 1)
         self.weight_r = rospy.get_param("/shared_controller/weight_r", 10)
@@ -205,9 +206,9 @@ class SharedController(BaseController):
         self.ctr += 1
         self.updateHumanLocalTraj(self.curIdx, humCmd, curStates)
         self.computeLambda(curStates)
-        if self.ctr > self.controlFrequency / self.replanFreq and self.humanIntent == 2:
-            self.ctr = 0
-            self.changeGlobalTraj(self.curIdx, humCmd)
+        # if self.ctr > self.controlFrequency / self.replanFreq and self.humanIntent == 2:
+        #     self.ctr = 0
+        #     self.changeGlobalTraj(self.curIdx, humCmd)
 
         self.curIdx += 1
 
@@ -282,12 +283,12 @@ class SharedController(BaseController):
         self.humanLocalTraj = self.robotGlobalTraj[:3, idx:(idx + self.localLen)]
 
         if distance > 0.01:
-            self.humanLocalTraj[:, 0] = curStates[:3]
+            self.humanLocalTraj[:, 0] = curStates[:3].reshape(3,)
             next_state = self.Ad.dot(curStates) + self.Brd.dot(np.zeros((3, 1))) + self.Bhd.dot(
                 humCmd[3:])
             forceCmd = humCmd[3:]
             for i in range(1, self.localLen):
-                self.humanLocalTraj[:, i] = next_state[:3]
+                self.humanLocalTraj[:, i] = next_state[:3].reshape(3,)
                 # iterate state space model without robot input to estimate human desired trajectory
                 next_state = self.Ad.dot(next_state) + self.Brd.dot(np.zeros((3, 1))) + self.Bhd.dot(forceCmd)
 
@@ -411,7 +412,7 @@ class SharedController(BaseController):
                                                     self.replanLen * (1 / self.controlFrequency),
                                                     self.controlFrequency).trajectory
 
-                trajectory = trajectoryFlatten.reshape(-1, 2 * len(startPoint)).T
+                trajectory = np.array(trajectoryFlatten).reshape(-1, 2 * len(startPoint)).T
 
                 if trajectory.shape != (6, self.replanLen):
                     raise Exception("Error: The shape of re-planned trajectory is wrong")
@@ -421,11 +422,13 @@ class SharedController(BaseController):
             except rospy.ServiceException as e:
                 print("Service call failed: %s" % e)
 
+        rospy.loginfo("Generate feasible trajectories")
+
         originTrajPosition = self.robotGlobalTraj[:3, currentTrajIndex:(currentTrajIndex + self.replanLen)]
         humanForceVector = np.ones((3, self.replanLen))
-        humanForceVector[0, :] = humCmd[4]
-        humanForceVector[1, :] = humCmd[5]
-        humanForceVector[2, :] = humCmd[6]
+        humanForceVector[0, :] = humCmd[3]
+        humanForceVector[1, :] = humCmd[4]
+        humanForceVector[2, :] = humCmd[5]
 
         # compute energy function
         energySet = []
@@ -451,6 +454,8 @@ class SharedController(BaseController):
 
         # change global trajectory
         self.robotGlobalTraj[:, currentTrajIndex:(currentTrajIndex + self.replanLen)] = trajSet[miniEnergyIndex][:, :self.replanLen]
+
+        rospy.loginfo("Change global trajectory")
 
         # visualization
         self.pubGlobalTraj()
@@ -500,8 +505,8 @@ class SharedController(BaseController):
         u_r = np.dot(k_0, k_r.dot(wx))
         u_h = np.dot(k_0, k_h.dot(wx))
 
-        # w_next = self.Ad.dot(curStates) + self.Brd.dot(u_r) + self.Bhd.dot(humCmd[3:])
-        w_next = self.Ad.dot(curStates) + self.Brd.dot(u_r) + self.Bhd.dot(u_h)
+        w_next = self.Ad.dot(curStates) + self.Brd.dot(u_r) + self.Bhd.dot(humCmd[3:])
+        # w_next = self.Ad.dot(curStates) + self.Brd.dot(u_r) + self.Bhd.dot(u_h)
         cmd_string = str(w_next[0, 0]) + ',' + str(w_next[1, 0]) + ',' + str(w_next[2, 0]) + ',' + str(w_next[3, 0]) + ',' + str(w_next[4, 0]) + ',' + str(w_next[5, 0])
 
         return cmd_string
