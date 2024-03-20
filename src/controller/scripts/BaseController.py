@@ -28,7 +28,7 @@ class BaseController:
         # publish control command to robot
         self.controlFrequency = rospy.get_param("/controller/control_frequency", 10)
         self.pubControlCmd = rospy.Publisher('nextState', String, queue_size=1)
-        self.pubCmdTimer = rospy.Timer(rospy.Duration(1/self.controlFrequency), self.pubCmd_callback)
+        # self.pubCmdTimer = rospy.Timer(rospy.Duration(1/self.controlFrequency), self.pubCmd_callback)
 
         # subscribe task publisher (currently care about "ReachGoal" task only)
         rospy.Subscriber('/task/reachGoal', ReachGoal, self.task_callBack, queue_size=1)
@@ -85,22 +85,48 @@ class BaseController:
         self.tolerance = msg.tolerance
         rospy.loginfo("Controller is activated !")
 
-    def pubCmd_callback(self, event):
-        if self.robotReady and self.active:
-            cmd = self.computeCmd()
-            self.pubControlCmd.publish(cmd)
+    # unstable
+    # def pubCmd_callback(self, event):
+    #     if self.robotReady and self.active:
+    #         cmd = self.computeCmd()
+    #         self.pubControlCmd.publish(cmd)
 
-            # rospy.loginfo('cmd' + cmd)
+    #         # rospy.loginfo('cmd' + cmd)
 
-            # deactivate the controller when task is completed
-            if np.linalg.norm(self.currentStates[:3] - np.array(self.goal)) < self.tolerance:
-                self.active = False
-                self.reInitial()
-                rospy.loginfo("Task has completed, controller is deactivated !")
+    #         # deactivate the controller when task is completed
+    #         if np.linalg.norm(self.currentStates[:3] - np.array(self.goal)) < self.tolerance:
+    #             self.active = False
+    #             self.reInitial()
+    #             rospy.loginfo("Task has completed, controller is deactivated !")
             
-            rospy.loginfo("real control frequency is %.2f" % (1/event.last_duration))
-        else:
-            return
+    #         rospy.loginfo("real control frequency is %.2f" % (1/event.last_duration))
+    #     else:
+    #         return
+        
+    def run(self):
+        rate = rospy.Rate(self.controlFrequency)
+        s = rospy.get_time()
+        while not rospy.is_shutdown():
+            if self.robotReady and self.active:
+                cmd = self.computeCmd()
+                self.pubControlCmd.publish(cmd)
+
+                # rospy.loginfo('cmd' + cmd)
+
+                # deactivate the controller when task is completed
+                if np.linalg.norm(self.currentStates[:3] - np.array(self.goal)) < self.tolerance:
+                    self.active = False
+                    self.reInitial()
+                    rospy.loginfo("Task has completed, controller is deactivated !")
+
+                # check real pub frequency
+                e = rospy.get_time()
+                rospy.loginfo("real control frequency is %.2f" % (1/(e-s)))
+                s = rospy.get_time()
+            else:
+                pass
+            
+            rate.sleep()
 
     def getCurrentState(self):
         return self.currentStates

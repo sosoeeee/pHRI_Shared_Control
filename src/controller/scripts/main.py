@@ -18,7 +18,9 @@ if __name__ == '__main__':
         if controller_type == "Shared":
             controller = SharedController()
 
-        rospy.spin()
+        controller.run()
+
+        # rospy.spin()
 
     except rospy.ROSInterruptException:
         pass
