@@ -332,6 +332,8 @@ class SharedController(BaseController):
 
         # self.lambda_ = 0.8
 
+        rospy.loginfo("lambda: %.2f" % self.lambda_)
+
         return self.lambda_
 
     def pubGlobalTraj(self):

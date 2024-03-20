@@ -27,7 +27,7 @@ class BaseController:
 
         # publish control command to robot
         self.controlFrequency = rospy.get_param("/controller/control_frequency", 10)
-        self.pubControlCmd = rospy.Publisher('nextState', String, queue_size=10)
+        self.pubControlCmd = rospy.Publisher('nextState', String, queue_size=1)
         self.pubCmdTimer = rospy.Timer(rospy.Duration(1/self.controlFrequency), self.pubCmd_callback)
 
         # subscribe task publisher (currently care about "ReachGoal" task only)
@@ -98,7 +98,7 @@ class BaseController:
                 self.reInitial()
                 rospy.loginfo("Task has completed, controller is deactivated !")
             
-            rospy.logdebug("real control frequency is %.2f" % (1/event.last_duration))
+            rospy.loginfo("real control frequency is %.2f" % (1/event.last_duration))
         else:
             return
 
