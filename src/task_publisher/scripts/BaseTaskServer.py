@@ -42,7 +42,7 @@ class BaseTaskServer(object):
                                    self.filter_a[2] * self.filterBuffer[:, 2]) / self.filter_a[0]
 
         # filter data
-        self.humanForce = np.array([data if abs(data) > 0.001 else 0 for data in self.filterBuffer[:, 0]]).reshape(3, 1)
+        self.humanForce = np.array([data if abs(data) > 0.001 else 0 for data in self.filterBuffer[:, 0]]).reshape((3, 1))
 
         # posAndForce = msg.data.split(',')
         # # interactive force (x, y, z) between human and remote haptic device

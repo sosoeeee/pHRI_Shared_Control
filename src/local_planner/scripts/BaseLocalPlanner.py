@@ -62,8 +62,8 @@ class BaseLocalPlanner:
         s = time.time()
         res.trajectory = self.planTrajectory().T.flatten().tolist()
         e = time.time()
-        rospy.loginfo("Minisnap traj finished: " + str(e - s))
-        rospy.loginfo("traj length: %d" % (len(res.trajectory)/(len(self.start_pos)*2)))
+        # rospy.loginfo("Minisnap traj finished: " + str(e - s))
+        # rospy.loginfo("traj length: %d" % (len(res.trajectory)/(len(self.start_pos)*2)))
 
         # res.path = self.path.flatten().tolist()  # switch to float32[]
         return res

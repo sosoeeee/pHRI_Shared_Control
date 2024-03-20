@@ -46,7 +46,7 @@ class PubGoalActionClient:
 
         # store data
         controller_type = rospy.get_param("/controller_type", "Impedance")
-        actualTraj = np.array(res.actualTraj).reshape(-1, 6)
+        actualTraj = np.array(res.actualTraj).reshape((-1, 6))
         
         # because we need launch nodes by roslaunch, so we have to use absolute path here
         directory = "/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s" % controller_type
@@ -64,7 +64,7 @@ class PubGoalActionClient:
 
     def feedback_callback(self, feedback):
         # default traj dimension is three :(
-        traj = {'path': np.array(feedback.robotTraj).reshape(-1, 3), 'time': feedback.time}
+        traj = {'path': np.array(feedback.robotTraj).reshape((-1, 3)), 'time': feedback.time}
         self.robotTrajSet.append(traj)
 
 
@@ -100,9 +100,9 @@ class PubPathActionClient:
         controller_type = rospy.get_param("/controller_type", "Impedance")
 
         np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/pathError_id%d.txt" %
-                   (controller_type, self._id), np.array(res.reach_error).reshape(-1, 1))
+                   (controller_type, self._id), np.array(res.reach_error).reshape((-1, 1)))
         np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/humanForce_id%d.txt" %
-                   (controller_type, self._id), np.array(res.human_force).reshape(-1, 3))
+                   (controller_type, self._id), np.array(res.human_force).reshape((-1, 3)))
 
         self.done = True
 

@@ -79,4 +79,4 @@ class RRTPlanner(BaseGlobalPlanner):
         # self.path = np.array(rrt.rrt_star_bid_h())
 
         endTime = time.time()
-        rospy.loginfo("RTT finished: " + str(endTime - startTime))
+        # rospy.loginfo("RTT finished: " + str(endTime - startTime))

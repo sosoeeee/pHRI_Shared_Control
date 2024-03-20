@@ -47,6 +47,7 @@ class PubGoalActionServer(BaseTaskServer):
         self.vis_pubHuman = rospy.Publisher('/task/visual/humanForce', Marker, queue_size=1)
         self.vis_pubPos = rospy.Publisher('/task/visual/curPos', PointStamped, queue_size=1)
         self.vis_pubTraj = rospy.Publisher('/task/visual/Traj', Path, queue_size=1)
+        self.vis_pubRobotDesPos = rospy.Publisher('/task/visual/robotDesPos', PointStamped, queue_size=1)
         self.br = tf.TransformBroadcaster()
         self.q = [0, 0, 0, 1]
 
@@ -79,6 +80,10 @@ class PubGoalActionServer(BaseTaskServer):
 
         self.vis_curPos = PointStamped()
         self.vis_curPos.header.frame_id = self.world_frame
+
+        rospy.Subscriber("/controller/robotDesPos", Point, self.updateVis_robotDesPos, queue_size=1)
+        self.vis_robotDesPos = PointStamped()
+        self.vis_robotDesPos.header.frame_id = self.world_frame
 
         rospy.Subscriber("/controller/globalTraj", VisualTraj, self.updateVis_traj, queue_size=1)
         self.vis_traj = Path()
@@ -126,7 +131,7 @@ class PubGoalActionServer(BaseTaskServer):
             self.updateInterface()
 
             # check end and send result to client
-            distanceToGoal = np.sum((self.currentStates[:3, :] - np.array(goal.goal).reshape(3, 1)) ** 2)
+            distanceToGoal = np.sum((self.currentStates[:3, :] - np.array(goal.goal).reshape((3, 1))) ** 2)
             if distanceToGoal < goal.tolerance:
                 rospy.loginfo('%s: Completed' % self._action_name)
                 endTime = time.time()
@@ -170,11 +175,14 @@ class PubGoalActionServer(BaseTaskServer):
         # planned trajectory (if controller have)
         self.vis_pubTraj.publish(self.vis_traj)
 
+        # robot desire pos
+        self.vis_pubRobotDesPos.publish(self.vis_robotDesPos)
+
     def recordData(self):
         self.data_actualTraj = np.hstack((self.data_actualTraj, self.currentStates))  # shape is (2*dim, N)
 
     def updateVis_traj(self, msg):
-        pathArray = np.array(msg.trajectory).reshape(-1, msg.dimension)
+        pathArray = np.array(msg.trajectory).reshape((-1, msg.dimension))
         self.vis_traj.poses = []
         for point in pathArray:
             # rospy.loginfo("vis traj append point (%.2f, %.2f, %.2f)" % (point[0], point[1], point[2]))
@@ -184,6 +192,11 @@ class PubGoalActionServer(BaseTaskServer):
         self._feedback.robotTraj = msg.trajectory
         self._feedback.time = time.time() - self.startTime
         self._as.publish_feedback(self._feedback)
+
+    def updateVis_robotDesPos(self, msg):
+        self.vis_robotDesPos.point.x = msg.x
+        self.vis_robotDesPos.point.y = msg.y
+        self.vis_robotDesPos.point.z = msg.z
 
     def Array2Pose(self, point):
         pose = PoseStamped()
@@ -254,7 +267,7 @@ class PubPathActionServer(BaseTaskServer):
         self.pathPoints = np.loadtxt(rospack.get_path('task_publisher') + '/' + goal.file_path)
         if self.pathPoints.shape[1] != 3:
             raise Exception("check your path points txt file! Each line only contains one point")
-        endPoint = np.array(goal.end_point).reshape(3, 1)  # generally same as goal in task "ReachGoal"
+        endPoint = np.array(goal.end_point).reshape((3, 1))  # generally same as goal in task "ReachGoal"
         self._feedback.distance_to_path = 0
         self.data_reachError = [np.inf for _ in range(self.pathPoints.shape[0])]
         self.data_humanForce = np.zeros((3, 1))
@@ -309,7 +322,7 @@ class PubPathActionServer(BaseTaskServer):
         self.data_humanForce = np.hstack((self.data_humanForce, self.humanForce))  # shape is (dim, N)
         # compute error in real time
         for i in range(len(self.data_reachError)):
-            error = np.linalg.norm(self.currentStates[:3, :] - self.pathPoints[i].reshape(3, 1))
+            error = np.linalg.norm(self.currentStates[:3, :] - self.pathPoints[i].reshape((3, 1)))
             if error < self.data_reachError[i]:
                 self.data_reachError[i] = error
 

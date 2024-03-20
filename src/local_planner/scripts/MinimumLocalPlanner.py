@@ -39,12 +39,12 @@ class MinimumLocalPlanner(BaseLocalPlanner):
 
     def planTrajectory(self):
         self.dim = len(self.start_vel)
-        self.refPath = np.array(self.refPath).reshape(-1, self.dim).T
+        self.refPath = np.array(self.refPath).reshape((-1, self.dim)).T
         self.polyTrajectories = [PolyTrajectory(self.order) for i in range(self.dim)]
 
         if self.refPath.shape[1] > 15:
             self.optimizeT = False
-            rospy.loginfo("path length %d is too long, fail to optimize Time params" % self.refPath.shape[1])
+            # rospy.loginfo("path length %d is too long, fail to optimize Time params" % self.refPath.shape[1])
 
         # whether to optimize the time parameters
         if self.optimizeT:
@@ -133,8 +133,8 @@ class MinimumLocalPlanner(BaseLocalPlanner):
 
                 self.ts = np.hstack((0, np.cumsum(new_durations)))
                 cost_T_dDuration = self.computeCost()
-                if cost_T_dDuration > cost_T + alpha * step * np.dot(grad.reshape(-1, 1).T,
-                                                                     grad_des_direction.reshape(-1, 1)):
+                if cost_T_dDuration > cost_T + alpha * step * np.dot(grad.reshape((-1, 1)).T,
+                                                                     grad_des_direction.reshape((-1, 1))):
                     step *= beta
                 else:
                     break
@@ -195,7 +195,7 @@ class MinimumLocalPlanner(BaseLocalPlanner):
         return cost_all
 
     def computeSingleAxisTraj(self, path, v0, a0, vt, at):
-        path = path.reshape(1, -1)
+        path = path.reshape((1, -1))
         n_coef = self.order + 1  # the number of coefficient
         n_seg = path.shape[1] - 1  # the number of segments
 
@@ -244,8 +244,8 @@ class MinimumLocalPlanner(BaseLocalPlanner):
         # compute C
         num_d = n_continuous * (n_seg + 1)
         C = np.eye(num_d)
-        df = np.hstack((path, np.array(v0).reshape(1, -1), np.array(a0).reshape(1, -1), np.array(vt).reshape(1, -1),
-                        np.array(at).reshape(1, -1))).T
+        df = np.hstack((path, np.array(v0).reshape((1, -1)), np.array(a0).reshape((1, -1)), np.array(vt).reshape((1, -1)),
+                        np.array(at).reshape((1, -1)))).T
         fix_idx = np.array(range(1, num_d, n_continuous))
         # add vel and acc constrain at start and end of Traj
         fix_idx = np.hstack((fix_idx, 2, 3, num_d - n_continuous + 2, num_d - n_continuous + 3))

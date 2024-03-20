@@ -58,7 +58,7 @@ class BaseController:
                                    self.filter_a[2] * self.filterBuffer[:, 2]) / self.filter_a[0]
 
         # filter data
-        self.humanCmd = np.array([data if abs(data) > 0.001 else 0 for data in self.filterBuffer[:, 0]]).reshape(6, 1)
+        self.humanCmd = np.array([data if abs(data) > 0.001 else 0 for data in self.filterBuffer[:, 0]]).reshape((6, 1))
 
         # posAndForce = msg.data.split(',')
         # # haptic stick pos (x, y, z)
@@ -105,7 +105,6 @@ class BaseController:
         
     def run(self):
         rate = rospy.Rate(self.controlFrequency)
-        s = rospy.get_time()
         while not rospy.is_shutdown():
             if self.robotReady and self.active:
                 cmd = self.computeCmd()
@@ -118,11 +117,6 @@ class BaseController:
                     self.active = False
                     self.reInitial()
                     rospy.loginfo("Task has completed, controller is deactivated !")
-
-                # check real pub frequency
-                e = rospy.get_time()
-                rospy.loginfo("real control frequency is %.2f" % (1/(e-s)))
-                s = rospy.get_time()
             else:
                 pass
             

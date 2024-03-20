@@ -11,6 +11,8 @@ import rospkg
 from BaseController import BaseController
 from visualization_msgs.msg import MarkerArray
 from visualization_msgs.msg import Marker
+from geometry_msgs.msg import Point, PoseStamped
+from nav_msgs.msg import Path
 import tf
 from local_planner.srv import *
 from controller.msg import VisualTraj
@@ -78,8 +80,13 @@ class SharedController(BaseController):
         self.ctr = 0
 
         self.curIdx = 0
+        self.pubRobotDesPos = rospy.Publisher('/controller/robotDesPos', Point, queue_size=1)
 
         self.loadParams()
+
+        # debug
+        self.vis_pubLocalTraj_h = rospy.Publisher('/controller/Traj_h', Path, queue_size=1)
+        self.vis_pubLocalTraj_r = rospy.Publisher('/controller/Traj_r', Path, queue_size=1)
 
     def reInitial(self):
         # local desired trajectory
@@ -206,11 +213,20 @@ class SharedController(BaseController):
         self.ctr += 1
         self.updateHumanLocalTraj(self.curIdx, humCmd, curStates)
         self.computeLambda(curStates)
+
         # if self.ctr > self.controlFrequency / self.replanFreq and self.humanIntent == 2:
         #     self.ctr = 0
         #     self.changeGlobalTraj(self.curIdx, humCmd)
 
+        robotDesPos = Point()
+        robotDesPos.x = self.robotGlobalTraj[0, self.curIdx]
+        robotDesPos.y = self.robotGlobalTraj[1, self.curIdx]
+        robotDesPos.z = self.robotGlobalTraj[2, self.curIdx]
+        self.pubRobotDesPos.publish(robotDesPos)
+
         self.curIdx += 1
+
+        # rospy.loginfo("idx: %d" % self.curIdx)
 
         return self.computeLocalTraj(self.curIdx, humCmd, curStates)
 
@@ -280,15 +296,16 @@ class SharedController(BaseController):
         distance = (humCmd[0] ** 2 + humCmd[1] ** 2 + humCmd[2] ** 2) ** 0.5
 
         # By default, human desired traj is equal to robot desired traj
-        self.humanLocalTraj = self.robotGlobalTraj[:3, idx:(idx + self.localLen)]
+        # 这里之前发生了一个地址上的copy，对humanLocalTraj的修改同时修改了robotGlobalTraj
+        self.humanLocalTraj = self.robotGlobalTraj[:3, idx:(idx + self.localLen)].copy()
 
         if distance > 0.01:
-            self.humanLocalTraj[:, 0] = curStates[:3].reshape(3,)
+            self.humanLocalTraj[:, 0] = curStates[:3].reshape((3,))
             next_state = self.Ad.dot(curStates) + self.Brd.dot(np.zeros((3, 1))) + self.Bhd.dot(
                 humCmd[3:])
             forceCmd = humCmd[3:]
             for i in range(1, self.localLen):
-                self.humanLocalTraj[:, i] = next_state[:3].reshape(3,)
+                self.humanLocalTraj[:, i] = next_state[:3].reshape((3,))
                 # iterate state space model without robot input to estimate human desired trajectory
                 next_state = self.Ad.dot(next_state) + self.Brd.dot(np.zeros((3, 1))) + self.Bhd.dot(forceCmd)
 
@@ -304,7 +321,7 @@ class SharedController(BaseController):
 
         # search for closest point in trajectory to current pos (search whole trajectory, also low efficiency)
         index = np.argmin(np.linalg.norm(self.robotGlobalTraj[:3, :] - endEffectorPos, axis=0))
-        desiredPos = self.robotGlobalTraj[0:3, index].reshape((3, 1))
+        desiredPos = self.robotGlobalTraj[0:3, index].copy().reshape((3, 1))
 
         # need to optimaize in future works
         if self.obstaclesPoints is None: # if obstacles is updating, use last lambda value
@@ -314,8 +331,8 @@ class SharedController(BaseController):
         # when obstacles are relative sparse, the value of 'd_res' may be really large 
         # it will lead to overflow error when calculating d_sat
         # so we will set a limits to d_res
-        if d_res > 0.1:
-            d_res = 0.1
+        if d_res > 0.5:
+            d_res = 0.5
 
         d = np.linalg.norm(endEffectorPos - desiredPos)
         d_max = min(d, d_res)
@@ -332,7 +349,7 @@ class SharedController(BaseController):
 
         # self.lambda_ = 0.8
 
-        rospy.loginfo("lambda: %.2f" % self.lambda_)
+        # rospy.loginfo("lambda_: %.2f" % self.lambda_)
 
         return self.lambda_
 
@@ -373,7 +390,7 @@ class SharedController(BaseController):
                                                 -1, -1,
                                                 self.time_taken,
                                                 self.controlFrequency).trajectory
-            self.robotGlobalTraj = np.array(trajectoryFlatten).reshape(-1, 2 * len(self.goal)).T
+            self.robotGlobalTraj = np.array(trajectoryFlatten).reshape((-1, 2 * len(self.goal))).T
             if self.robotGlobalTraj.shape[0] != 6:
                 raise Exception("Error: The shape of global trajectory is wrong")
 
@@ -388,15 +405,15 @@ class SharedController(BaseController):
 
     def extendGlobalTraj(self):
         exd_block = np.zeros((2 * len(self.goal), self.localLen))
-        exd_block[0:3, :] = np.array(self.goal).reshape(3, 1)
+        exd_block[0:3, :] = np.array(self.goal).reshape((3, 1))
         self.robotGlobalTraj = np.hstack((self.robotGlobalTraj, exd_block))
         self.robotGlobalTrajLen = self.robotGlobalTraj.shape[1]
 
     def changeGlobalTraj(self, currentTrajIndex, humCmd):
-        startPoint = self.robotGlobalTraj[:3, currentTrajIndex].tolist()
-        endPoint = self.robotGlobalTraj[:3, currentTrajIndex + self.replanLen - 1].tolist()
-        startVel = self.robotGlobalTraj[3:6, currentTrajIndex].tolist()
-        endVel = self.robotGlobalTraj[3:6, currentTrajIndex + self.replanLen - 1].tolist()
+        startPoint = self.robotGlobalTraj[:3, currentTrajIndex].copy().tolist()
+        endPoint = self.robotGlobalTraj[:3, currentTrajIndex + self.replanLen - 1].copy().tolist()
+        startVel = self.robotGlobalTraj[3:6, currentTrajIndex].copy().tolist()
+        endVel = self.robotGlobalTraj[3:6, currentTrajIndex + self.replanLen - 1].copy().tolist()
         startAcc = np.array([0, 0, 0]).tolist()
         endAcc = np.array([0, 0, 0]).tolist()
 
@@ -414,7 +431,7 @@ class SharedController(BaseController):
                                                     self.replanLen * (1 / self.controlFrequency),
                                                     self.controlFrequency).trajectory
 
-                trajectory = np.array(trajectoryFlatten).reshape(-1, 2 * len(startPoint)).T
+                trajectory = np.array(trajectoryFlatten).reshape((-1, 2 * len(startPoint))).T
 
                 if trajectory.shape != (6, self.replanLen):
                     raise Exception("Error: The shape of re-planned trajectory is wrong")
@@ -424,7 +441,7 @@ class SharedController(BaseController):
             except rospy.ServiceException as e:
                 print("Service call failed: %s" % e)
 
-        rospy.loginfo("Generate feasible trajectories")
+        # rospy.loginfo("Generate feasible trajectories")
 
         originTrajPosition = self.robotGlobalTraj[:3, currentTrajIndex:(currentTrajIndex + self.replanLen)]
         humanForceVector = np.ones((3, self.replanLen))
@@ -455,14 +472,14 @@ class SharedController(BaseController):
         # smoother (optional)
 
         # change global trajectory
-        self.robotGlobalTraj[:, currentTrajIndex:(currentTrajIndex + self.replanLen)] = trajSet[miniEnergyIndex][:, :self.replanLen]
+        self.robotGlobalTraj[:, currentTrajIndex:(currentTrajIndex + self.replanLen)] = trajSet[miniEnergyIndex][:, :self.replanLen].copy()
 
-        rospy.loginfo("Change global trajectory")
+        # rospy.loginfo("Change global trajectory")
 
         # visualization
         self.pubGlobalTraj()
 
-        return self.robotGlobalTraj
+        # return self.robotGlobalTraj
 
     def computeLocalTraj(self, idx, humCmd, curStates):
         if idx + self.localLen > self.robotGlobalTraj.shape[1]:
@@ -474,6 +491,30 @@ class SharedController(BaseController):
         X_dr = self.reshapeLocalTraj(self.robotLocalTraj)
         X_dh = self.reshapeLocalTraj(self.humanLocalTraj)
         X_d = np.vstack((X_dh, X_dr))
+
+        # debug
+        # self.local_robot_traj = Path()
+        # self.local_robot_traj.header.frame_id = self.world_frame
+        # pathArray = self.robotLocalTraj.T
+        # self.local_robot_traj.poses = []
+        # for point in pathArray:
+        #     # rospy.loginfo("vis traj append point (%.2f, %.2f, %.2f)" % (point[0], point[1], point[2]))
+        #     self.local_robot_traj.poses.append(self.Array2Pose(point))
+        # self.vis_pubLocalTraj_r.publish(self.local_robot_traj)
+
+        # self.local_human_traj = Path()
+        # self.local_human_traj.header.frame_id = self.world_frame
+        # pathArray = self.humanLocalTraj.T
+        # self.local_human_traj.poses = []
+        # for point in pathArray:
+        #     # rospy.loginfo("vis traj append point (%.2f, %.2f, %.2f)" % (point[0], point[1], point[2]))
+        #     self.local_human_traj.poses.append(self.Array2Pose(point))
+        # self.vis_pubLocalTraj_h.publish(self.local_human_, raj)
+
+        if self.humanIntent != 0:
+            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/local_r_%d.txt" % (idx), self.robotLocalTraj)
+            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/local_h_%d.txt" % (idx), self.humanLocalTraj)
+            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/curStates_%d.txt" % (idx), curStates)
 
         # 将Q_h和Q_r对角拼接
         Q = np.vstack((np.hstack((self.Qh * self.lambda_, np.zeros((3 * self.localLen, 3 * self.localLen)))),
@@ -507,9 +548,11 @@ class SharedController(BaseController):
         u_r = np.dot(k_0, k_r.dot(wx))
         u_h = np.dot(k_0, k_h.dot(wx))
 
-        w_next = self.Ad.dot(curStates) + self.Brd.dot(u_r) + self.Bhd.dot(humCmd[3:])
-        # w_next = self.Ad.dot(curStates) + self.Brd.dot(u_r) + self.Bhd.dot(u_h)
+        # w_next = self.Ad.dot(curStates) + self.Brd.dot(u_r) + self.Bhd.dot(humCmd[3:])
+        w_next = self.Ad.dot(curStates) + self.Brd.dot(u_r) + self.Bhd.dot(u_h)
         cmd_string = str(w_next[0, 0]) + ',' + str(w_next[1, 0]) + ',' + str(w_next[2, 0]) + ',' + str(w_next[3, 0]) + ',' + str(w_next[4, 0]) + ',' + str(w_next[5, 0])
+
+        # rospy.loginfo("u_r (%.2f, %.2f, %.2f) u_h (%.2f, %.2f, %.2f)" % (u_r[0], u_r[1], u_r[2], u_h[0], u_h[1], u_h[2]))
 
         return cmd_string
 
@@ -570,3 +613,17 @@ class SharedController(BaseController):
             (cuboidPoints, np.vstack((x4.reshape((1, -1)), y4.reshape((1, -1)), z4.reshape((1, -1))))))
 
         return cuboidPoints
+
+    # debug
+    def Array2Pose(self, point):
+        pose = PoseStamped()
+        pose.header.frame_id = self.world_frame
+        pose.header.stamp = rospy.Time.now()
+        pose.pose.position.x = point[0]
+        pose.pose.position.y = point[1]
+        pose.pose.position.z = point[2]
+        pose.pose.orientation.x = 0
+        pose.pose.orientation.y = 0
+        pose.pose.orientation.z = 0
+        pose.pose.orientation.w = 1
+        return pose
