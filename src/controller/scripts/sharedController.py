@@ -111,7 +111,6 @@ class SharedController(BaseController):
 
         self.curIdx = 0
 
-
     def loadParams(self):
         # read parameters
         self.Md = rospy.get_param("/shared_controller/M", 1)
@@ -179,8 +178,8 @@ class SharedController(BaseController):
                 theta_h_row = theta_h_row.dot(self.Ad)
             phi_row = np.dot(phi_row, self.Ad)
 
-        self.theta_rg = np.vstack((theta_h, theta_h))
-        self.theta_hg = np.vstack((theta_r, theta_r))
+        self.theta_hg = np.vstack((theta_h, theta_h))
+        self.theta_rg = np.vstack((theta_r, theta_r))
         self.phi_g = np.vstack((phi, phi))
 
         # initialize params for trajectory re-planning
@@ -200,8 +199,8 @@ class SharedController(BaseController):
 
     def computeCmd(self):
         # copy sensor data
-        humCmd = self.humanCmd
-        curStates = self.currentStates
+        humCmd = self.humanCmd.copy()
+        curStates = self.currentStates.copy()
 
         if self.computeGlobalTraj is False:
             # compute global trajectory
@@ -305,7 +304,7 @@ class SharedController(BaseController):
                 humCmd[3:])
             forceCmd = humCmd[3:]
             for i in range(1, self.localLen):
-                self.humanLocalTraj[:, i] = next_state[:3].reshape((3,))
+                self.humanLocalTraj[:, i] = next_state[:3].copy().reshape((3,))
                 # iterate state space model without robot input to estimate human desired trajectory
                 next_state = self.Ad.dot(next_state) + self.Brd.dot(np.zeros((3, 1))) + self.Bhd.dot(forceCmd)
 
@@ -316,6 +315,9 @@ class SharedController(BaseController):
         else:
             self.humanIntent = 0
 
+        rospy.loginfo("human_%d: (%.2f, %.2f, %.2f)" % (
+        idx, self.humanLocalTraj[0, 0], self.humanLocalTraj[1, 0], self.humanLocalTraj[2, 0]))
+
     def computeLambda(self, curStates):
         endEffectorPos = curStates[0:3].reshape((3, 1))
 
@@ -324,7 +326,7 @@ class SharedController(BaseController):
         desiredPos = self.robotGlobalTraj[0:3, index].copy().reshape((3, 1))
 
         # need to optimaize in future works
-        if self.obstaclesPoints is None: # if obstacles is updating, use last lambda value
+        if self.obstaclesPoints is None:  # if obstacles is updating, use last lambda value
             return self.lambda_
         d_res = min(np.linalg.norm(desiredPos - self.obstaclesPoints, axis=0))
 
@@ -356,19 +358,20 @@ class SharedController(BaseController):
     def pubGlobalTraj(self):
         visualTraj = VisualTraj()
         visualTraj.dimension = len(self.goal)
-        visualTraj.trajectory = self.robotGlobalTraj[:len(self.goal), :].T.flatten().tolist()  # pub without velocity msg
+        visualTraj.trajectory = self.robotGlobalTraj[:len(self.goal),
+                                :].T.flatten().tolist()  # pub without velocity msg
         self.vis_pubRawTraj.publish(visualTraj)
 
     def planGlobalTraj(self, curStates):
-        
+
         # keep the first-planned trajectory consistent among all users (In User Study)
         if self.loadTraj:
             rospack = rospkg.RosPack()
             self.robotGlobalTraj = np.loadtxt(rospack.get_path('controller') + '/loadTraj/globalTraj.txt').T
             if self.robotGlobalTraj.shape[0] != 6:
-                raise Exception("check your globalTraj file, trajectory need to be (6, N), currently is (%d, %d)" 
-                                % (self.robotGlobalTraj.shape[0],self.robotGlobalTraj.shape[1]))
-            self.robotGlobalTrajLen = self.robotGlobalTraj.shape[1]     
+                raise Exception("check your globalTraj file, trajectory need to be (6, N), currently is (%d, %d)"
+                                % (self.robotGlobalTraj.shape[0], self.robotGlobalTraj.shape[1]))
+            self.robotGlobalTrajLen = self.robotGlobalTraj.shape[1]
             self.computeGlobalTraj = True
 
             # visualization
@@ -472,7 +475,8 @@ class SharedController(BaseController):
         # smoother (optional)
 
         # change global trajectory
-        self.robotGlobalTraj[:, currentTrajIndex:(currentTrajIndex + self.replanLen)] = trajSet[miniEnergyIndex][:, :self.replanLen].copy()
+        self.robotGlobalTraj[:, currentTrajIndex:(currentTrajIndex + self.replanLen)] = trajSet[miniEnergyIndex][:,
+                                                                                        :self.replanLen].copy()
 
         # rospy.loginfo("Change global trajectory")
 
@@ -511,10 +515,13 @@ class SharedController(BaseController):
         #     self.local_human_traj.poses.append(self.Array2Pose(point))
         # self.vis_pubLocalTraj_h.publish(self.local_human_, raj)
 
-        if self.humanIntent != 0:
-            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/local_r_%d.txt" % (idx), self.robotLocalTraj)
-            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/local_h_%d.txt" % (idx), self.humanLocalTraj)
-            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/curStates_%d.txt" % (idx), curStates)
+        # if self.humanIntent != 0:
+        #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/local_r_%d.txt" % (idx), self.robotLocalTraj)
+        #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/local_h_%d.txt" % (idx), self.humanLocalTraj)
+        #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/curStates_%d.txt" % (idx), curStates)
+
+        rospy.loginfo("curState_%d: (%.2f, %.2f, %.2f)" % (
+            idx, curStates[0, 0], curStates[1, 0], curStates[2, 0]))
 
         # 将Q_h和Q_r对角拼接
         Q = np.vstack((np.hstack((self.Qh * self.lambda_, np.zeros((3 * self.localLen, 3 * self.localLen)))),
@@ -550,7 +557,8 @@ class SharedController(BaseController):
 
         # w_next = self.Ad.dot(curStates) + self.Brd.dot(u_r) + self.Bhd.dot(humCmd[3:])
         w_next = self.Ad.dot(curStates) + self.Brd.dot(u_r) + self.Bhd.dot(u_h)
-        cmd_string = str(w_next[0, 0]) + ',' + str(w_next[1, 0]) + ',' + str(w_next[2, 0]) + ',' + str(w_next[3, 0]) + ',' + str(w_next[4, 0]) + ',' + str(w_next[5, 0])
+        cmd_string = str(w_next[0, 0]) + ',' + str(w_next[1, 0]) + ',' + str(w_next[2, 0]) + ',' + str(
+            w_next[3, 0]) + ',' + str(w_next[4, 0]) + ',' + str(w_next[5, 0])
 
         # rospy.loginfo("u_r (%.2f, %.2f, %.2f) u_h (%.2f, %.2f, %.2f)" % (u_r[0], u_r[1], u_r[2], u_h[0], u_h[1], u_h[2]))
 
