@@ -79,7 +79,7 @@ class SharedController(BaseController):
         self.replanFreq = None  # control frequency must be the multiples of re-plan frequency
         self.ctr = 0
 
-        self.curIdx = 0
+        self.curIdx = -1
         self.pubRobotDesPos = rospy.Publisher('/controller/robotDesPos', Point, queue_size=1)
 
         self.loadParams()
@@ -109,7 +109,7 @@ class SharedController(BaseController):
         # params for trajectory re-planning
         self.ctr = 0
 
-        self.curIdx = 0
+        self.curIdx = -1
 
     def loadParams(self):
         # read parameters
@@ -201,6 +201,7 @@ class SharedController(BaseController):
         # copy sensor data
         humCmd = self.humanCmd.copy()
         curStates = self.currentStates.copy()
+        self.curIdx += 1
 
         if self.computeGlobalTraj is False:
             # compute global trajectory
@@ -210,6 +211,7 @@ class SharedController(BaseController):
             self.extendGlobalTraj()
 
         self.ctr += 1
+
         self.updateHumanLocalTraj(self.curIdx, humCmd, curStates)
         self.computeLambda(curStates)
 
@@ -222,8 +224,6 @@ class SharedController(BaseController):
         robotDesPos.y = self.robotGlobalTraj[1, self.curIdx]
         robotDesPos.z = self.robotGlobalTraj[2, self.curIdx]
         self.pubRobotDesPos.publish(robotDesPos)
-
-        self.curIdx += 1
 
         # rospy.loginfo("idx: %d" % self.curIdx)
 
@@ -315,9 +315,9 @@ class SharedController(BaseController):
         else:
             self.humanIntent = 0
 
-        rospy.loginfo("human_%d: (%.2f, %.2f, %.2f)" % (
-        idx, self.humanLocalTraj[0, 0], self.humanLocalTraj[1, 0], self.humanLocalTraj[2, 0]))
-
+        # rospy.loginfo("human_%d: (%.2f, %.2f, %.2f)" % (
+        #                 idx, curStates[0, 0], curStates[1, 0], curStates[2, 0]))
+        
     def computeLambda(self, curStates):
         endEffectorPos = curStates[0:3].reshape((3, 1))
 
@@ -515,13 +515,13 @@ class SharedController(BaseController):
         #     self.local_human_traj.poses.append(self.Array2Pose(point))
         # self.vis_pubLocalTraj_h.publish(self.local_human_, raj)
 
-        # if self.humanIntent != 0:
-        #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/local_r_%d.txt" % (idx), self.robotLocalTraj)
-        #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/local_h_%d.txt" % (idx), self.humanLocalTraj)
-        #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/curStates_%d.txt" % (idx), curStates)
+        if self.humanIntent != 0:
+            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/local_r_%d.txt" % (idx), self.robotLocalTraj)
+            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/local_h_%d.txt" % (idx), self.humanLocalTraj)
+            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/curStates_%d.txt" % (idx), curStates)
 
-        rospy.loginfo("curState_%d: (%.2f, %.2f, %.2f)" % (
-            idx, curStates[0, 0], curStates[1, 0], curStates[2, 0]))
+        # rospy.loginfo("curState_%d: (%.2f, %.2f, %.2f)" % (
+        #     idx, curStates[0, 0], curStates[1, 0], curStates[2, 0]))
 
         # 将Q_h和Q_r对角拼接
         Q = np.vstack((np.hstack((self.Qh * self.lambda_, np.zeros((3 * self.localLen, 3 * self.localLen)))),
