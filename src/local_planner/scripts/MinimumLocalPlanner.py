@@ -42,15 +42,16 @@ class MinimumLocalPlanner(BaseLocalPlanner):
         self.refPath = np.array(self.refPath).reshape((-1, self.dim)).T
         self.polyTrajectories = [PolyTrajectory(self.order) for i in range(self.dim)]
 
-        # if self.refPath.shape[1] > 15:
-        #     self.optimizeT = False
-        # rospy.loginfo("path length %d is too long, fail to optimize Time params" % self.refPath.shape[1])
-
         # whether to optimizing time params depends on the std of distance between two next ref 
         # not depends on the number of ref points
         dis = np.linalg.norm(np.diff(self.refPath, axis=1), axis=0)
         std = np.std(dis)
-        if std < 0.1:
+        rospy.loginfo("std: %.5f" % std)
+        if std < 0.08:
+            self.optimizeT = False
+
+        # debug
+        if self.refPath.shape[1] > 50:
             self.optimizeT = False
 
         # whether to optimize the time parameters
@@ -85,7 +86,7 @@ class MinimumLocalPlanner(BaseLocalPlanner):
         return traj
 
     def optimizeTime(self):
-        interation_N = 5
+        interation_N = 8
         for n in range(interation_N):
 
             # rospy.loginfo("start time parameters optimization, iteration is %d" % n)

@@ -64,7 +64,7 @@ class BaseGlobalPlanner:
             smoothPath = np.vstack((self.path[0], smoothPath))
             smoothPath = np.vstack((smoothPath, self.path[-1]))
 
-            # rospy.loginfo("before smoothing points number: %d, after smoothing: %d" % (self.path.shape[0], smoothPath.shape[0]))
+            rospy.loginfo("before smoothing points number: %d, after smoothing: %d" % (self.path.shape[0], smoothPath.shape[0]))
 
             return smoothPath
 

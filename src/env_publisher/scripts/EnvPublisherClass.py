@@ -92,7 +92,8 @@ class EnvPublisher:
         # self.updateObstacles(None, {'id': 0})
 
         # debug
-        index = 0
+        # index = 0
+        self.generateRandomObstacles(len(self.VICON_topics))
 
         while not rospy.is_shutdown():
             self.env_publisher.publish(self.obstacles)
@@ -105,10 +106,10 @@ class EnvPublisher:
                                   self.world_frame)
 
             # debug
-            if index % 1000 == 0:
-                self.generateRandomObstacles(len(self.VICON_topics))
-                index = 0
-            index += 1
+            # if index % 1000 == 0:
+            #     self.generateRandomObstacles(len(self.VICON_topics))
+            #     index = 0
+            # index += 1
 
             self.rate.sleep()
 

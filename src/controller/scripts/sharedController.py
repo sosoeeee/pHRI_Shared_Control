@@ -353,7 +353,7 @@ class SharedController(BaseController):
 
         # self.lambda_ = 0.8
 
-        rospy.loginfo("lambda_: %.2f" % self.lambda_)
+        # rospy.loginfo("lambda_: %.2f" % self.lambda_)
 
         return self.lambda_
 
