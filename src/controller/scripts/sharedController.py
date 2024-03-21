@@ -332,21 +332,23 @@ class SharedController(BaseController):
         # when obstacles are relative sparse, the value of 'd_res' may be really large 
         # it will lead to overflow error when calculating d_sat
         # so we will set a limits to d_res
-        if d_res > 1:
-            d_res = 1
-
+        limits = 1
+        if d_res > limits:
+            d_res = limits
         d = np.linalg.norm(endEffectorPos - desiredPos)
-        d_max = min(d, d_res)
 
-        # 这组参数需要在d_res变化时重新调节
+        # normalization --- d_res to 0.1
+        norm_k = 0.1 / d_res
+        d_norm = d * norm_k
+
+        d_max = min(d_norm, 0.1)
         a1_ = 1  # 在不取max时，d趋向无穷的时候，d_sat趋向于 d_res * a1_
-        a2_ = 0.25  # a2_越大，lambda曲线开始时死区越长
+        a2_ = 0.4  # a2_越大，lambda曲线开始时死区越长
         mu_ = 200  # mu_越大，曲线越早达到极限值
         eta_ = 0.1
+        d_sat = (a1_ * 0.1) / (1 + eta_ * math.exp(-mu_ * (d_max - a2_ * 0.1))) ** (1 / eta_)
 
-        d_sat = (a1_ * d_res) / (1 + eta_ * math.exp(-mu_ * (d_max - a2_ * d_res))) ** (1 / eta_)
-
-        self.lambda_ = np.sqrt(d_res ** 2 - d_sat ** 2) / d_res
+        self.lambda_ = np.sqrt(0.1 ** 2 - d_sat ** 2) / 0.1
 
         # self.lambda_ = 0.8
 
