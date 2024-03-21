@@ -12,7 +12,7 @@ from BaseController import BaseController
 from visualization_msgs.msg import MarkerArray
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Point, PoseStamped
-from nav_msgs.msg import Path
+# from nav_msgs.msg import Path
 import tf
 from local_planner.srv import *
 from controller.msg import VisualTraj
@@ -85,8 +85,8 @@ class SharedController(BaseController):
         self.loadParams()
 
         # debug
-        self.vis_pubLocalTraj_h = rospy.Publisher('/controller/Traj_h', Path, queue_size=1)
-        self.vis_pubLocalTraj_r = rospy.Publisher('/controller/Traj_r', Path, queue_size=1)
+        # self.vis_pubLocalTraj_h = rospy.Publisher('/controller/Traj_h', Path, queue_size=1)
+        # self.vis_pubLocalTraj_r = rospy.Publisher('/controller/Traj_r', Path, queue_size=1)
 
     def reInitial(self):
         # local desired trajectory
@@ -296,14 +296,13 @@ class SharedController(BaseController):
 
         # By default, human desired traj is equal to robot desired traj
         # 这里之前发生了一个地址上的copy，对humanLocalTraj的修改同时修改了robotGlobalTraj
-        self.humanLocalTraj = self.robotGlobalTraj[:3, idx:(idx + self.localLen)].copy()
+        self.humanLocalTraj = self.robotGlobalTraj[:3, idx + 1:(idx + 1 + self.localLen)].copy()
 
         if distance > 0.01:
-            self.humanLocalTraj[:, 0] = curStates[:3].reshape((3,))
             next_state = self.Ad.dot(curStates) + self.Brd.dot(np.zeros((3, 1))) + self.Bhd.dot(
                 humCmd[3:])
             forceCmd = humCmd[3:]
-            for i in range(1, self.localLen):
+            for i in range(self.localLen):
                 self.humanLocalTraj[:, i] = next_state[:3].copy().reshape((3,))
                 # iterate state space model without robot input to estimate human desired trajectory
                 next_state = self.Ad.dot(next_state) + self.Brd.dot(np.zeros((3, 1))) + self.Bhd.dot(forceCmd)
@@ -333,8 +332,8 @@ class SharedController(BaseController):
         # when obstacles are relative sparse, the value of 'd_res' may be really large 
         # it will lead to overflow error when calculating d_sat
         # so we will set a limits to d_res
-        if d_res > 0.5:
-            d_res = 0.5
+        if d_res > 1:
+            d_res = 1
 
         d = np.linalg.norm(endEffectorPos - desiredPos)
         d_max = min(d, d_res)
@@ -351,7 +350,7 @@ class SharedController(BaseController):
 
         # self.lambda_ = 0.8
 
-        # rospy.loginfo("lambda_: %.2f" % self.lambda_)
+        rospy.loginfo("lambda_: %.2f" % self.lambda_)
 
         return self.lambda_
 
@@ -490,7 +489,7 @@ class SharedController(BaseController):
             raise Exception("Error: Index out of the range of robotGlobalTraj")
 
         # 当人类有意图时，返回共享控制器计算的局部轨迹
-        self.robotLocalTraj = self.robotGlobalTraj[:3, idx:(idx + self.localLen)]
+        self.robotLocalTraj = self.robotGlobalTraj[:3, idx + 1:(idx + 1 + self.localLen)]
 
         X_dr = self.reshapeLocalTraj(self.robotLocalTraj)
         X_dh = self.reshapeLocalTraj(self.humanLocalTraj)
@@ -515,10 +514,10 @@ class SharedController(BaseController):
         #     self.local_human_traj.poses.append(self.Array2Pose(point))
         # self.vis_pubLocalTraj_h.publish(self.local_human_, raj)
 
-        if self.humanIntent != 0:
-            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/local_r_%d.txt" % (idx), self.robotLocalTraj)
-            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/local_h_%d.txt" % (idx), self.humanLocalTraj)
-            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/curStates_%d.txt" % (idx), curStates)
+        # if self.humanIntent != 0:
+        #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/local_r_%d.txt" % (idx), self.robotLocalTraj)
+        #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/local_h_%d.txt" % (idx), self.humanLocalTraj)
+        #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/curStates_%d.txt" % (idx), curStates)
 
         # rospy.loginfo("curState_%d: (%.2f, %.2f, %.2f)" % (
         #     idx, curStates[0, 0], curStates[1, 0], curStates[2, 0]))
@@ -623,15 +622,15 @@ class SharedController(BaseController):
         return cuboidPoints
 
     # debug
-    def Array2Pose(self, point):
-        pose = PoseStamped()
-        pose.header.frame_id = self.world_frame
-        pose.header.stamp = rospy.Time.now()
-        pose.pose.position.x = point[0]
-        pose.pose.position.y = point[1]
-        pose.pose.position.z = point[2]
-        pose.pose.orientation.x = 0
-        pose.pose.orientation.y = 0
-        pose.pose.orientation.z = 0
-        pose.pose.orientation.w = 1
-        return pose
+    # def Array2Pose(self, point):
+    #     pose = PoseStamped()
+    #     pose.header.frame_id = self.world_frame
+    #     pose.header.stamp = rospy.Time.now()
+    #     pose.pose.position.x = point[0]
+    #     pose.pose.position.y = point[1]
+    #     pose.pose.position.z = point[2]
+    #     pose.pose.orientation.x = 0
+    #     pose.pose.orientation.y = 0
+    #     pose.pose.orientation.z = 0
+    #     pose.pose.orientation.w = 1
+    #     return pose
