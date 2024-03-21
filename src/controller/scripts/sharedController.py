@@ -12,6 +12,7 @@ from BaseController import BaseController
 from visualization_msgs.msg import MarkerArray
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Point, PoseStamped
+# debug
 # from nav_msgs.msg import Path
 import tf
 from local_planner.srv import *
@@ -215,9 +216,9 @@ class SharedController(BaseController):
         self.updateHumanLocalTraj(self.curIdx, humCmd, curStates)
         self.computeLambda(curStates)
 
-        # if self.ctr > self.controlFrequency / self.replanFreq and self.humanIntent == 2:
-        #     self.ctr = 0
-        #     self.changeGlobalTraj(self.curIdx, humCmd)
+        if self.ctr > self.controlFrequency / self.replanFreq and self.humanIntent == 2:
+            self.ctr = 0
+            self.changeGlobalTraj(self.curIdx, humCmd)
 
         robotDesPos = Point()
         robotDesPos.x = self.robotGlobalTraj[0, self.curIdx]
@@ -332,7 +333,7 @@ class SharedController(BaseController):
         # when obstacles are relative sparse, the value of 'd_res' may be really large 
         # it will lead to overflow error when calculating d_sat
         # so we will set a limits to d_res
-        limits = 1
+        limits = 0.3
         if d_res > limits:
             d_res = limits
         d = np.linalg.norm(endEffectorPos - desiredPos)
@@ -344,7 +345,7 @@ class SharedController(BaseController):
         d_max = min(d_norm, 0.1)
         a1_ = 1  # 在不取max时，d趋向无穷的时候，d_sat趋向于 d_res * a1_
         a2_ = 0.4  # a2_越大，lambda曲线开始时死区越长
-        mu_ = 200  # mu_越大，曲线越早达到极限值
+        mu_ = 100  # mu_越大，曲线越早达到极限值
         eta_ = 0.1
         d_sat = (a1_ * 0.1) / (1 + eta_ * math.exp(-mu_ * (d_max - a2_ * 0.1))) ** (1 / eta_)
 
@@ -416,7 +417,8 @@ class SharedController(BaseController):
     def changeGlobalTraj(self, currentTrajIndex, humCmd):
         startPoint = self.robotGlobalTraj[:3, currentTrajIndex].copy().tolist()
         endPoint = self.robotGlobalTraj[:3, currentTrajIndex + self.replanLen - 1].copy().tolist()
-        startVel = self.robotGlobalTraj[3:6, currentTrajIndex].copy().tolist()
+        # startVel = self.robotGlobalTraj[3:6, currentTrajIndex].copy().tolist()
+        startVel = np.array([0, 0, 0]).tolist()
         endVel = self.robotGlobalTraj[3:6, currentTrajIndex + self.replanLen - 1].copy().tolist()
         startAcc = np.array([0, 0, 0]).tolist()
         endAcc = np.array([0, 0, 0]).tolist()
@@ -456,15 +458,9 @@ class SharedController(BaseController):
         # compute energy function
         energySet = []
         for i in range(self.replanPathNum):
-            Ex = 1 / (2 * self.alpha) * trajSet[i][0, :].dot(self.R.dot(trajSet[i][0, :].T)) + humanForceVector[0,
-                                                                                               :].dot(
-                trajSet[i][0, :].T) - 1 / self.alpha * originTrajPosition[0, :].dot(self.R.dot(trajSet[i][0, :].T))
-            Ey = 1 / (2 * self.alpha) * trajSet[i][1, :].dot(self.R.dot(trajSet[i][1, :].T)) + humanForceVector[1,
-                                                                                               :].dot(
-                trajSet[i][1, :].T) - 1 / self.alpha * originTrajPosition[1, :].dot(self.R.dot(trajSet[i][1, :].T))
-            Ez = 1 / (2 * self.alpha) * trajSet[i][2, :].dot(self.R.dot(trajSet[i][2, :].T)) + humanForceVector[2,
-                                                                                               :].dot(
-                trajSet[i][2, :].T) - 1 / self.alpha * originTrajPosition[2, :].dot(self.R.dot(trajSet[i][2, :].T))
+            Ex = 1 / (2 * self.alpha) * trajSet[i][0, :].dot(self.R.dot(trajSet[i][0, :].T)) - humanForceVector[0,:].dot(trajSet[i][0, :].T) - 1 / self.alpha * originTrajPosition[0, :].dot(self.R.dot(trajSet[i][0, :].T))
+            Ey = 1 / (2 * self.alpha) * trajSet[i][1, :].dot(self.R.dot(trajSet[i][1, :].T)) - humanForceVector[1,:].dot(trajSet[i][1, :].T) - 1 / self.alpha * originTrajPosition[1, :].dot(self.R.dot(trajSet[i][1, :].T))
+            Ez = 1 / (2 * self.alpha) * trajSet[i][2, :].dot(self.R.dot(trajSet[i][2, :].T)) - humanForceVector[2,:].dot(trajSet[i][2, :].T) - 1 / self.alpha * originTrajPosition[2, :].dot(self.R.dot(trajSet[i][2, :].T))
 
             energySet.append(Ex + Ey + Ez)
 
@@ -514,7 +510,7 @@ class SharedController(BaseController):
         # for point in pathArray:
         #     # rospy.loginfo("vis traj append point (%.2f, %.2f, %.2f)" % (point[0], point[1], point[2]))
         #     self.local_human_traj.poses.append(self.Array2Pose(point))
-        # self.vis_pubLocalTraj_h.publish(self.local_human_, raj)
+        # self.vis_pubLocalTraj_h.publish(self.local_human_traj)
 
         # if self.humanIntent != 0:
         #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/local_r_%d.txt" % (idx), self.robotLocalTraj)

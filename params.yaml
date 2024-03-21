@@ -39,7 +39,6 @@ RRT_planner:
     step_size: 0.05
     line_collision_check_resolution: 0.05
     check_goal_prob: 0.01
-    optimize_path: false
     search_space:
       x:
         - 0
