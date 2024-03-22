@@ -52,9 +52,7 @@ class BaseGlobalPlanner:
     def smoothPath(self):
         # rospy.loginfo("before smoothing points number" + str(self.path.shape))
         step = np.sum((self.path[1] - self.path[0]) ** 2) ** 0.5
-        if step > self.smooth_step:
-            return self.path
-        else:
+        if step <= self.smooth_step:
             n = math.ceil(self.smooth_step / step)
             iterations = int((self.path.shape[0] - 2) / n)  # remove start and end point
             smoothPath = np.zeros((iterations, self.path.shape[1]))
@@ -64,10 +62,18 @@ class BaseGlobalPlanner:
             # add start and end point
             smoothPath = np.vstack((self.path[0], smoothPath))
             smoothPath = np.vstack((smoothPath, self.path[-1]))
-
+            self.path = smoothPath
             # rospy.loginfo("before smoothing points number: %d, after smoothing: %d" % (self.path.shape[0], smoothPath.shape[0]))
 
-            return smoothPath
+        # add extra path points
+        if np.linalg.norm(self.path[-1] - self.path[-2]) > self.smooth_step:
+            N = int(np.ceil(np.linalg.norm(self.path[-1] - self.path[-2]) / self.smooth_step))
+
+            addPoints = self.path[-2] + (self.path[-1] - self.path[-2]) / N
+            for j in range(1, N - 1):
+                newPoint = self.path[-2] + (self.path[-1] - self.path[-2]) / N * (j + 1)
+                addPoints = np.hstack((addPoints, newPoint))
+            self.path = np.hstack((self.path[:-1], addPoints, self.path[-1]))
 
     def handle_GlobalPlanning(self, req):
         # get the request
@@ -83,7 +89,7 @@ class BaseGlobalPlanner:
         if len(self.path.shape) == 0:
             self.planPath()
 
-        self.path = self.smoothPath()
+        self.smoothPath()
 
         # debug
         # rospy.loginfo("RRT plan finish")

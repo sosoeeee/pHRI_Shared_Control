@@ -553,6 +553,11 @@ class SharedController(BaseController):
         u_r = np.dot(k_0, k_r.dot(wx))
         u_h = np.dot(k_0, k_h.dot(wx))
 
+        # limit max ||u_r||
+        limit = 8.5
+        if np.linalg.norm(u_r) > limit:
+            u_r = u_r / np.linalg.norm(u_r) * limit
+
         w_next = self.Ad.dot(curStates) + self.Brd.dot(u_r) + self.Bhd.dot(humCmd[3:])
         # w_next = self.Ad.dot(curStates) + self.Brd.dot(u_r) + self.Bhd.dot(u_h)
         cmd_string = str(w_next[0, 0]) + ',' + str(w_next[1, 0]) + ',' + str(w_next[2, 0]) + ',' + str(
