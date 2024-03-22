@@ -420,6 +420,7 @@ class SharedController(BaseController):
         # startVel = self.robotGlobalTraj[3:6, currentTrajIndex].copy().tolist()
         startVel = np.array([0, 0, 0]).tolist()
         endVel = self.robotGlobalTraj[3:6, currentTrajIndex + self.replanLen - 1].copy().tolist()
+        # endVel = np.array([0, 0, 0]).tolist()
         startAcc = np.array([0, 0, 0]).tolist()
         endAcc = np.array([0, 0, 0]).tolist()
 
@@ -552,8 +553,8 @@ class SharedController(BaseController):
         u_r = np.dot(k_0, k_r.dot(wx))
         u_h = np.dot(k_0, k_h.dot(wx))
 
-        # w_next = self.Ad.dot(curStates) + self.Brd.dot(u_r) + self.Bhd.dot(humCmd[3:])
-        w_next = self.Ad.dot(curStates) + self.Brd.dot(u_r) + self.Bhd.dot(u_h)
+        w_next = self.Ad.dot(curStates) + self.Brd.dot(u_r) + self.Bhd.dot(humCmd[3:])
+        # w_next = self.Ad.dot(curStates) + self.Brd.dot(u_r) + self.Bhd.dot(u_h)
         cmd_string = str(w_next[0, 0]) + ',' + str(w_next[1, 0]) + ',' + str(w_next[2, 0]) + ',' + str(
             w_next[3, 0]) + ',' + str(w_next[4, 0]) + ',' + str(w_next[5, 0])
 

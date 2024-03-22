@@ -42,22 +42,28 @@ class MinimumLocalPlanner(BaseLocalPlanner):
         self.refPath = np.array(self.refPath).reshape((-1, self.dim)).T
         self.polyTrajectories = [PolyTrajectory(self.order) for i in range(self.dim)]
 
+        # In order to ignore unnessary optimization, add "optimize_need" variable
         # whether to optimizing time params depends on the std of distance between two next ref 
         # not depends on the number of ref points
+        interation = 5
         dis = np.linalg.norm(np.diff(self.refPath, axis=1), axis=0)
         std = np.std(dis)
+        if std < 0.2:
+            optimize_need = False
+        else:
+            optimize_need = True
+            if std > 0.5:
+                interation = 10
         rospy.loginfo("std: %.5f" % std)
-        if std < 0.08:
-            self.optimizeT = False
 
         # debug
-        if self.refPath.shape[1] > 50:
-            self.optimizeT = False
+        if self.refPath.shape[1] > 30:
+            optimize_need = False
 
         # whether to optimize the time parameters
-        if self.optimizeT and self.refPath.shape[1] > 2:
+        if self.optimizeT and optimize_need and self.refPath.shape[1] > 2:
             self.avr_arrangeTime()  # initialize ts
-            self.optimizeTime()
+            self.optimizeTime(interation)
             # update the time parameters
             for i in range(self.dim):
                 self.polyTrajectories[i].arrangeTime(self.ts)
@@ -85,9 +91,9 @@ class MinimumLocalPlanner(BaseLocalPlanner):
 
         return traj
 
-    def optimizeTime(self):
-        interation_N = 8
-        for n in range(interation_N):
+    def optimizeTime(self, interation):
+        interation_N = interation
+        for _ in range(interation_N):
 
             # rospy.loginfo("start time parameters optimization, iteration is %d" % n)
 
@@ -156,6 +162,10 @@ class MinimumLocalPlanner(BaseLocalPlanner):
             # update time parameters
             self.durations = self.durations + grad_des_direction * step
             self.ts = np.hstack((0, np.cumsum(self.durations)))
+
+        # debug
+        # rospy.loginfo("finish optimizing T")
+
 
     def avr_arrangeTime(self):
         dx = np.diff(self.refPath)
