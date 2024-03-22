@@ -72,7 +72,7 @@ shared_controller:
   C: 10
   threshold_force: 3.7
   local_len: 50
-  replan_len: 100
+  replan_len: 200
   replan_len_num: 10
   replan_freq: 1
   alpha: 100

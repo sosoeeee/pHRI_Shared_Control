@@ -72,8 +72,8 @@ class BaseGlobalPlanner:
             addPoints = self.path[-2] + (self.path[-1] - self.path[-2]) / N
             for j in range(1, N - 1):
                 newPoint = self.path[-2] + (self.path[-1] - self.path[-2]) / N * (j + 1)
-                addPoints = np.hstack((addPoints, newPoint))
-            self.path = np.hstack((self.path[:-1], addPoints, self.path[-1]))
+                addPoints = np.vstack((addPoints, newPoint))
+            self.path = np.vstack((self.path[:-1], addPoints, self.path[-1]))
 
     def handle_GlobalPlanning(self, req):
         # get the request
