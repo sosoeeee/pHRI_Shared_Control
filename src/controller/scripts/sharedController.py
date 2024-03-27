@@ -208,7 +208,7 @@ class SharedController(BaseController):
             # compute global trajectory
             self.planGlobalTraj(curStates)
 
-        if self.curIdx == self.robotGlobalTrajLen - self.localLen:
+        if self.curIdx == self.robotGlobalTrajLen - self.replanLen:
             self.extendGlobalTraj()
 
         self.ctr += 1
@@ -409,7 +409,7 @@ class SharedController(BaseController):
             print("Service call failed: %s" % e)
 
     def extendGlobalTraj(self):
-        exd_block = np.zeros((2 * len(self.goal), self.localLen))
+        exd_block = np.zeros((2 * len(self.goal), self.replanLen))
         exd_block[0:3, :] = np.array(self.goal).reshape((3, 1))
         self.robotGlobalTraj = np.hstack((self.robotGlobalTraj, exd_block))
         self.robotGlobalTrajLen = self.robotGlobalTraj.shape[1]
