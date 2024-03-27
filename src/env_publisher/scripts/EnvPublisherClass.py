@@ -65,9 +65,13 @@ class EnvPublisher:
             if 'x' in self.obstacle_args[i]:
                 marker.pose.position.x = self.obstacle_args[i]['x']
             if 'y' in self.obstacle_args[i]:
-                marker.pose.position.x = self.obstacle_args[i]['y']
+                marker.pose.position.y = self.obstacle_args[i]['y']
             if 'z' in self.obstacle_args[i]:
-                marker.pose.position.x = self.obstacle_args[i]['z']
+                marker.pose.position.z = self.obstacle_args[i]['z']
+            marker.pose.orientation.x = 0
+            marker.pose.orientation.y = 0
+            marker.pose.orientation.z = 0
+            marker.pose.orientation.w = 1
 
             marker.color.r = 1
             marker.color.g = 0
@@ -101,7 +105,7 @@ class EnvPublisher:
 
         # debug
         # index = 0
-        # self.generateRandomObstacles(len(self.VICON_topics))
+        self.generateRandomObstacles(len(self.VICON_topics))
 
         while not rospy.is_shutdown():
             self.env_publisher.publish(self.obstacles)
