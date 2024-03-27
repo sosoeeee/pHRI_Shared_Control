@@ -61,6 +61,14 @@ class EnvPublisher:
                 marker.scale.y = self.obstacle_args[i]['size_y']
                 marker.scale.z = self.obstacle_args[i]['size_z']
 
+            # static scenario
+            if 'x' in self.obstacle_args[i]:
+                marker.pose.position.x = self.obstacle_args[i]['x']
+            if 'y' in self.obstacle_args[i]:
+                marker.pose.position.x = self.obstacle_args[i]['y']
+            if 'z' in self.obstacle_args[i]:
+                marker.pose.position.x = self.obstacle_args[i]['z']
+
             marker.color.r = 1
             marker.color.g = 0
             marker.color.b = 0
@@ -93,7 +101,7 @@ class EnvPublisher:
 
         # debug
         # index = 0
-        self.generateRandomObstacles(len(self.VICON_topics))
+        # self.generateRandomObstacles(len(self.VICON_topics))
 
         while not rospy.is_shutdown():
             self.env_publisher.publish(self.obstacles)

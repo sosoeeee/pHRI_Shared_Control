@@ -10,22 +10,13 @@ env_publisher:
     - "/vicon/Obstacle_2/Obstacle_2"
     - "/vicon/Obstacle_3/Obstacle_3"
     - "/vicon/Obstacle_4/Obstacle_4"
-    - "/vicon/Obstacle_5/Obstacle_5"
-    - "/vicon/Obstacle_6/Obstacle_6"
-    - "/vicon/Obstacle_7/Obstacle_7"
-    - "/vicon/Obstacle_8/Obstacle_8"
-    - "/vicon/Obstacle_9/Obstacle_9"
+
   VICON_transform: {x: 1, y: 1, z: 1, qx: 0, qy: 0, qz: 0, qw: 1} # VICON frame according to world frame
   obstacle_args:
-    - {id: 0, type: "cube", size_x: 1, size_y: 1, size_z: 1}
-    - {id: 1, type: "cube", size_x: 2, size_y: 2, size_z: 2}
-    - {id: 2, type: "cube", size_x: 0.8, size_y: 1, size_z: 0.7}
-    - {id: 3, type: "cube", size_x: 2, size_y: 1, size_z: 1}
-    - {id: 4, type: "cube", size_x: 1, size_y: 2, size_z: 1}
-    - {id: 5, type: "cube", size_x: 1, size_y: 1, size_z: 2}
-    - {id: 6, type: "sphere", radius: 1}
-    - {id: 7, type: "sphere", radius: 1}
-    - {id: 8, type: "sphere", radius: 1}
+    - {id: 0, type: "cube", size_x: 1, size_y: 1, size_z: 1, x: 1, y: 1, z: 0.5}
+    - {id: 1, type: "cube", size_x: 2, size_y: 2, size_z: 2, x: 2, y: 2, z: 1}
+    - {id: 2, type: "cube", size_x: 0.8, size_y: 1, size_z: 0.7, x: 3, y: 3, z: 0.35}
+    - {id: 3, type: "cube", size_x: 2, size_y: 1, size_z: 1, x: 4, y: 4, z: 0.5}
 
 ## Global planner params
 global_planner:
@@ -48,7 +39,7 @@ RRT_planner:
         - 8
       z:
         - 0
-        - 8
+        - 0
 
 ## Local planner params
 MinimumLocalPlanner:
