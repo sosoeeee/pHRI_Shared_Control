@@ -12,9 +12,9 @@ from BaseController import BaseController
 import numpy as np
 
 
-class ImpedanceController(BaseController):
+class AdmittanceController(BaseController):
     def __init__(self):
-        super(ImpedanceController, self).__init__()
+        super(AdmittanceController, self).__init__()
 
         # controller parameters
         # Impedance Model
