@@ -434,7 +434,7 @@ class SharedController(BaseController):
         i = 0
 
         # generate feasible trajectories
-        while time.time() - startTime < self.replanTimeOut and i < self.replanPathNum:
+        while i < self.replanPathNum:
             i += 1
             # generate trajectory
             rospy.wait_for_service('local_planner')
@@ -474,6 +474,9 @@ class SharedController(BaseController):
             if curEnergy < minEnergy:
                 minEnergy = curEnergy
                 optimalTraj = trajectory
+
+            if time.time() - startTime < self.replanTimeOut:
+                rospy.loginfo("Timeout occurs while replanning traj")
 
         # change global trajectory
         self.robotGlobalTraj[:, currentTrajIndex:(currentTrajIndex + self.replanLen)] = optimalTraj[:, :self.replanLen].copy()
