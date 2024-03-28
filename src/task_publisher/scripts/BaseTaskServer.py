@@ -14,6 +14,7 @@ class BaseTaskServer(object):
     def __init__(self):
         # subscribe human force
         rospy.Subscriber("stickSignal", String, self.humanCmd_callback, queue_size=1)
+        self.twoDimFlag = rospy.get_param("/two_dimesion", False)
         self.humanForce = np.zeros((3, 1))
         self.rawBuffer = np.zeros((3, 3))
         self.filterBuffer = np.zeros((3, 3))
@@ -31,10 +32,12 @@ class BaseTaskServer(object):
         # update raw buffer
         self.rawBuffer[:, 2] = self.rawBuffer[:, 1]
         self.rawBuffer[:, 1] = self.rawBuffer[:, 0]
-        self.rawBuffer[:, 0] = np.array([-float(posAndForce[3]), float(posAndForce[5]), -float(posAndForce[4])])
 
         # two dimension setup
-        # self.rawBuffer[:, 0] = np.array([-float(posAndForce[3]), -float(posAndForce[4]), 0])
+        if self.twoDimFlag:
+            self.rawBuffer[:, 0] = np.array([-float(posAndForce[3]), -float(posAndForce[4]), 0])
+        else:
+            self.rawBuffer[:, 0] = np.array([-float(posAndForce[3]), float(posAndForce[5]), -float(posAndForce[4])])
 
         # update filter buffer
         self.filterBuffer[:, 2] = self.filterBuffer[:, 1]

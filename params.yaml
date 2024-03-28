@@ -1,5 +1,6 @@
 world_frame: "world"
 use_simulate: true
+two_dimesion: false
 
 ## env publisher params
 env_publisher:
@@ -10,6 +11,11 @@ env_publisher:
     - "/vicon/Obstacle_2/Obstacle_2"
     - "/vicon/Obstacle_3/Obstacle_3"
     - "/vicon/Obstacle_4/Obstacle_4"
+    - "/vicon/Obstacle_5/Obstacle_5"
+    - "/vicon/Obstacle_6/Obstacle_6"
+    - "/vicon/Obstacle_7/Obstacle_7"
+    - "/vicon/Obstacle_8/Obstacle_8"
+
 
   VICON_transform: {x: 1, y: 1, z: 1, qx: 0, qy: 0, qz: 0, qw: 1} # VICON frame according to world frame
   obstacle_args:
@@ -17,6 +23,11 @@ env_publisher:
     - {id: 1, type: "cube", size_x: 2, size_y: 2, size_z: 2}
     - {id: 2, type: "cube", size_x: 0.8, size_y: 1, size_z: 0.7}
     - {id: 3, type: "cube", size_x: 2, size_y: 1, size_z: 1}
+    - {id: 4, type: "cube", size_x: 2, size_y: 1, size_z: 1}
+    - {id: 5, type: "cube", size_x: 2, size_y: 1, size_z: 1}
+    - {id: 6, type: "cube", size_x: 2, size_y: 1, size_z: 1}
+    - {id: 7, type: "cube", size_x: 2, size_y: 1, size_z: 1}
+
 
 ## Global planner params
 global_planner:
@@ -39,7 +50,7 @@ RRT_planner:
         - 8
       z:
         - 0
-        - 0.001
+        - 8
 
 ## Local planner params
 MinimumLocalPlanner:
@@ -71,6 +82,7 @@ shared_controller:
   weight_h: 10
   weight_tracking: 10000
   load_traj: false
+  deviation: 0.2    # the max tolerated deviation from robot desired traj
 
 
 ## actuator params

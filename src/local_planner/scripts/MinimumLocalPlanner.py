@@ -54,7 +54,7 @@ class MinimumLocalPlanner(BaseLocalPlanner):
             optimize_need = True
             if std > 0.5:
                 interation = 10
-        rospy.loginfo("std: %.5f" % std)
+        # rospy.loginfo("std: %.5f" % std)
 
         # debug
         if self.refPath.shape[1] > 30:

@@ -126,6 +126,7 @@ class SharedController(BaseController):
         self.weight_tracking = rospy.get_param("/shared_controller/weight_tracking", 10000)
         self.replanFreq = rospy.get_param("/shared_controller/replan_freq", 1)
         self.loadTraj = rospy.get_param("/shared_controller/load_traj", False)
+        self.deviation = rospy.get_param("/shared_controller/deviation", 0.1)
 
         # state space model
         # Md_inv = np.linalg.inv(self.Md * np.eye(3))
@@ -333,9 +334,9 @@ class SharedController(BaseController):
         # when obstacles are relative sparse, the value of 'd_res' may be really large 
         # it will lead to overflow error when calculating d_sat
         # so we will set a limits to d_res
-        limits = 0.3
-        if d_res > limits:
-            d_res = limits
+        # limits = 0.2
+        if d_res > self.deviation:
+            d_res = self.deviation
         d = np.linalg.norm(endEffectorPos - desiredPos)
 
         # normalization --- d_res to 0.1
@@ -353,7 +354,7 @@ class SharedController(BaseController):
 
         # self.lambda_ = 0.8
 
-        # rospy.loginfo("lambda_: %.2f" % self.lambda_)
+        rospy.loginfo("lambda_: %.2f" % self.lambda_)
 
         return self.lambda_
 
@@ -555,10 +556,12 @@ class SharedController(BaseController):
         u_r = np.dot(k_0, k_r.dot(wx))
         u_h = np.dot(k_0, k_h.dot(wx))
 
-        # limit max ||u_r||
+        # limit max ||u_r|| and ||u_h||
         limit = 8.5
         if np.linalg.norm(u_r) > limit:
             u_r = u_r / np.linalg.norm(u_r) * limit
+        if np.linalg.norm(u_h) > limit:
+            u_h = u_h / np.linalg.norm(u_h) * limit
 
         # w_next = self.Ad.dot(curStates) + self.Brd.dot(u_r) + self.Bhd.dot(humCmd[3:])
 
