@@ -19,6 +19,7 @@ from local_planner.srv import *
 from controller.msg import VisualTraj
 
 import numpy as np
+import time
 
 
 class SharedController(BaseController):
@@ -79,6 +80,7 @@ class SharedController(BaseController):
         self.alpha = None  # weight param in trajectory energy function
         self.replanFreq = None  # control frequency must be the multiples of re-plan frequency
         self.ctr = 0
+        self.replanTimeOut = None
 
         self.curIdx = -1
         self.pubRobotDesPos = rospy.Publisher('/controller/robotDesPos', Point, queue_size=1)
@@ -120,11 +122,12 @@ class SharedController(BaseController):
         self.thresholdForce = rospy.get_param("/shared_controller/threshold_force", 3.5)
         self.replanLen = rospy.get_param("/shared_controller/replan_len", 250)
         self.replanPathNum = rospy.get_param("/shared_controller/replan_len_num", 10)
+        self.replanFreq = rospy.get_param("/shared_controller/replan_freq", 1)
+        self.replanTimeOut = rospy.get_param("/shared_controller/replan_timeout", 0.5)
         self.alpha = rospy.get_param("/shared_controller/alpha", 100)
         self.weight_h = rospy.get_param("/shared_controller/weight_h", 1)
         self.weight_r = rospy.get_param("/shared_controller/weight_r", 10)
         self.weight_tracking = rospy.get_param("/shared_controller/weight_tracking", 10000)
-        self.replanFreq = rospy.get_param("/shared_controller/replan_freq", 1)
         self.loadTraj = rospy.get_param("/shared_controller/load_traj", False)
         self.deviation = rospy.get_param("/shared_controller/deviation", 0.1)
 
@@ -318,7 +321,7 @@ class SharedController(BaseController):
 
         # rospy.loginfo("human_%d: (%.2f, %.2f, %.2f)" % (
         #                 idx, curStates[0, 0], curStates[1, 0], curStates[2, 0]))
-        
+
     def computeLambda(self, curStates):
         endEffectorPos = curStates[0:3].reshape((3, 1))
 
@@ -425,10 +428,14 @@ class SharedController(BaseController):
         startAcc = np.array([0, 0, 0]).tolist()
         endAcc = np.array([0, 0, 0]).tolist()
 
-        trajSet = []
+        startTime = time.time()
+        optimalTraj = None
+        minEnergy = np.inf
+        i = 0
 
         # generate feasible trajectories
-        for i in range(self.replanPathNum):
+        while time.time() - startTime < self.replanTimeOut and i < self.replanPathNum:
+            i += 1
             # generate trajectory
             rospy.wait_for_service('local_planner')
             try:
@@ -444,40 +451,32 @@ class SharedController(BaseController):
                 if trajectory.shape != (6, self.replanLen):
                     raise Exception("Error: The shape of re-planned trajectory is wrong")
 
-                trajSet.append(trajectory)
-
             except rospy.ServiceException as e:
                 print("Service call failed: %s" % e)
+                continue
 
-        # rospy.loginfo("Generate feasible trajectories")
+            # rospy.loginfo("Generate feasible trajectories")
 
-        originTrajPosition = self.robotGlobalTraj[:3, currentTrajIndex:(currentTrajIndex + self.replanLen)]
-        humanForceVector = np.ones((3, self.replanLen))
-        humanForceVector[0, :] = humCmd[3]
-        humanForceVector[1, :] = humCmd[4]
-        humanForceVector[2, :] = humCmd[5]
+            originTrajPosition = self.robotGlobalTraj[:3, currentTrajIndex:(currentTrajIndex + self.replanLen)]
+            humanForceVector = np.ones((3, self.replanLen))
+            humanForceVector[0, :] = humCmd[3]
+            humanForceVector[1, :] = humCmd[4]
+            humanForceVector[2, :] = humCmd[5]
 
-        # compute energy function
-        energySet = []
-        for i in range(self.replanPathNum):
-            Ex = 1 / (2 * self.alpha) * trajSet[i][0, :].dot(self.R.dot(trajSet[i][0, :].T)) - humanForceVector[0,:].dot(trajSet[i][0, :].T) - 1 / self.alpha * originTrajPosition[0, :].dot(self.R.dot(trajSet[i][0, :].T))
-            Ey = 1 / (2 * self.alpha) * trajSet[i][1, :].dot(self.R.dot(trajSet[i][1, :].T)) - humanForceVector[1,:].dot(trajSet[i][1, :].T) - 1 / self.alpha * originTrajPosition[1, :].dot(self.R.dot(trajSet[i][1, :].T))
-            Ez = 1 / (2 * self.alpha) * trajSet[i][2, :].dot(self.R.dot(trajSet[i][2, :].T)) - humanForceVector[2,:].dot(trajSet[i][2, :].T) - 1 / self.alpha * originTrajPosition[2, :].dot(self.R.dot(trajSet[i][2, :].T))
+            # compute energy function
+            Ex = 1 / (2 * self.alpha) * trajectory[0, :].dot(self.R.dot(trajectory[0, :].T)) - humanForceVector[0,:].dot(trajectory[0, :].T) - 1 / self.alpha * originTrajPosition[0, :].dot(self.R.dot(trajectory[0, :].T))
+            Ey = 1 / (2 * self.alpha) * trajectory[1, :].dot(self.R.dot(trajectory[1, :].T)) - humanForceVector[1,:].dot(trajectory[1, :].T) - 1 / self.alpha * originTrajPosition[1, :].dot(self.R.dot(trajectory[1, :].T))
+            Ez = 1 / (2 * self.alpha) * trajectory[2, :].dot(self.R.dot(trajectory[2, :].T)) - humanForceVector[2,:].dot(trajectory[2, :].T) - 1 / self.alpha * originTrajPosition[2, :].dot(self.R.dot(trajectory[2, :].T))
 
-            energySet.append(Ex + Ey + Ez)
+            curEnergy = Ex + Ey + Ez
+            rospy.loginfo("current energy is %.2f" % curEnergy)
 
-        miniEnergyIndex = energySet.index(min(energySet))
-
-        if trajSet[miniEnergyIndex].shape != (6, self.replanLen):
-            raise Exception("Error: The shape of miniEnergyTraj is wrong")
-
-        # smoother (optional)
+            if curEnergy < minEnergy:
+                minEnergy = curEnergy
+                optimalTraj = trajectory
 
         # change global trajectory
-        self.robotGlobalTraj[:, currentTrajIndex:(currentTrajIndex + self.replanLen)] = trajSet[miniEnergyIndex][:,
-                                                                                        :self.replanLen].copy()
-
-        # rospy.loginfo("Change global trajectory")
+        self.robotGlobalTraj[:, currentTrajIndex:(currentTrajIndex + self.replanLen)] = optimalTraj[:, :self.replanLen].copy()
 
         # visualization
         self.pubGlobalTraj()
