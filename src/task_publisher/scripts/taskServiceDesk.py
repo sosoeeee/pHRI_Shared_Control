@@ -47,6 +47,8 @@ if __name__ == '__main__':
                     clientList.append(PubGoalActionClient(task))
                 if task['task_type'] == 'followPath':
                     clientList.append(PubPathActionClient(task))
+                if task['task_type'] == 'followTraj':
+                    clientList.append(PubTrajActionClient(task))
 
             for client in clientList:
                 client.sendReq()

@@ -13,6 +13,7 @@ import actionlib
 from task_publisher.msg import ReachGoal
 from task_publisher.msg import pubGoalAction, pubGoalFeedback, pubGoalResult
 from task_publisher.msg import pubPathAction, pubPathFeedback, pubPathResult
+from task_publisher.msg import pubTrajAction, pubTrajFeedback, pubTrajResult
 
 # visualization
 from geometry_msgs.msg import PointStamped, PoseStamped
@@ -240,7 +241,6 @@ class PubPathActionServer(BaseTaskServer):
 
         # visual publisher
         self.vis_pubPath = rospy.Publisher('/task/visual/followPath', Marker, queue_size=1)
-        self.vis_updateFlag = False
 
         # visual data
         self.world_frame = rospy.get_param('/world_frame', 'map')
@@ -307,7 +307,7 @@ class PubPathActionServer(BaseTaskServer):
             r.sleep()
 
     def updateInterface(self):
-        # path point (only once)
+        # path point
         self.vis_PathPoints.points = []
         for point in self.pathPoints:
             p = Point()
@@ -326,3 +326,132 @@ class PubPathActionServer(BaseTaskServer):
             if error < self.data_reachError[i]:
                 self.data_reachError[i] = error
 
+
+class PubTrajActionServer(BaseTaskServer):
+    # create messages that are used to publish feedback/result
+    _feedback = pubTrajFeedback()
+    _result = pubTrajResult()
+
+    def __init__(self, name):
+        super().__init__()
+        self._action_name = name
+        self._as = actionlib.SimpleActionServer(self._action_name, pubTrajAction,
+                                                execute_cb=self.execute_cb, auto_start=False)
+        self._as.start()
+
+        # recorded data (customize by yourself)
+        self.data_sumError = None
+        self.data_humanForce = None
+        self.refTraj = None
+        self.idx = 0
+
+        # visual publisher
+        self.vis_pubFollowPoint = rospy.Publisher('/task/visual/followPoint', Marker, queue_size=1)
+        self.vis_pubRefTraj = rospy.Publisher('/task/visual/refTraj', Path, queue_size=1)
+        self.firstPub = True
+
+        # visual data
+        self.world_frame = rospy.get_param('/world_frame', 'map')
+
+        self.vis_followPoint = Marker()
+        self.vis_followPoint.header.frame_id = self.world_frame
+        self.vis_followPoint.ns = "task"
+        self.vis_followPoint.type = Marker.CUBE
+        self.vis_followPoint.action = Marker.ADD
+        self.vis_followPoint.scale.x = 0.1
+        self.vis_followPoint.scale.y = 0.1
+        self.vis_followPoint.scale.Z = 0.1
+        self.vis_followPoint.color.r = 0
+        self.vis_followPoint.color.g = 1
+        self.vis_followPoint.color.b = 0
+        self.vis_followPoint.color.a = 1
+        self.vis_followPoint.pose.orientation.x = 0.0
+        self.vis_followPoint.pose.orientation.y = 0.0
+        self.vis_followPoint.pose.orientation.z = 0.0
+        self.vis_followPoint.pose.orientation.w = 1.0
+
+        self.vis_refTraj = Path()
+        self.vis_refTraj.header.frame_id = self.world_frame
+
+    def execute_cb(self, goal):
+        # local variables
+        r = rospy.Rate(goal.sample_frequency)  # update rate
+
+        # initialize feedback and result msg
+        rospack = rospkg.RosPack()
+        self.refTraj = np.loadtxt(rospack.get_path('task_publisher') + '/' + goal.file_path)
+        length = self.refTraj.shape[0]
+        if self.refTraj.shape[1] != 3:
+            raise Exception("check your trajectory txt file! Each line only contains one point")
+        self._feedback.current_error = 0
+        self.data_sumError = 0
+        self.data_humanForce = np.zeros((3, 1))
+
+        # publish info to the console for the user
+        rospy.loginfo('%s: Executing' % self._action_name)
+
+        # execute task
+        while True:
+            # check that preempt has not been requested by the client
+            if self._as.is_preempt_requested():
+                rospy.loginfo('%s: Preempted' % self._action_name)
+                self._as.set_preempted()
+                break
+
+            # update recorded data (used for data analysis)
+            self.recordData()
+
+            # update monitor data (used for visualization)
+            self.updateInterface()
+
+            # send feedback to client
+            error = np.linalg.norm(self.currentStates[:3, :] - self.refTraj[self.idx].reshape((3, 1)))
+            # the minimum among the distances from the current point to all points on the path.
+            self._feedback.current_error = error
+            self._as.publish_feedback(self._feedback)
+
+            # check end and send result to client
+            if self.idx == length:
+                rospy.loginfo('%s: Completed' % self._action_name)
+                self._result.average_error = self.data_sumError / length
+                self._result.human_force = self.data_humanForce.T.flatten().tolist()
+                self._as.set_succeeded(self._result)
+                break
+
+            self.idx += 1
+
+            r.sleep()
+
+    def updateInterface(self):
+        # follow point
+        self.vis_followPoint.pose.position.x = self.refTraj[self.idx, 0]
+        self.vis_followPoint.pose.position.y = self.refTraj[self.idx, 1]
+        self.vis_followPoint.pose.position.z = self.refTraj[self.idx, 2]
+        self.vis_pubFollowPoint.publish(self.vis_followPoint)
+
+        # ref Traj
+        if self.firstPub:
+            self.vis_refTraj.poses = []
+            for point in self.refTraj:
+                self.vis_refTraj.poses.append(self.Array2Pose(point))
+            self.firstPub = False
+        self.vis_pubRefTraj.publish(self.vis_refTraj)
+
+    def Array2Pose(self, point):
+        pose = PoseStamped()
+        pose.header.frame_id = self.world_frame
+        pose.header.stamp = rospy.Time.now()
+        pose.pose.position.x = point[0]
+        pose.pose.position.y = point[1]
+        pose.pose.position.z = point[2]
+        pose.pose.orientation.x = 0
+        pose.pose.orientation.y = 0
+        pose.pose.orientation.z = 0
+        pose.pose.orientation.w = 1
+        return pose
+
+    def recordData(self):
+        # collect interact force
+        self.data_humanForce = np.hstack((self.data_humanForce, self.humanForce))  # shape is (dim, N)
+        # compute error in real time
+        self.data_sumError += np.linalg.norm(self.currentStates[:3, :] - self.refTraj[self.idx].reshape((3, 1)))

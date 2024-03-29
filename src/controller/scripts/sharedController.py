@@ -477,6 +477,7 @@ class SharedController(BaseController):
 
             if time.time() - startTime < self.replanTimeOut:
                 rospy.loginfo("Timeout occurs while replanning traj")
+                break
 
         # change global trajectory
         self.robotGlobalTraj[:, currentTrajIndex:(currentTrajIndex + self.replanLen)] = optimalTraj[:, :self.replanLen].copy()

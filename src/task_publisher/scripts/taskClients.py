@@ -10,6 +10,7 @@ import rospy
 import actionlib
 from task_publisher.msg import pubGoalAction, pubGoalGoal
 from task_publisher.msg import pubPathAction, pubPathGoal
+from task_publisher.msg import pubTrajAction, pubTrajGoal
 import numpy as np
 
 
@@ -101,6 +102,45 @@ class PubPathActionClient:
 
         np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/pathError_id%d.txt" %
                    (controller_type, self._id), np.array(res.reach_error).reshape((-1, 1)))
+        np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/humanForce_id%d.txt" %
+                   (controller_type, self._id), np.array(res.human_force).reshape((-1, 3)))
+
+        self.done = True
+
+    def feedback_callback(self, feedback):
+        pass
+
+
+# instantiate a specific following traj task
+class PubTrajActionClient:
+    def __init__(self, args):
+        self.client = actionlib.SimpleActionClient('FollowTraj', pubTrajAction)
+        self.client.wait_for_server()
+
+        # create a goal instance
+        self.goal = pubTrajGoal()
+        self.goal.sample_frequency = args['sample_frequency']
+        self.goal.file_path = args['file_path']
+
+        self._id = args['task_id']
+
+        self.done = False
+
+    def sendReq(self):
+        self.client.send_goal(self.goal, done_cb=self.done_callback, feedback_cb=self.feedback_callback)
+
+    # return true, if status is one of the terminal states
+    def isDone(self):
+        return self.done
+
+    def done_callback(self, status, res):
+        rospy.loginfo("FollowPath task (id: %d) is done!" % self._id)
+
+        # store data
+        controller_type = rospy.get_param("/controller_type", "Impedance")
+
+        np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/TrajAvrError_id%d.txt" %
+                   (controller_type, self._id), res.average_error)
         np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/humanForce_id%d.txt" %
                    (controller_type, self._id), np.array(res.human_force).reshape((-1, 3)))
 

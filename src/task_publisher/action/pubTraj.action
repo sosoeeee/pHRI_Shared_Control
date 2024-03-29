@@ -1,4 +1,5 @@
 # publish an moving point (Trajectory), which both human and robot aim to follow on their way to the final goal
+# attention: this trajectory should share the same goal as 'ReachGoal' task
 
 # Define the goal
 string file_path                # a file containing an array of discrete trajectory points sampled in a specified frequency
