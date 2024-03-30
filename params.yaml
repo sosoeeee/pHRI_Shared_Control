@@ -76,7 +76,7 @@ shared_controller:
   local_len: 50
   replan_len: 200
   replan_len_num: 10
-  replan_freq: 1
+  replan_freq: 2
   replan_timeout: 0.5
   alpha: 100
   weight_r: 1       # 追踪机器人期望轨迹的误差权重为 weight_r*weight_tracking

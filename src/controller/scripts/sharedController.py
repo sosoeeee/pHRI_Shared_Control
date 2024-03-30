@@ -215,14 +215,22 @@ class SharedController(BaseController):
         if self.curIdx == self.robotGlobalTrajLen - self.replanLen:
             self.extendGlobalTraj()
 
-        self.ctr += 1
-
         self.updateHumanLocalTraj(self.curIdx, humCmd, curStates)
         self.computeLambda(curStates)
 
-        if self.ctr > self.controlFrequency / self.replanFreq and self.humanIntent == 2:
+        # self.ctr += 1
+        # if self.ctr > self.controlFrequency / self.replanFreq and self.humanIntent == 2:
+        #     self.ctr = 0
+        #     self.changeGlobalTraj(self.curIdx, humCmd)
+
+        # trigger re-planning until interaction force exceed threshold and last for '1/self.replanFreq'
+        if self.humanIntent == 2:
+            self.ctr += 1
+            if self.ctr == self.controlFrequency / self.replanFreq:
+                self.changeGlobalTraj(self.curIdx, humCmd)
+                self.ctr = 0
+        else:
             self.ctr = 0
-            self.changeGlobalTraj(self.curIdx, humCmd)
 
         robotDesPos = Point()
         robotDesPos.x = self.robotGlobalTraj[0, self.curIdx]
