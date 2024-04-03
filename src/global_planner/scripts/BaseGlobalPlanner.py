@@ -4,6 +4,7 @@ import math
 import rospy
 from visualization_msgs.msg import MarkerArray
 from global_planner.srv import GlobalPlanning, GlobalPlanningResponse
+from geometry_msgs.msg import PoseStamped
 import tf
 
 # debug
@@ -107,10 +108,16 @@ class BaseGlobalPlanner:
         self.obstacles = obstacleSet.markers
         # transform obstacles into world frame
         for obstacle in self.obstacles:
-            (trans, _) = self.tf_listener.lookupTransform(self.world_frame, obstacle.header.frame_id, rospy.Time(0))
-            obstacle.pose.position.x += trans[0]
-            obstacle.pose.position.y += trans[1]
-            obstacle.pose.position.z += trans[2]
+            # (trans, _) = self.tf_listener.lookupTransform(self.world_frame, obstacle.header.frame_id, rospy.Time(0))
+            # obstacle.pose.position.x += trans[0]
+            # obstacle.pose.position.y += trans[1]
+            # obstacle.pose.position.z += trans[2]
+            ori_pose = PoseStamped()
+            ori_pose.pose = obstacle.pose
+            ori_pose.header = obstacle.header
+            tar_pose = PoseStamped()
+            self.tf_listener.transformPose(self.world_frame, ori_pose, tar_pose)
+            obstacle.pose = tar_pose.pose
 
     # debug
     # def Array2Pose(self, point):
