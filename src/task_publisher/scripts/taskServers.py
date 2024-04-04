@@ -132,7 +132,7 @@ class PubGoalActionServer(BaseTaskServer):
             self.updateInterface()
 
             # check end and send result to client
-            distanceToGoal = np.sum((self.currentStates[:3, :] - np.array(goal.goal).reshape((3, 1))) ** 2)
+            distanceToGoal = np.sum((self.currentStates[:3, :] - np.array(goal.goal).reshape((3, 1))) ** 2) ** 0.5
             if distanceToGoal < goal.tolerance:
                 rospy.loginfo('%s: Completed' % self._action_name)
                 endTime = time.time()
@@ -291,7 +291,7 @@ class PubPathActionServer(BaseTaskServer):
             self.updateInterface()
 
             # send feedback to client
-            distanceToEnd = np.sum((self.currentStates[:3, :] - endPoint) ** 2)
+            distanceToEnd = np.sum((self.currentStates[:3, :] - endPoint) ** 2) ** 0.5
             # the minimum among the distances from the current point to all points on the path.
             self._feedback.distance_to_path = np.min(self.data_reachError)
             self._as.publish_feedback(self._feedback)
