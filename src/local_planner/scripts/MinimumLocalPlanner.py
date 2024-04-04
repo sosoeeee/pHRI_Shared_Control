@@ -57,8 +57,8 @@ class MinimumLocalPlanner(BaseLocalPlanner):
         # rospy.loginfo("std: %.5f" % std)
 
         # debug
-        if self.refPath.shape[1] > 30:
-            optimize_need = False
+        # if self.refPath.shape[1] > 30:
+        #     optimize_need = False
 
         # whether to optimize the time parameters
         if self.optimizeT and optimize_need and self.refPath.shape[1] > 2:

@@ -1,7 +1,8 @@
 # task id must start from 1
 task_list:
-  - {task_id: 1, task_type: 'reachGoal', goal_x: 7.5, goal_y: 7.5, goal_z: 7.5, tolerance: 0.02, time_taken: 60}
-  - {task_id: 1, task_type: 'followPath', goal_x: 7.5, goal_y: 7.5, goal_z: 7.5, tolerance: 0.02, file_path: "task/path.txt"}
+  - {task_id: 1, task_type: 'reachGoal', goal_x: 0.4 , goal_y: 0.05, goal_z: 0.08, tolerance: 0.01, time_taken: 60}
+  # - {task_id: 1, task_type: 'reachGoal', goal_x: 0.39, goal_y: -0.16, goal_z: 0.15, tolerance: 0.01, time_taken: 60}
+  # - {task_id: 1, task_type: 'followPath', goal_x: 7.5, goal_y: 7.5, goal_z: 7.5, tolerance: 0.02, file_path: "task/path.txt"}
 #  - {task_id: 1, task_type: 'followTraj', file_path: "task/traj.txt", sample_frequency: 10}
 # - {task_id: 2, task_type: 'initRobot', sleep_time: 5}
 # - {task_id: 3, task_type: 'reachGoal', goal_x: 7, goal_y: 7, goal_z: 7, tolerance: 0.02, time_taken: 60 }

@@ -81,13 +81,28 @@ class EnvPublisher:
 
     def updateObstacles(self, data, args):
         i = args['id']
-        self.obstacles.markers[i].pose.position.x = data.transform.translation.x
-        self.obstacles.markers[i].pose.position.y = data.transform.translation.y
-        self.obstacles.markers[i].pose.position.z = data.transform.translation.z
-        self.obstacles.markers[i].pose.orientation.x = data.transform.rotation.x
-        self.obstacles.markers[i].pose.orientation.y = data.transform.rotation.y
-        self.obstacles.markers[i].pose.orientation.z = data.transform.rotation.z
-        self.obstacles.markers[i].pose.orientation.w = data.transform.rotation.w
+        self.obstacles.markers[i].pose.position.x = data.transform.translation.x + args['cor_x']
+        self.obstacles.markers[i].pose.position.y = data.transform.translation.y + args['cor_y']
+        self.obstacles.markers[i].pose.position.z = data.transform.translation.z + args['cor_z']
+        # self.obstacles.markers[i].pose.orientation.x = data.transform.rotation.x
+        # self.obstacles.markers[i].pose.orientation.y = data.transform.rotation.y
+        # self.obstacles.markers[i].pose.orientation.z = data.transform.rotation.z
+        # self.obstacles.markers[i].pose.orientation.w = data.transform.rotation.w
+        self.obstacles.markers[i].pose.orientation.x = 0
+        self.obstacles.markers[i].pose.orientation.y = 0
+        self.obstacles.markers[i].pose.orientation.z = 0
+        self.obstacles.markers[i].pose.orientation.w = 1
+
+        # update obs refered to it
+        for obs in self.obstacle_args:
+            if 'ref' in obs and obs['ref'] == i:
+                self.obstacles.markers[obs['id']].pose.position.x = self.obstacles.markers[i].pose.position.x + obs['offset_x']
+                self.obstacles.markers[obs['id']].pose.position.y = self.obstacles.markers[i].pose.position.y + obs['offset_y']
+                self.obstacles.markers[obs['id']].pose.position.z = self.obstacles.markers[i].pose.position.z + obs['offset_z']
+                self.obstacles.markers[obs['id']].pose.orientation.x = 0
+                self.obstacles.markers[obs['id']].pose.orientation.y = 0
+                self.obstacles.markers[obs['id']].pose.orientation.z = 0
+                self.obstacles.markers[obs['id']].pose.orientation.w = 1
 
     # debug function
     def generateRandomObstacles(self, num):

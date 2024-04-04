@@ -59,9 +59,9 @@ class PubGoalActionServer(BaseTaskServer):
         self.vis_goal.action = Marker.ADD
         self.vis_goal.ns = 'task'
         self.vis_goal.type = Marker.SPHERE
-        self.vis_goal.scale.x = 0.4
-        self.vis_goal.scale.y = 0.4
-        self.vis_goal.scale.z = 0.4
+        self.vis_goal.scale.x = 0.04
+        self.vis_goal.scale.y = 0.04
+        self.vis_goal.scale.z = 0.04
         self.vis_goal.color.r = 1
         self.vis_goal.color.g = 1
         self.vis_goal.color.b = 0
@@ -72,8 +72,8 @@ class PubGoalActionServer(BaseTaskServer):
         self.vis_human.action = Marker.ADD
         self.vis_human.ns = 'task'
         self.vis_human.type = Marker.ARROW
-        self.vis_human.scale.x = 0.05
-        self.vis_human.scale.y = 0.08
+        self.vis_human.scale.x = 0.02
+        self.vis_human.scale.y = 0.04
         self.vis_human.color.r = 1
         self.vis_human.color.g = 1
         self.vis_human.color.b = 0
@@ -132,7 +132,7 @@ class PubGoalActionServer(BaseTaskServer):
             self.updateInterface()
 
             # check end and send result to client
-            distanceToGoal = np.sum((self.currentStates[:3, :] - np.array(goal.goal).reshape((3, 1))) ** 2)
+            distanceToGoal = np.sum((self.currentStates[:3, :] - np.array(goal.goal).reshape((3, 1))) ** 2) ** 0.5
             if distanceToGoal < goal.tolerance:
                 rospy.loginfo('%s: Completed' % self._action_name)
                 endTime = time.time()
@@ -152,9 +152,9 @@ class PubGoalActionServer(BaseTaskServer):
         self.vis_human.points[0].x = self.currentStates[0]
         self.vis_human.points[0].y = self.currentStates[1]
         self.vis_human.points[0].z = self.currentStates[2]
-        self.vis_human.points[1].x = self.currentStates[0] + self.humanForce[0] * 0.7
-        self.vis_human.points[1].y = self.currentStates[1] + self.humanForce[1] * 0.7
-        self.vis_human.points[1].z = self.currentStates[2] + self.humanForce[2] * 0.7
+        self.vis_human.points[1].x = self.currentStates[0] + self.humanForce[0] * 0.05
+        self.vis_human.points[1].y = self.currentStates[1] + self.humanForce[1] * 0.05
+        self.vis_human.points[1].z = self.currentStates[2] + self.humanForce[2] * 0.05
         self.vis_pubHuman.publish(self.vis_human)
 
         # current position
@@ -291,7 +291,7 @@ class PubPathActionServer(BaseTaskServer):
             self.updateInterface()
 
             # send feedback to client
-            distanceToEnd = np.sum((self.currentStates[:3, :] - endPoint) ** 2)
+            distanceToEnd = np.sum((self.currentStates[:3, :] - endPoint) ** 2) ** 0.5
             # the minimum among the distances from the current point to all points on the path.
             self._feedback.distance_to_path = np.min(self.data_reachError)
             self._as.publish_feedback(self._feedback)
@@ -360,7 +360,7 @@ class PubTrajActionServer(BaseTaskServer):
         self.vis_followPoint.action = Marker.ADD
         self.vis_followPoint.scale.x = 0.1
         self.vis_followPoint.scale.y = 0.1
-        self.vis_followPoint.scale.Z = 0.1
+        self.vis_followPoint.scale.z = 0.1
         self.vis_followPoint.color.r = 0
         self.vis_followPoint.color.g = 1
         self.vis_followPoint.color.b = 0
