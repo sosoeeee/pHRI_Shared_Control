@@ -365,7 +365,7 @@ class SharedController(BaseController):
 
         # self.lambda_ = 0.8
 
-        rospy.loginfo("lambda_: %.2f" % self.lambda_)
+        # rospy.loginfo("lambda_: %.2f" % self.lambda_)
 
         return self.lambda_
 
@@ -477,15 +477,16 @@ class SharedController(BaseController):
             Ez = 1 / (2 * self.alpha) * trajectory[2, :].dot(self.R.dot(trajectory[2, :].T)) - humanForceVector[2,:].dot(trajectory[2, :].T) - 1 / self.alpha * originTrajPosition[2, :].dot(self.R.dot(trajectory[2, :].T))
 
             curEnergy = Ex + Ey + Ez
-            rospy.loginfo("current energy is %.2f" % curEnergy)
+            # rospy.loginfo("current energy is %.2f" % curEnergy)
 
             if curEnergy < minEnergy:
                 minEnergy = curEnergy
                 optimalTraj = trajectory
 
-            if time.time() - startTime < self.replanTimeOut:
+            if time.time() - startTime > self.replanTimeOut:
                 rospy.loginfo("Timeout occurs while replanning traj")
-                break
+                # break
+                i = self.replanPathNum
 
         # change global trajectory
         self.robotGlobalTraj[:, currentTrajIndex:(currentTrajIndex + self.replanLen)] = optimalTraj[:, :self.replanLen].copy()

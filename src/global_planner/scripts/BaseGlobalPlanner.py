@@ -75,6 +75,21 @@ class BaseGlobalPlanner:
                 newPoint = self.path[-2] + (self.path[-1] - self.path[-2]) / N * (j + 1)
                 addPoints = np.vstack((addPoints, newPoint))
             self.path = np.vstack((self.path[:-1], addPoints, self.path[-1]))
+        
+        # only used for RRT algorithm with huersitic optimazition
+        # insertPath = self.path[0].copy()
+        # for i in range(self.path.shape[0] - 1):
+        #     if np.linalg.norm(self.path[i] - self.path[i+1]) > self.smooth_step:
+        #         N = int(np.ceil(np.linalg.norm(self.path[i] - self.path[i+1]) / self.smooth_step))
+
+        #         addPoints = self.path[i] + (self.path[i+1] - self.path[i]) / N
+        #         for j in range(1, N - 1):
+        #             newPoint = self.path[i] + (self.path[i+1] - self.path[i]) / N * (j + 1)
+        #             addPoints = np.vstack((addPoints, newPoint))
+
+        #         insertPath = np.vstack((insertPath, addPoints, self.path[i+1]))
+        # self.path = insertPath.copy()
+                # rospy.loginfo('add points: %d' % addPoints.shape[0])
 
     def handle_GlobalPlanning(self, req):
         # get the request
@@ -87,7 +102,7 @@ class BaseGlobalPlanner:
         
         # plan the path, self.path is (N, dimension)
         self.planPath()
-        if len(self.path.shape) == 0:
+        while len(self.path.shape) == 0:
             self.planPath()
 
         self.smoothPath()
@@ -115,8 +130,7 @@ class BaseGlobalPlanner:
             ori_pose = PoseStamped()
             ori_pose.pose = obstacle.pose
             ori_pose.header = obstacle.header
-            tar_pose = PoseStamped()
-            self.tf_listener.transformPose(self.world_frame, ori_pose, tar_pose)
+            tar_pose = self.tf_listener.transformPose(self.world_frame, ori_pose)
             obstacle.pose = tar_pose.pose
 
     # debug

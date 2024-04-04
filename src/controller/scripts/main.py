@@ -16,9 +16,9 @@ if __name__ == '__main__':
         controller_type = rospy.get_param("/controller_type", "Admittance")
         if controller_type == "Admittance":
             controller = AdmittanceController()
-        if controller_type == "Shared":
+        elif controller_type == "Shared":
             controller = SharedController()
-        if controller_type == "Switching":
+        elif controller_type == "Switching":
             controller = SwitchController()
         else:
             rospy.logerr("controller_type %s is not registered, use Admittance Controller as default" % controller_type)
