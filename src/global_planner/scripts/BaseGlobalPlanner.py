@@ -8,9 +8,9 @@ from geometry_msgs.msg import PoseStamped
 import tf
 
 # debug
-# from nav_msgs.msg import Path
-# from geometry_msgs.msg import PoseStamped
-# cnt = 1
+from nav_msgs.msg import Path
+from geometry_msgs.msg import PoseStamped
+cnt = 1
 
 import time
 from abc import abstractmethod
@@ -38,9 +38,9 @@ class BaseGlobalPlanner:
         self.path = None          # type np.ndarray, shape (N, 3)
 
         # debug
-        # self.path_publisher = rospy.Publisher('global_path', Path, queue_size=1)
-        # self.publish_rate = rospy.get_param('/global_planner/publish_rate', 10)
-        # self.path_visual = None  # type nav_msgs/Path
+        self.path_publisher = rospy.Publisher('global_path', Path, queue_size=1)
+        self.publish_rate = rospy.get_param('/global_planner/publish_rate', 10)
+        self.path_visual = None  # type nav_msgs/Path
 
     @abstractmethod
     def initPlanner(self):
@@ -52,43 +52,43 @@ class BaseGlobalPlanner:
 
     def smoothPath(self):
         # rospy.loginfo("before smoothing points number" + str(self.path.shape))
-        step = np.sum((self.path[1] - self.path[0]) ** 2) ** 0.5
-        if step <= self.smooth_step:
-            n = math.ceil(self.smooth_step / step)
-            iterations = int((self.path.shape[0] - 2) / n)  # remove start and end point
-            smoothPath = np.zeros((iterations, self.path.shape[1]))
-            averageVector = np.ones((1, n)) * (1 / n)
-            for i in range(iterations):
-                smoothPath[i] = np.dot(averageVector, self.path[(1 + i*n):(i+1)*n + 1, :])
-            # add start and end point
-            smoothPath = np.vstack((self.path[0], smoothPath))
-            smoothPath = np.vstack((smoothPath, self.path[-1]))
-            self.path = smoothPath
+        # step = np.sum((self.path[1] - self.path[0]) ** 2) ** 0.5
+        # if step <= self.smooth_step:
+        #     n = math.ceil(self.smooth_step / step)
+        #     iterations = int((self.path.shape[0] - 2) / n)  # remove start and end point
+        #     smoothPath = np.zeros((iterations, self.path.shape[1]))
+        #     averageVector = np.ones((1, n)) * (1 / n)
+        #     for i in range(iterations):
+        #         smoothPath[i] = np.dot(averageVector, self.path[(1 + i*n):(i+1)*n + 1, :])
+        #     # add start and end point
+        #     smoothPath = np.vstack((self.path[0], smoothPath))
+        #     smoothPath = np.vstack((smoothPath, self.path[-1]))
+        #     self.path = smoothPath
             # rospy.loginfo("before smoothing points number: %d, after smoothing: %d" % (self.path.shape[0], smoothPath.shape[0]))
 
         # add extra path points
-        if np.linalg.norm(self.path[-1] - self.path[-2]) > self.smooth_step:
-            N = int(np.ceil(np.linalg.norm(self.path[-1] - self.path[-2]) / self.smooth_step))
+        # if np.linalg.norm(self.path[-1] - self.path[-2]) > self.smooth_step:
+        #     N = int(np.ceil(np.linalg.norm(self.path[-1] - self.path[-2]) / self.smooth_step))
 
-            addPoints = self.path[-2] + (self.path[-1] - self.path[-2]) / N
-            for j in range(1, N - 1):
-                newPoint = self.path[-2] + (self.path[-1] - self.path[-2]) / N * (j + 1)
-                addPoints = np.vstack((addPoints, newPoint))
-            self.path = np.vstack((self.path[:-1], addPoints, self.path[-1]))
+        #     addPoints = self.path[-2] + (self.path[-1] - self.path[-2]) / N
+        #     for j in range(1, N - 1):
+        #         newPoint = self.path[-2] + (self.path[-1] - self.path[-2]) / N * (j + 1)
+        #         addPoints = np.vstack((addPoints, newPoint))
+        #     self.path = np.vstack((self.path[:-1], addPoints, self.path[-1]))
         
         # only used for RRT algorithm with huersitic optimazition
-        # insertPath = self.path[0].copy()
-        # for i in range(self.path.shape[0] - 1):
-        #     if np.linalg.norm(self.path[i] - self.path[i+1]) > self.smooth_step:
-        #         N = int(np.ceil(np.linalg.norm(self.path[i] - self.path[i+1]) / self.smooth_step))
+        insertPath = self.path[0].copy()
+        for i in range(self.path.shape[0] - 1):
+            if np.linalg.norm(self.path[i] - self.path[i+1]) > self.smooth_step:
+                N = int(np.ceil(np.linalg.norm(self.path[i] - self.path[i+1]) / self.smooth_step))
 
-        #         addPoints = self.path[i] + (self.path[i+1] - self.path[i]) / N
-        #         for j in range(1, N - 1):
-        #             newPoint = self.path[i] + (self.path[i+1] - self.path[i]) / N * (j + 1)
-        #             addPoints = np.vstack((addPoints, newPoint))
+                addPoints = self.path[i] + (self.path[i+1] - self.path[i]) / N
+                for j in range(1, N - 1):
+                    newPoint = self.path[i] + (self.path[i+1] - self.path[i]) / N * (j + 1)
+                    addPoints = np.vstack((addPoints, newPoint))
 
-        #         insertPath = np.vstack((insertPath, addPoints, self.path[i+1]))
-        # self.path = insertPath.copy()
+                insertPath = np.vstack((insertPath, addPoints, self.path[i+1]))
+        self.path = insertPath.copy()
                 # rospy.loginfo('add points: %d' % addPoints.shape[0])
 
     def handle_GlobalPlanning(self, req):
@@ -134,30 +134,30 @@ class BaseGlobalPlanner:
             obstacle.pose = tar_pose.pose
 
     # debug
-    # def Array2Pose(self, point):
-    #     pose = PoseStamped()
-    #     pose.header.frame_id = self.world_frame
-    #     pose.header.stamp = rospy.Time.now()
-    #     pose.pose.position.x = point[0]
-    #     pose.pose.position.y = point[1]
-    #     pose.pose.position.z = point[2]
-    #     pose.pose.orientation.x = 0
-    #     pose.pose.orientation.y = 0
-    #     pose.pose.orientation.z = 0
-    #     pose.pose.orientation.w = 1
-    #     return pose
+    def Array2Pose(self, point):
+        pose = PoseStamped()
+        pose.header.frame_id = self.world_frame
+        pose.header.stamp = rospy.Time.now()
+        pose.pose.position.x = point[0]
+        pose.pose.position.y = point[1]
+        pose.pose.position.z = point[2]
+        pose.pose.orientation.x = 0
+        pose.pose.orientation.y = 0
+        pose.pose.orientation.z = 0
+        pose.pose.orientation.w = 1
+        return pose
 
     def run(self):
         # debug
-        # while not rospy.is_shutdown():
-        #     self.path_visual = Path()
-        #     self.path_visual.header.frame_id = self.world_frame
-        #     if self.path is not None:
-        #         for point in self.path:
-        #             self.path_visual.poses.append(self.Array2Pose(point))
+        while not rospy.is_shutdown():
+            self.path_visual = Path()
+            self.path_visual.header.frame_id = self.world_frame
+            if self.path is not None:
+                for point in self.path:
+                    self.path_visual.poses.append(self.Array2Pose(point))
         
-        #     self.path_publisher.publish(self.path_visual)
+            self.path_publisher.publish(self.path_visual)
         
-        #     rospy.Rate(self.publish_rate).sleep()
+            rospy.Rate(self.publish_rate).sleep()
         rospy.spin()
 

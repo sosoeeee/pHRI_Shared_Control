@@ -18,6 +18,8 @@ import rospy
 # RRT package
 from rrt_algorithms.rrt.rrt import RRT
 from rrt_algorithms.rrt.rrt_star_bid_h import RRTStarBidirectionalHeuristic
+from rrt_algorithms.rrt.rrt_star_bid import RRTStarBidirectional
+from rrt_algorithms.rrt.rrt_star import RRTStar
 from rrt_algorithms.search_space.search_space import SearchSpace
 
 
@@ -67,17 +69,23 @@ class RRTPlanner(BaseGlobalPlanner):
         x_init = (self.start[0], self.start[1], self.start[2])
         x_goal = (self.goal[0], self.goal[1], self.goal[2])
 
-        # update obstacles
+        # update obstacles  
         self.obstaclesNormalization()
 
         X = SearchSpace(self.searchSpace, self.normalizedObstacles)
 
-        rrt = RRT(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb)
-        self.path = np.array(rrt.rrt_search())
+        # rrt = RRT(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb)
+        # self.path = np.array(rrt.rrt_search())
 
         # more smoooooooooooth
         # rrt = RRTStarBidirectionalHeuristic(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb, 32)
         # self.path = np.array(rrt.rrt_star_bid_h())
+
+        # rrt = RRTStarBidirectional(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb, 16)
+        # self.path = np.array(rrt.rrt_star_bidirectional())
+        
+        rrt = RRTStar(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb, 4)
+        self.path = np.array(rrt.rrt_star())
 
         endTime = time.time()
         # rospy.loginfo("RTT finished: " + str(endTime - startTime))

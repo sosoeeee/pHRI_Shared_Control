@@ -57,7 +57,7 @@ class Actuator:
         self.readyFlag = False
         self.initJointPose = rospy.get_param("/actuator/initJointPoses", None)
 
-        self.z_deviation = 0.15
+        self.z_deviation = rospy.get_param("/actuator/endDeviation", 0.15)
 
     def initRobot(self):
         while self.currentJointPosition is None:

@@ -1,12 +1,14 @@
 world_frame: "world"
-use_simulate: false
+use_simulate: true
 two_dimesion: false
 
 ## actuator params
 actuator:
+  endDeviation: 0.19
   initJointPoses:
-    - {q1: 0.0519, q2: 0.0105, q3: -0.1780, q4: -1.6328, q5: 0.0018, q6: 1.4984, q7: 1.4446}
-    - {q1: -0.7278, q2: 0.6829, q3: -0.1780, q4: -1.5556, q5: 0.1414, q6: 0.9155, q7: 0.6178}
+    - {q1: 0.1783, q2: 0.5602, q3: -0.2449, q4: -1.5819, q5: 1.9484, q6: 0.1644, q7: 0.6433}
+    - {q1: -0.8074, q2: 0.6577, q3: -0.0850, q4: -1.6221, q5: 1.9792, q6: 1.1787, q7: 0.6433}
+    - {q1: -0.7281, q2: 0.5331, q3: -0.0849, q4: -1.5450, q5: -0.0290, q6: 1.0227, q7: 1.1971}
 
   # initJointPoses: {q1: -0.8073, q2: 0.6508, q3: -0.1780, q4: -1.4782, q5: 0.1215, q6: 1.0317, q7: 0.1414}   # used to calibrate VICON frame
 
@@ -48,7 +50,7 @@ global_planner:
   publish_rate: 10
   publish_topic: "global_plan"
   obstacles_dilate: 0.03
-  smooth_step: 0.03    # actual distance between path points next to each other
+  smooth_step: 0.02    # actual distance between path points next to each other
   
 RRT_planner:
     max_iter: 10000
@@ -57,21 +59,21 @@ RRT_planner:
     check_goal_prob: 0.01
     search_space:
       x:
-        - 0.38
+        - 0.36
         - 0.75
       y:
-        - -0.45
-        - 0
+        - -0.42
+        - 0.08
       z:
         - 0
-        - 0.25
+        - 0.20
 
 ## Local planner params
 MinimumLocalPlanner:
   opt_order: 4
   conti_order: 3
   order: 5
-  optimizeT: true
+  optimizeT: false
 
 ## controller params
 controller_type: "Shared"  # Admittance, Shared, Switching
@@ -91,7 +93,7 @@ shared_controller:
   replan_len: 350
   replan_len_num: 50
   replan_freq: 1
-  replan_timeout: 3
+  replan_timeout: 60
   alpha: 100
   weight_r: 1       # 追踪机器人期望轨迹的误差权重为 weight_r*weight_tracking
   weight_h: 10
