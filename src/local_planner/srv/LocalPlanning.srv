@@ -19,4 +19,4 @@ float32 control_frequency
 ---
 
 float32[] trajectory
-
+bool success

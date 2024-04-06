@@ -14,6 +14,8 @@ import time
 
 from visualization_msgs.msg import Marker
 import rospy
+from std_msgs.msg import String
+from actuator.msg import StateVector
 
 # RRT package
 from rrt_algorithms.rrt.rrt import RRT
@@ -48,6 +50,38 @@ class RRTPlanner(BaseGlobalPlanner):
         self.searchSpace = rospy.get_param('/RRT_planner/search_space', {'x': [0, 0], 'y': [0, 0], 'z': [0, 0]})
         self.searchSpace = np.array([self.searchSpace['x'], self.searchSpace['y'], self.searchSpace['z']])
 
+        # 优化采样空间
+        # subscribe human force
+        rospy.Subscriber("stickSignal", String, self.humanCmd_callback, queue_size=1)
+        self.thresholdForce = rospy.get_param("/shared_controller/threshold_force", 3.5)
+        self.twoDimFlag = rospy.get_param("/two_dimesion", False)
+        self.humanForce = np.zeros((3, 1))
+        self.humanForce_valid = np.zeros((3, 1))
+
+        # subscribe robot states from actuator
+        rospy.Subscriber('/actuator/robotState', StateVector, self.cartesianState_callBack, queue_size=1)
+        self.currentStates = np.zeros((6, 1))
+
+    def humanCmd_callback(self, msg):
+        posAndForce = msg.data.split(',')
+        # two dimension setup
+        if self.twoDimFlag:
+            self.humanForce = np.array([-float(posAndForce[3]), -float(posAndForce[4]), 0])
+        else:
+            self.humanForce = np.array([-float(posAndForce[3]), float(posAndForce[5]), -float(posAndForce[4])])
+        
+        # only use valid force
+        if np.linalg.norm(self.humanForce) > self.thresholdForce:
+            self.humanForce_valid = self.humanForce
+    
+    def cartesianState_callBack(self, msg):
+        self.currentStates[0] = msg.x
+        self.currentStates[1] = msg.y
+        self.currentStates[2] = msg.z
+        self.currentStates[3] = msg.dx
+        self.currentStates[4] = msg.dy
+        self.currentStates[5] = msg.dz
+
     def obstaclesNormalization(self):
         self.normalizedObstacles = []
         for obstacle in self.obstacles:
@@ -72,7 +106,24 @@ class RRTPlanner(BaseGlobalPlanner):
         # update obstacles  
         self.obstaclesNormalization()
 
-        X = SearchSpace(self.searchSpace, self.normalizedObstacles)
+        # shrink search space
+        shrinkSpace = self.searchSpace.copy()
+        if np.linalg.norm(self.humanForce_valid) > 0.001:
+            rospy.loginfo("shrink search space")
+            # shrink x dimension
+            if self.humanForce_valid[0] > 0:
+                shrinkSpace[0][0] = self.currentStates[0]
+            elif self.humanForce_valid[0] < 0:
+                shrinkSpace[0][1] = self.currentStates[0]
+            # shrink y dimension
+            if self.humanForce_valid[1] > 0:
+                shrinkSpace[1][0] = self.currentStates[1]
+            elif self.humanForce_valid[1] < 0:
+                shrinkSpace[1][1] = self.currentStates[1]
+            
+            X = SearchSpace(shrinkSpace, self.normalizedObstacles)
+        else:
+            X = SearchSpace(self.searchSpace, self.normalizedObstacles)
 
         # rrt = RRT(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb)
         # self.path = np.array(rrt.rrt_search())

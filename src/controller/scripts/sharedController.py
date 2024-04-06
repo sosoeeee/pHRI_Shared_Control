@@ -448,11 +448,15 @@ class SharedController(BaseController):
             rospy.wait_for_service('local_planner')
             try:
                 plan_trajectory = rospy.ServiceProxy('local_planner', LocalPlanning)
-                trajectoryFlatten = plan_trajectory(startPoint, startVel, startAcc,
+                res = plan_trajectory(startPoint, startVel, startAcc,
                                                     endPoint, endVel, endAcc,
                                                     -1, -1,
                                                     self.replanLen * (1 / self.controlFrequency),
-                                                    self.controlFrequency).trajectory
+                                                    self.controlFrequency)
+                if res.success is False:
+                    continue
+                else:
+                    trajectoryFlatten = res.trajectory
 
                 trajectory = np.array(trajectoryFlatten).reshape((-1, 2 * len(startPoint))).T
 
@@ -489,10 +493,12 @@ class SharedController(BaseController):
                 i = self.replanPathNum
 
         # change global trajectory
-        self.robotGlobalTraj[:, currentTrajIndex:(currentTrajIndex + self.replanLen)] = optimalTraj[:, :self.replanLen].copy()
-
-        # visualization
-        self.pubGlobalTraj()
+        if optimalTraj is None:
+            rospy.loginfo("update global trajectory failed!")
+        else:
+            self.robotGlobalTraj[:, currentTrajIndex:(currentTrajIndex + self.replanLen)] = optimalTraj[:, :self.replanLen].copy()
+            # visualization
+            self.pubGlobalTraj()
 
         # return self.robotGlobalTraj
 

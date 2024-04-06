@@ -102,10 +102,12 @@ class BaseGlobalPlanner:
         
         # plan the path, self.path is (N, dimension)
         self.planPath()
-        while len(self.path.shape) == 0:
-            self.planPath()
-
-        self.smoothPath()
+        if len(self.path.shape) != 0: 
+            self.smoothPath()
+            success = True
+        else:
+            rospy.loginfo("RRT path not found")
+            success = False
 
         # debug
         # rospy.loginfo("RRT plan finish")
@@ -117,6 +119,7 @@ class BaseGlobalPlanner:
         # return the response
         res = GlobalPlanningResponse()
         res.path = self.path.flatten().tolist()   # switch to float32[]
+        res.success = success
         return res
 
     def updateObstacles(self, obstacleSet):
