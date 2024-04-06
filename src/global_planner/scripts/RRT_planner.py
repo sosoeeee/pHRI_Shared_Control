@@ -61,6 +61,7 @@ class RRTPlanner(BaseGlobalPlanner):
         # subscribe robot states from actuator
         rospy.Subscriber('/actuator/robotState', StateVector, self.cartesianState_callBack, queue_size=1)
         self.currentStates = np.zeros((6, 1))
+        self.deviation = rospy.get_param("/shared_controller/deviation", 0.1)
 
     def humanCmd_callback(self, msg):
         posAndForce = msg.data.split(',')
@@ -112,14 +113,14 @@ class RRTPlanner(BaseGlobalPlanner):
             rospy.loginfo("shrink search space")
             # shrink x dimension
             if self.humanForce_valid[0] > 0:
-                shrinkSpace[0][0] = self.currentStates[0]
+                shrinkSpace[0][0] = self.currentStates[0] - self.deviation
             elif self.humanForce_valid[0] < 0:
-                shrinkSpace[0][1] = self.currentStates[0]
+                shrinkSpace[0][1] = self.currentStates[0] + self.deviation
             # shrink y dimension
             if self.humanForce_valid[1] > 0:
-                shrinkSpace[1][0] = self.currentStates[1]
+                shrinkSpace[1][0] = self.currentStates[1] - self.deviation
             elif self.humanForce_valid[1] < 0:
-                shrinkSpace[1][1] = self.currentStates[1]
+                shrinkSpace[1][1] = self.currentStates[1] + self.deviation
             
             X = SearchSpace(shrinkSpace, self.normalizedObstacles)
         else:
@@ -132,11 +133,11 @@ class RRTPlanner(BaseGlobalPlanner):
         # rrt = RRTStarBidirectionalHeuristic(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb, 32)
         # self.path = np.array(rrt.rrt_star_bid_h())
 
-        # rrt = RRTStarBidirectional(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb, 16)
-        # self.path = np.array(rrt.rrt_star_bidirectional())
+        rrt = RRTStarBidirectional(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb, 16)
+        self.path = np.array(rrt.rrt_star_bidirectional())
         
-        rrt = RRTStar(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb, 4)
-        self.path = np.array(rrt.rrt_star())
+        # rrt = RRTStar(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb, 4)
+        # self.path = np.array(rrt.rrt_star())
 
         endTime = time.time()
         # rospy.loginfo("RTT finished: " + str(endTime - startTime))
