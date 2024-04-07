@@ -443,6 +443,11 @@ class SharedController(BaseController):
 
         # generate feasible trajectories
         while i < self.replanPathNum:
+            if time.time() - startTime > self.replanTimeOut:
+                rospy.loginfo("Timeout occurs while replanning traj")
+                # break
+                i = self.replanPathNum
+
             i += 1
             # generate trajectory
             rospy.wait_for_service('local_planner')
@@ -486,11 +491,6 @@ class SharedController(BaseController):
             if curEnergy < minEnergy:
                 minEnergy = curEnergy
                 optimalTraj = trajectory
-
-            if time.time() - startTime > self.replanTimeOut:
-                rospy.loginfo("Timeout occurs while replanning traj")
-                # break
-                i = self.replanPathNum
 
         # change global trajectory
         if optimalTraj is None:

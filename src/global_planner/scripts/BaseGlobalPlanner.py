@@ -108,6 +108,7 @@ class BaseGlobalPlanner:
         else:
             rospy.loginfo("RRT path not found")
             success = False
+            self.path = np.array([0])
 
         # debug
         # rospy.loginfo("RRT plan finish")

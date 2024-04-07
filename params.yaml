@@ -53,7 +53,7 @@ global_planner:
   smooth_step: 0.02    # actual distance between path points next to each other
   
 RRT_planner:
-    max_iter: 10000
+    max_iter: 2000
     step_size: 0.02
     line_collision_check_resolution: 0.005
     check_goal_prob: 0.01
