@@ -164,11 +164,11 @@ class PubGoalActionServer(BaseTaskServer):
         self.vis_pubPos.publish(self.vis_curPos)
 
         if np.linalg.norm(self.humanForce) != 0:
-            self.q  = self.getQuaternion([1, 0, 0], self.humanForce[:3].flatten())
+            self.q = self.getQuaternion([1, 0, 0], self.humanForce[:3].flatten())
             # rospy.loginfo("quaternion: (%.2f, %.2f, %.2f, %.2f)" % (self.q [0], self.q [1], self.q [2], self.q [3]))
 
         self.br.sendTransform((self.vis_curPos.point.x, self.vis_curPos.point.y, self.vis_curPos.point.z),
-                              (self.q [0], self.q [1], self.q [2], self.q [3]),
+                              (self.q[0], self.q[1], self.q[2], self.q[3]),
                               rospy.Time.now(),
                               "camera",
                               self.world_frame)
@@ -211,10 +211,10 @@ class PubGoalActionServer(BaseTaskServer):
         pose.pose.orientation.z = 0
         pose.pose.orientation.w = 1
         return pose
-  
+
     def getQuaternion(self, ori_vec, loc_vec):
         ori_vec = np.array(ori_vec)
-        loc_vec = np.array(loc_vec)              
+        loc_vec = np.array(loc_vec)
         ori_vec = ori_vec / np.linalg.norm(ori_vec)
         loc_vec = loc_vec / np.linalg.norm(loc_vec)
         axis = np.cross(ori_vec, loc_vec)
@@ -236,6 +236,7 @@ class PubPathActionServer(BaseTaskServer):
 
         # recorded data (customize by yourself)
         self.data_reachError = None
+        self.data_realTimeError = None
         self.data_humanForce = None
         self.pathPoints = None
 
@@ -270,6 +271,7 @@ class PubPathActionServer(BaseTaskServer):
         endPoint = np.array(goal.end_point).reshape((3, 1))  # generally same as goal in task "ReachGoal"
         self._feedback.distance_to_path = 0
         self.data_reachError = [np.inf for _ in range(self.pathPoints.shape[0])]
+        self.data_realTimeError = []
         self.data_humanForce = np.zeros((3, 1))
 
         # publish info to the console for the user
@@ -301,6 +303,7 @@ class PubPathActionServer(BaseTaskServer):
                 rospy.loginfo('%s: Completed' % self._action_name)
                 self._result.reach_error = self.data_reachError
                 self._result.human_force = self.data_humanForce.T.flatten().tolist()
+                self._result.real_time_error = self.data_realTimeError
                 self._as.set_succeeded(self._result)
                 break
 
@@ -321,10 +324,14 @@ class PubPathActionServer(BaseTaskServer):
         # collect interact force
         self.data_humanForce = np.hstack((self.data_humanForce, self.humanForce))  # shape is (dim, N)
         # compute error in real time
+        miniError = np.inf
         for i in range(len(self.data_reachError)):
             error = np.linalg.norm(self.currentStates[:3, :] - self.pathPoints[i].reshape((3, 1)))
             if error < self.data_reachError[i]:
                 self.data_reachError[i] = error
+            if error < miniError:
+                miniError = error
+        self.data_realTimeError.append(miniError)
 
 
 class PubTrajActionServer(BaseTaskServer):
@@ -341,6 +348,7 @@ class PubTrajActionServer(BaseTaskServer):
 
         # recorded data (customize by yourself)
         self.data_sumError = None
+        self.data_realTimeError = None
         self.data_humanForce = None
         self.refTraj = None
         self.idx = 0
@@ -385,6 +393,7 @@ class PubTrajActionServer(BaseTaskServer):
             raise Exception("check your trajectory txt file! Each line only contains one point")
         self._feedback.current_error = 0
         self.data_sumError = 0
+        self.data_realTimeError = []
         self.data_humanForce = np.zeros((3, 1))
 
         # publish info to the console for the user
@@ -414,6 +423,7 @@ class PubTrajActionServer(BaseTaskServer):
             if self.idx == length:
                 rospy.loginfo('%s: Completed' % self._action_name)
                 self._result.average_error = self.data_sumError / length
+                self._result.real_time_error = self.data_realTimeError
                 self._result.human_force = self.data_humanForce.T.flatten().tolist()
                 self._as.set_succeeded(self._result)
                 break
@@ -454,4 +464,6 @@ class PubTrajActionServer(BaseTaskServer):
         # collect interact force
         self.data_humanForce = np.hstack((self.data_humanForce, self.humanForce))  # shape is (dim, N)
         # compute error in real time
-        self.data_sumError += np.linalg.norm(self.currentStates[:3, :] - self.refTraj[self.idx].reshape((3, 1)))
+        error = np.linalg.norm(self.currentStates[:3, :] - self.refTraj[self.idx].reshape((3, 1)))
+        self.data_sumError += error
+        self.data_realTimeError.append(error)

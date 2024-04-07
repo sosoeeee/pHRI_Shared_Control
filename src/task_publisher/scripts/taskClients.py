@@ -102,6 +102,8 @@ class PubPathActionClient:
 
         np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/pathError_id%d.txt" %
                    (controller_type, self._id), np.array(res.reach_error).reshape((-1, 1)))
+        np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/pathRealTimeError_id%d.txt" %
+                   (controller_type, self._id), np.array(res.real_time_error).reshape((-1, 1)))
         np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/humanForce_id%d.txt" %
                    (controller_type, self._id), np.array(res.human_force).reshape((-1, 3)))
 
@@ -141,6 +143,8 @@ class PubTrajActionClient:
 
         np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/TrajAvrError_id%d.txt" %
                    (controller_type, self._id), res.average_error)
+        np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/TrajRealTimeError_id%d.txt" %
+                   (controller_type, self._id), np.array(res.real_time_error).reshape((-1, 1)))
         np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/humanForce_id%d.txt" %
                    (controller_type, self._id), np.array(res.human_force).reshape((-1, 3)))
 
