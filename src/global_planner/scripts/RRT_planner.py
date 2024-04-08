@@ -133,11 +133,11 @@ class RRTPlanner(BaseGlobalPlanner):
         # rrt = RRTStarBidirectionalHeuristic(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb, 32)
         # self.path = np.array(rrt.rrt_star_bid_h())
 
-        rrt = RRTStarBidirectional(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb, 16)
-        self.path = np.array(rrt.rrt_star_bidirectional())
+        # rrt = RRTStarBidirectional(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb, 16)
+        # self.path = np.array(rrt.rrt_star_bidirectional())
         
-        # rrt = RRTStar(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb, 4)
-        # self.path = np.array(rrt.rrt_star())
+        rrt = RRTStar(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb, 4)
+        self.path = np.array(rrt.rrt_star())
 
         endTime = time.time()
         # rospy.loginfo("RTT finished: " + str(endTime - startTime))

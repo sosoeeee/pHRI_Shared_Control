@@ -1,6 +1,6 @@
 # task id must start from 1
 task_list:
-  - {task_id: 1, task_type: 'reachGoal', goal_x: 0.4 , goal_y: 0.05, goal_z: 0.08, tolerance: 0.01, time_taken: 60}
+  - {task_id: 1, task_type: 'reachGoal', goal_x: 0.4 , goal_y: 0.05, goal_z: 0.08, tolerance: 0.01, time_taken: 120}
   # - {task_id: 1, task_type: 'reachGoal', goal_x: 0.39, goal_y: -0.16, goal_z: 0.15, tolerance: 0.01, time_taken: 60}
   - {task_id: 1, task_type: 'followPath', goal_x: 0.4 , goal_y: 0.05, goal_z: 0.08, tolerance: 0.01, file_path: "task/path.txt"}
 #  - {task_id: 1, task_type: 'followTraj', file_path: "task/traj.txt", sample_frequency: 10}

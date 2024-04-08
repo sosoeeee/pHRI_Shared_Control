@@ -45,6 +45,7 @@ class SharedController(BaseController):
         self.computeGlobalTraj = False
         self.robotGlobalTraj = None
         self.robotGlobalTrajLen = None
+        self.ori_robotGlobalTrajLen = None
         self.vis_pubRawTraj = rospy.Publisher('/controller/globalTraj', VisualTraj, queue_size=10)
         self.loadTraj = False
 
@@ -100,6 +101,7 @@ class SharedController(BaseController):
         self.computeGlobalTraj = False
         self.robotGlobalTraj = None
         self.robotGlobalTrajLen = None
+        self.ori_robotGlobalTrajLen = None
 
         # predicted safety index
         self.lambda_ = None
@@ -386,6 +388,7 @@ class SharedController(BaseController):
                 raise Exception("check your globalTraj file, trajectory need to be (6, N), currently is (%d, %d)"
                                 % (self.robotGlobalTraj.shape[0], self.robotGlobalTraj.shape[1]))
             self.robotGlobalTrajLen = self.robotGlobalTraj.shape[1]
+            self.ori_robotGlobalTrajLen = self.robotGlobalTrajLen
             self.computeGlobalTraj = True
 
             # visualization
@@ -456,7 +459,7 @@ class SharedController(BaseController):
                 res = plan_trajectory(startPoint, startVel, startAcc,
                                                     endPoint, endVel, endAcc,
                                                     -1, -1,
-                                                    self.replanLen * (1 / self.controlFrequency),
+                                                    min(self.replanLen, self.ori_robotGlobalTrajLen - currentTrajIndex) * (1 / self.controlFrequency),
                                                     self.controlFrequency)
                 if res.success is False:
                     continue
@@ -465,12 +468,20 @@ class SharedController(BaseController):
 
                 trajectory = np.array(trajectoryFlatten).reshape((-1, 2 * len(startPoint))).T
 
-                if trajectory.shape != (6, self.replanLen):
-                    raise Exception("Error: The shape of re-planned trajectory is wrong")
+                # if trajectory.shape != (6, self.replanLen):
+                #     raise Exception("Error: The shape of re-planned trajectory is wrong")
 
             except rospy.ServiceException as e:
                 print("Service call failed: %s" % e)
                 continue
+
+            if trajectory.shape != (6, self.replanLen):
+                exd_block = np.zeros((2 * len(self.goal), self.replanLen - trajectory.shape[1]))
+                exd_block[0:3, :] = np.array(self.goal).reshape((3, 1))
+                trajectory = np.hstack((trajectory, exd_block))
+            
+            if trajectory.shape != (6, self.replanLen):
+                raise Exception("Error: The shape of re-planned trajectory is wrong")
 
             # rospy.loginfo("Generate feasible trajectories")
 
@@ -532,10 +543,11 @@ class SharedController(BaseController):
         #     self.local_human_traj.poses.append(self.Array2Pose(point))
         # self.vis_pubLocalTraj_h.publish(self.local_human_traj)
 
-        # if self.humanIntent != 0:
-        #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/local_r_%d.txt" % (idx), self.robotLocalTraj)
-        #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/local_h_%d.txt" % (idx), self.humanLocalTraj)
-        #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/curStates_%d.txt" % (idx), curStates)
+        if self.humanIntent != 0:
+            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/local_r_%d.txt" % (idx), self.robotLocalTraj)
+            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/local_h_%d.txt" % (idx), self.humanLocalTraj)
+            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/curStates_%d.txt" % (idx), curStates)
+            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/lambda_%d.txt" % (idx), np.array([self.lambda_]))
 
         # rospy.loginfo("curState_%d: (%.2f, %.2f, %.2f)" % (
         #     idx, curStates[0, 0], curStates[1, 0], curStates[2, 0]))
