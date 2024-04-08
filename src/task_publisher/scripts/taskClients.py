@@ -130,13 +130,14 @@ class PubTrajActionClient:
 
     def sendReq(self):
         self.client.send_goal(self.goal, done_cb=self.done_callback, feedback_cb=self.feedback_callback)
+        # self.client.send_goal(self.goal)
 
     # return true, if status is one of the terminal states
     def isDone(self):
         return self.done
 
     def done_callback(self, status, res):
-        rospy.loginfo("FollowPath task (id: %d) is done!" % self._id)
+        rospy.loginfo("FollowTraj task (id: %d) is done!" % self._id)
 
         # store data
         controller_type = rospy.get_param("/controller_type", "Impedance")

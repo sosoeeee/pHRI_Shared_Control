@@ -1,19 +1,20 @@
 world_frame: "world"
-use_simulate: false
-two_dimesion: false
+use_simulate: true
+two_dimesion: true
 
 ## actuator params
 actuator:
-  endDeviation: 0.19
+  endDeviation: 0.14
   initJointPoses:
-    - {q1: 0.1783, q2: 0.5602, q3: -0.2449, q4: -1.5819, q5: 1.9484, q6: 0.1644, q7: 0.6433}
-    - {q1: -0.8074, q2: 0.6577, q3: -0.0850, q4: -1.6221, q5: 1.9792, q6: 1.1787, q7: 0.6433}
-    - {q1: -0.7281, q2: 0.5331, q3: -0.0849, q4: -1.5450, q5: -0.0290, q6: 1.0227, q7: 1.1971}
+    # - {q1: 0.1783, q2: 0.5602, q3: -0.2449, q4: -1.5819, q5: 1.9484, q6: 0.1644, q7: 0.6433}
+    - {q1: 0.1683, q2: 0.4251, q3: -0.0850, q4: -1.4250, q5: -0.0042, q6: 1.2527, q7: 1.2268}
+    - {q1: -0.6816, q2: 0.4251, q3: -0.0850, q4: -1.4250, q5: -0.0042, q6: 1.2527, q7: 1.2268}
+    - {q1: -0.6741, q2: 0.7753, q3: -0.0850, q4: -1.6275, q5: -0.0173, q6: 0.7026, q7: 1.2622}
 
   # initJointPoses: {q1: -0.8073, q2: 0.6508, q3: -0.1780, q4: -1.4782, q5: 0.1215, q6: 1.0317, q7: 0.1414}   # used to calibrate VICON frame
 
 simulate_actuator:
-  initPos: {x: 0.390, y: -0.509, z: 0.201}
+  initPos: {x: 0.4, y: -0.378, z: 0.065}
   pub_frequency: 100  # must faster than control_frequency
 
 ## env publisher params
@@ -23,33 +24,25 @@ env_publisher:
   VICON_topics:
     - "/vicon/shr_obs1/shr_obs1"
     - "/vicon/shr_obs2/shr_obs2"
-    - "/vicon/shr_obs3/shr_obs3"
     - "/ref1_1"
     - "/ref1_2"
     - "/ref2_1"
-    - "/ref2_2"
-    - "/ref3_1"
-    - "/ref3_2"
 
 
   VICON_transform: {x: 2.36, y: -0.47, z: -0.54, qx: 0, qy: 0, qz: -0.707, qw: 0.707} # VICON frame according to world frame
   obstacle_args:
     - {id: 0, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, cor_x: -0.012, cor_y: 0.062, cor_z: -0.075}  
     - {id: 1, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, cor_x: 0.018, cor_y: 0.065, cor_z: -0.055} 
-    - {id: 2, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, cor_x: 0.01, cor_y: 0.07, cor_z: -0.072} 
-    - {id: 3, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, ref: 0, offset_x: 0, offset_y: 0, offset_z: -0.1}
-    - {id: 4, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, ref: 0, offset_x: -0.1, offset_y: 0, offset_z: -0.1}
-    - {id: 5, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, ref: 1, offset_x: 0, offset_y: 0, offset_z: -0.1}
-    - {id: 6, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, ref: 1, offset_x: 0, offset_y: 0.1, offset_z: -0.1}
-    - {id: 7, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, ref: 2, offset_x: 0, offset_y: 0, offset_z: -0.1}
-    - {id: 8, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, ref: 2, offset_x: 0, offset_y: -0.1, offset_z: -0.1}
+    - {id: 2, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, ref: 0, offset_x: 0, offset_y: -0.15, offset_z: 0}
+    - {id: 3, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, ref: 0, offset_x: 0, offset_y: -0.3, offset_z: 0}
+    - {id: 4, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, ref: 1, offset_x: 0, offset_y: -0.1, offset_z: 0}
 
 
 ## Global planner params
 global_planner:
   publish_rate: 10
   publish_topic: "global_plan"
-  obstacles_dilate: 0.03
+  obstacles_dilate: 0.02
   smooth_step: 0.02  # actual distance between path points next to each other
   
 RRT_planner:
@@ -60,13 +53,13 @@ RRT_planner:
     search_space:
       x:
         - 0.37
-        - 0.75
+        - 0.7
       y:
-        - -0.42
-        - 0.08
+        - -0.45
+        - 0.03
       z:
         - 0
-        - 0.20
+        - 0
 
 ## Local planner params
 MinimumLocalPlanner:
@@ -76,7 +69,7 @@ MinimumLocalPlanner:
   optimizeT: false
 
 ## controller params
-controller_type: "Shared"  # Admittance, Shared, Switching
+controller_type: "Switching"  # Admittance, Shared, Switching
 
 controller:
   control_frequency: 10 # must slower than the frequency of sampling the sensor data
@@ -88,9 +81,9 @@ impedance_controller:
 shared_controller:
   M: 5
   C: 75
-  threshold_force: 3.0
+  threshold_force: 2.7
   local_len: 50
-  replan_len: 600
+  replan_len: 250
   replan_len_num: 20
   replan_freq: 1
   replan_timeout: 2
@@ -98,5 +91,5 @@ shared_controller:
   weight_r: 1       # 追踪机器人期望轨迹的误差权重为 weight_r*weight_tracking
   weight_h: 10
   weight_tracking: 1000
-  load_traj: false
+  load_traj: true
   deviation: 0.05   # the max tolerated deviation from robot desired traj
