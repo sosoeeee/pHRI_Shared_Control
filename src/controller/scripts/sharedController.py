@@ -548,6 +548,7 @@ class SharedController(BaseController):
             np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/local_h_%d.txt" % (idx), self.humanLocalTraj)
             np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/curStates_%d.txt" % (idx), curStates)
             np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/lambda_%d.txt" % (idx), np.array([self.lambda_]))
+            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/humanCmd_%d.txt" % (idx), np.array(humCmd[3:]))
 
         # rospy.loginfo("curState_%d: (%.2f, %.2f, %.2f)" % (
         #     idx, curStates[0, 0], curStates[1, 0], curStates[2, 0]))

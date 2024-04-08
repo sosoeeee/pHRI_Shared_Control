@@ -23,7 +23,7 @@ class simActuator:
         # self.pubPosCmd = rospy.Publisher('/simulate_actuator/pos', PointStamped, queue_size=10)
 
         # publish simulate point state to controller
-        self.pubRobotState = rospy.Publisher('/actuator/robotState', StateVector, queue_size=10)
+        self.pubRobotState = rospy.Publisher('/actuator/robotState', StateVector, queue_size=1)
         self.pubStateFreq = rospy.get_param("/simulate_actuator/pub_frequency", 100)
         self.pubStateTimer = rospy.Timer(rospy.Duration(1/self.pubStateFreq), self.pubStateTimer_callback)
 
