@@ -207,18 +207,18 @@ class SharedController(BaseController):
     def computeCmd(self):
         # copy sensor data
         # humCmd = self.humanCmd.copy()
-        # curStates = self.currentStates.copy() ## ? strange, causing sensor data lag
+        curStates = self.currentStates.copy() ## ? strange, causing sensor data lag
         self.curIdx += 1
 
         if self.computeGlobalTraj is False:
             # compute global trajectory
-            self.planGlobalTraj(self.currentStates)
+            self.planGlobalTraj(curStates)
 
         if self.curIdx == self.robotGlobalTrajLen - self.replanLen:
             self.extendGlobalTraj()
 
-        self.updateHumanLocalTraj(self.curIdx, self.humanCmd, self.currentStates)
-        self.computeLambda(self.currentStates)
+        self.updateHumanLocalTraj(self.curIdx, self.humanCmd, curStates)
+        self.computeLambda(curStates)
 
         # self.ctr += 1
         # if self.ctr > self.controlFrequency / self.replanFreq and self.humanIntent == 2:
@@ -242,7 +242,7 @@ class SharedController(BaseController):
 
         # rospy.loginfo("idx: %d" % self.curIdx)
 
-        return self.computeLocalTraj(self.curIdx, self.humanCmd, self.currentStates)
+        return self.computeLocalTraj(self.curIdx, self.humanCmd, curStates)
 
     def updateObstacles(self, obstacleSet):
         self.obstacles = obstacleSet.markers
@@ -423,6 +423,8 @@ class SharedController(BaseController):
         except rospy.ServiceException as e:
             print("Service call failed: %s" % e)
 
+        # np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/fixTraj.txt", self.robotGlobalTraj.T)
+
     def extendGlobalTraj(self):
         exd_block = np.zeros((2 * len(self.goal), self.replanLen))
         exd_block[0:3, :] = np.array(self.goal).reshape((3, 1))
@@ -588,7 +590,7 @@ class SharedController(BaseController):
         u_h = np.dot(k_0, k_h.dot(wx))
 
         # limit max ||u_r|| and ||u_h||
-        limit = 4.5
+        limit = 8.5
         if np.linalg.norm(u_r) > limit:
             u_r = u_r / np.linalg.norm(u_r) * limit
         if np.linalg.norm(u_h) > limit:
@@ -604,6 +606,10 @@ class SharedController(BaseController):
         # w_next = self.Ad.dot(curStates) + self.Brd.dot(u_r) + self.Bhd.dot(u_h)
         cmd_string = str(w_next[0, 0]) + ',' + str(w_next[1, 0]) + ',' + str(w_next[2, 0]) + ',' + str(
             w_next[3, 0]) + ',' + str(w_next[4, 0]) + ',' + str(w_next[5, 0])
+
+        # print('-----------')
+        # print(curStates.T)
+        # print(w_next.T)
 
         # rospy.loginfo("u_r (%.2f, %.2f, %.2f) u_h (%.2f, %.2f, %.2f)" % (u_r[0], u_r[1], u_r[2], u_h[0], u_h[1], u_h[2]))
 
