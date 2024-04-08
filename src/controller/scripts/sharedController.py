@@ -415,6 +415,7 @@ class SharedController(BaseController):
                 raise Exception("Error: The shape of global trajectory is wrong")
 
             self.robotGlobalTrajLen = self.robotGlobalTraj.shape[1]
+            self.ori_robotGlobalTrajLen = self.robotGlobalTrajLen
             self.computeGlobalTraj = True
 
             # visualization
@@ -607,6 +608,7 @@ class SharedController(BaseController):
         cmd_string = str(w_next[0, 0]) + ',' + str(w_next[1, 0]) + ',' + str(w_next[2, 0]) + ',' + str(
             w_next[3, 0]) + ',' + str(w_next[4, 0]) + ',' + str(w_next[5, 0])
 
+        # np.set_printoptions(precision = 4)
         # print('-----------')
         # print(curStates.T)
         # print(w_next.T)
