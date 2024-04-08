@@ -206,19 +206,19 @@ class SharedController(BaseController):
 
     def computeCmd(self):
         # copy sensor data
-        humCmd = self.humanCmd.copy()
-        curStates = self.currentStates.copy()
+        # humCmd = self.humanCmd.copy()
+        # curStates = self.currentStates.copy() ## ? strange, causing sensor data lag
         self.curIdx += 1
 
         if self.computeGlobalTraj is False:
             # compute global trajectory
-            self.planGlobalTraj(curStates)
+            self.planGlobalTraj(self.currentStates)
 
         if self.curIdx == self.robotGlobalTrajLen - self.replanLen:
             self.extendGlobalTraj()
 
-        self.updateHumanLocalTraj(self.curIdx, humCmd, curStates)
-        self.computeLambda(curStates)
+        self.updateHumanLocalTraj(self.curIdx, self.humanCmd, self.currentStates)
+        self.computeLambda(self.currentStates)
 
         # self.ctr += 1
         # if self.ctr > self.controlFrequency / self.replanFreq and self.humanIntent == 2:
@@ -229,7 +229,7 @@ class SharedController(BaseController):
         if self.humanIntent == 2:
             self.ctr += 1
             if self.ctr == self.controlFrequency / self.replanFreq:
-                self.changeGlobalTraj(self.curIdx, humCmd)
+                self.changeGlobalTraj(self.curIdx, self.humanCmd)
                 self.ctr = 0
         else:
             self.ctr = 0
@@ -242,7 +242,7 @@ class SharedController(BaseController):
 
         # rospy.loginfo("idx: %d" % self.curIdx)
 
-        return self.computeLocalTraj(self.curIdx, humCmd, curStates)
+        return self.computeLocalTraj(self.curIdx, self.humanCmd, self.currentStates)
 
     def updateObstacles(self, obstacleSet):
         self.obstacles = obstacleSet.markers
@@ -543,12 +543,12 @@ class SharedController(BaseController):
         #     self.local_human_traj.poses.append(self.Array2Pose(point))
         # self.vis_pubLocalTraj_h.publish(self.local_human_traj)
 
-        if self.humanIntent != 0:
-            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/local_r_%d.txt" % (idx), self.robotLocalTraj)
-            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/local_h_%d.txt" % (idx), self.humanLocalTraj)
-            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/curStates_%d.txt" % (idx), curStates)
-            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/lambda_%d.txt" % (idx), np.array([self.lambda_]))
-            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/humanCmd_%d.txt" % (idx), np.array(humCmd[3:]))
+        # if self.humanIntent != 0:
+        #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/local_r_%d.txt" % (idx), self.robotLocalTraj)
+        #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/local_h_%d.txt" % (idx), self.humanLocalTraj)
+        #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/curStates_%d.txt" % (idx), curStates)
+        #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/lambda_%d.txt" % (idx), np.array([self.lambda_]))
+        #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/humanCmd_%d.txt" % (idx), np.array(humCmd[3:]))
 
         # rospy.loginfo("curState_%d: (%.2f, %.2f, %.2f)" % (
         #     idx, curStates[0, 0], curStates[1, 0], curStates[2, 0]))
@@ -588,7 +588,7 @@ class SharedController(BaseController):
         u_h = np.dot(k_0, k_h.dot(wx))
 
         # limit max ||u_r|| and ||u_h||
-        limit = 8.5
+        limit = 4.5
         if np.linalg.norm(u_r) > limit:
             u_r = u_r / np.linalg.norm(u_r) * limit
         if np.linalg.norm(u_h) > limit:
