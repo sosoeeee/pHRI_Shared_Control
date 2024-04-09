@@ -6,7 +6,7 @@ string file_path                # a file containing an array of discrete traject
 int64 sample_frequency
 ---
 # Define the result
-float32[] average_error         # the average of the distances to moving point measured at each sampling time
+float32 average_error           # the average of the distances to moving point measured at each sampling time
 float32[] real_time_error       # the current distances to moving point at each sampling time
 float32[] human_force           # the interaction force during the task sampled in control_frequency
 ---

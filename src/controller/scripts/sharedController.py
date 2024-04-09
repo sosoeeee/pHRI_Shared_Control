@@ -17,6 +17,7 @@ from geometry_msgs.msg import Point, PoseStamped
 import tf
 from local_planner.srv import *
 from controller.msg import VisualTraj
+from controller.msg import StateCmd
 
 import numpy as np
 import time
@@ -218,6 +219,7 @@ class SharedController(BaseController):
             self.extendGlobalTraj()
 
         self.updateHumanLocalTraj(self.curIdx, self.humanCmd, curStates)
+        
         self.computeLambda(curStates)
 
         # self.ctr += 1
@@ -605,8 +607,8 @@ class SharedController(BaseController):
             w_next = self.Ad.dot(curStates) + self.Brd.dot(u_r) + self.Bhd.dot(humCmd[3:])
 
         # w_next = self.Ad.dot(curStates) + self.Brd.dot(u_r) + self.Bhd.dot(u_h)
-        cmd_string = str(w_next[0, 0]) + ',' + str(w_next[1, 0]) + ',' + str(w_next[2, 0]) + ',' + str(
-            w_next[3, 0]) + ',' + str(w_next[4, 0]) + ',' + str(w_next[5, 0])
+        # cmd_string = str(w_next[0, 0]) + ',' + str(w_next[1, 0]) + ',' + str(w_next[2, 0]) + ',' + str(
+        #     w_next[3, 0]) + ',' + str(w_next[4, 0]) + ',' + str(w_next[5, 0])
 
         # np.set_printoptions(precision = 4)
         # print('-----------')
@@ -615,7 +617,18 @@ class SharedController(BaseController):
 
         # rospy.loginfo("u_r (%.2f, %.2f, %.2f) u_h (%.2f, %.2f, %.2f)" % (u_r[0], u_r[1], u_r[2], u_h[0], u_h[1], u_h[2]))
 
-        return cmd_string
+        stateCmd = StateCmd()
+        stateCmd.stamp = rospy.Time.now()
+        stateCmd.x = w_next[0, 0]
+        stateCmd.y = w_next[1, 0]
+        stateCmd.z = w_next[2, 0]
+        stateCmd.vx = w_next[3, 0]
+        stateCmd.vy = w_next[4, 0]
+        stateCmd.vz = w_next[5, 0]
+
+        return stateCmd
+
+        # return cmd_string
 
     # generate discrete points on a sphere
     def generateSphericalPoints(self, center, radius, distanceStep):

@@ -4,6 +4,7 @@ from std_msgs.msg import String
 from task_publisher.msg import ReachGoal
 from actuator.srv import *
 from actuator.msg import StateVector
+from controller.msg import StateCmd
 
 from abc import abstractmethod
 import numpy as np
@@ -28,7 +29,7 @@ class BaseController:
 
         # publish control command to robot
         self.controlFrequency = rospy.get_param("/controller/control_frequency", 10)
-        self.pubControlCmd = rospy.Publisher('nextState', String, queue_size=1)
+        self.pubControlCmd = rospy.Publisher('nextState', StateCmd, queue_size=1)
         # self.pubCmdTimer = rospy.Timer(rospy.Duration(1/self.controlFrequency), self.pubCmd_callback)
 
         # subscribe task publisher (currently care about "ReachGoal" task only)
@@ -91,7 +92,7 @@ class BaseController:
         self.goal = [msg.goal[0], msg.goal[1], msg.goal[2]]
         self.time_taken = msg.time_taken
         self.tolerance = msg.tolerance
-        rospy.loginfo("Controller is activated !")
+        # rospy.loginfo("Controller is activated !")
 
     # unstable
     # def pubCmd_callback(self, event):

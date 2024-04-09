@@ -14,6 +14,7 @@ from task_publisher.msg import ReachGoal
 from task_publisher.msg import pubGoalAction, pubGoalFeedback, pubGoalResult
 from task_publisher.msg import pubPathAction, pubPathFeedback, pubPathResult
 from task_publisher.msg import pubTrajAction, pubTrajFeedback, pubTrajResult
+from controller.msg import StateCmd
 
 # visualization
 from geometry_msgs.msg import PointStamped, PoseStamped
@@ -352,6 +353,9 @@ class PubTrajActionServer(BaseTaskServer):
         self.data_humanForce = None
         self.refTraj = None
         self.idx = 0
+        # wait robot start to move
+        rospy.Subscriber('/nextState', StateCmd, self.controlCmd_callback, queue_size=1)
+        self.startTask = False
 
         # visual publisher
         self.vis_pubFollowPoint = rospy.Publisher('/task/visual/followPoint', Marker, queue_size=1)
@@ -398,6 +402,9 @@ class PubTrajActionServer(BaseTaskServer):
         self.data_realTimeError = []
         self.data_humanForce = np.zeros((3, 1))
 
+        while self.startTask is False:
+            rospy.sleep(0.01)
+
         # publish info to the console for the user
         rospy.loginfo('%s: Executing' % self._action_name)
 
@@ -421,6 +428,8 @@ class PubTrajActionServer(BaseTaskServer):
             self._feedback.current_error = error
             self._as.publish_feedback(self._feedback)
 
+            self.idx += 1
+
             # check end and send result to client
             if self.idx == length:
                 rospy.loginfo('%s: Completed' % self._action_name)
@@ -429,8 +438,6 @@ class PubTrajActionServer(BaseTaskServer):
                 self._result.human_force = self.data_humanForce.T.flatten().tolist()
                 self._as.set_succeeded(self._result)
                 break
-
-            self.idx += 1
 
             r.sleep()
 
@@ -467,3 +474,9 @@ class PubTrajActionServer(BaseTaskServer):
         error = np.linalg.norm(self.currentStates[:3, :] - self.refTraj[self.idx].reshape((3, 1)))
         self.data_sumError += error
         self.data_realTimeError.append(error)
+
+    def controlCmd_callback(self, msg):
+        if self.startTask is False:
+            self.startTask = True
+        else:
+            pass
