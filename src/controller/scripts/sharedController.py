@@ -206,8 +206,8 @@ class SharedController(BaseController):
 
     def computeCmd(self):
         # copy sensor data
-        humCmd = self.humanCmd.copy()
-        curStates = self.currentStates.copy()
+        # humCmd = self.humanCmd.copy()
+        curStates = self.currentStates.copy() ## ? strange, causing sensor data lag
         self.curIdx += 1
 
         if self.computeGlobalTraj is False:
@@ -217,7 +217,7 @@ class SharedController(BaseController):
         if self.curIdx == self.robotGlobalTrajLen - self.replanLen:
             self.extendGlobalTraj()
 
-        self.updateHumanLocalTraj(self.curIdx, humCmd, curStates)
+        self.updateHumanLocalTraj(self.curIdx, self.humanCmd, curStates)
         self.computeLambda(curStates)
 
         # self.ctr += 1
@@ -229,7 +229,7 @@ class SharedController(BaseController):
         if self.humanIntent == 2:
             self.ctr += 1
             if self.ctr == self.controlFrequency / self.replanFreq:
-                self.changeGlobalTraj(self.curIdx, humCmd)
+                self.changeGlobalTraj(self.curIdx, self.humanCmd)
                 self.ctr = 0
         else:
             self.ctr = 0
@@ -242,7 +242,7 @@ class SharedController(BaseController):
 
         # rospy.loginfo("idx: %d" % self.curIdx)
 
-        return self.computeLocalTraj(self.curIdx, humCmd, curStates)
+        return self.computeLocalTraj(self.curIdx, self.humanCmd, curStates)
 
     def updateObstacles(self, obstacleSet):
         self.obstacles = obstacleSet.markers
@@ -415,6 +415,7 @@ class SharedController(BaseController):
                 raise Exception("Error: The shape of global trajectory is wrong")
 
             self.robotGlobalTrajLen = self.robotGlobalTraj.shape[1]
+            self.ori_robotGlobalTrajLen = self.robotGlobalTrajLen
             self.computeGlobalTraj = True
 
             # visualization
@@ -422,6 +423,8 @@ class SharedController(BaseController):
 
         except rospy.ServiceException as e:
             print("Service call failed: %s" % e)
+
+        # np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/fixTraj.txt", self.robotGlobalTraj.T)
 
     def extendGlobalTraj(self):
         exd_block = np.zeros((2 * len(self.goal), self.replanLen))
@@ -543,12 +546,12 @@ class SharedController(BaseController):
         #     self.local_human_traj.poses.append(self.Array2Pose(point))
         # self.vis_pubLocalTraj_h.publish(self.local_human_traj)
 
-        if self.humanIntent != 0:
-            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/local_r_%d.txt" % (idx), self.robotLocalTraj)
-            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/local_h_%d.txt" % (idx), self.humanLocalTraj)
-            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/curStates_%d.txt" % (idx), curStates)
-            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/lambda_%d.txt" % (idx), np.array([self.lambda_]))
-            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/humanCmd_%d.txt" % (idx), np.array(humCmd[3:]))
+        # if self.humanIntent != 0:
+        #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/local_r_%d.txt" % (idx), self.robotLocalTraj)
+        #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/local_h_%d.txt" % (idx), self.humanLocalTraj)
+        #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/curStates_%d.txt" % (idx), curStates)
+        #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/lambda_%d.txt" % (idx), np.array([self.lambda_]))
+        #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/humanCmd_%d.txt" % (idx), np.array(humCmd[3:]))
 
         # rospy.loginfo("curState_%d: (%.2f, %.2f, %.2f)" % (
         #     idx, curStates[0, 0], curStates[1, 0], curStates[2, 0]))
@@ -612,6 +615,11 @@ class SharedController(BaseController):
         # w_next = self.Ad.dot(curStates) + self.Brd.dot(u_r) + self.Bhd.dot(u_h)
         cmd_string = str(w_next[0, 0]) + ',' + str(w_next[1, 0]) + ',' + str(w_next[2, 0]) + ',' + str(
             w_next[3, 0]) + ',' + str(w_next[4, 0]) + ',' + str(w_next[5, 0])
+
+        # np.set_printoptions(precision = 4)
+        # print('-----------')
+        # print(curStates.T)
+        # print(w_next.T)
 
         # rospy.loginfo("u_r (%.2f, %.2f, %.2f) u_h (%.2f, %.2f, %.2f)" % (u_r[0], u_r[1], u_r[2], u_h[0], u_h[1], u_h[2]))
 

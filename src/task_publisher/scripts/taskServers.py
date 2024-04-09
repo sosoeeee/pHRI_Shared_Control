@@ -366,9 +366,9 @@ class PubTrajActionServer(BaseTaskServer):
         self.vis_followPoint.ns = "task"
         self.vis_followPoint.type = Marker.CUBE
         self.vis_followPoint.action = Marker.ADD
-        self.vis_followPoint.scale.x = 0.1
-        self.vis_followPoint.scale.y = 0.1
-        self.vis_followPoint.scale.z = 0.1
+        self.vis_followPoint.scale.x = 0.02
+        self.vis_followPoint.scale.y = 0.02
+        self.vis_followPoint.scale.z = 0.02
         self.vis_followPoint.color.r = 0
         self.vis_followPoint.color.g = 1
         self.vis_followPoint.color.b = 0
@@ -388,9 +388,11 @@ class PubTrajActionServer(BaseTaskServer):
         # initialize feedback and result msg
         rospack = rospkg.RosPack()
         self.refTraj = np.loadtxt(rospack.get_path('task_publisher') + '/' + goal.file_path)
+        if self.refTraj.shape[1] == 6:
+            self.refTraj = self.refTraj[:, :3]
         length = self.refTraj.shape[0]
         if self.refTraj.shape[1] != 3:
-            raise Exception("check your trajectory txt file! Each line only contains one point")
+            rospy.logerr("check your trajectory txt file! Each line only contains one point")
         self._feedback.current_error = 0
         self.data_sumError = 0
         self.data_realTimeError = []
@@ -440,11 +442,9 @@ class PubTrajActionServer(BaseTaskServer):
         self.vis_pubFollowPoint.publish(self.vis_followPoint)
 
         # ref Traj
-        if self.firstPub:
-            self.vis_refTraj.poses = []
-            for point in self.refTraj:
-                self.vis_refTraj.poses.append(self.Array2Pose(point))
-            self.firstPub = False
+        self.vis_refTraj.poses = []
+        for point in self.refTraj:
+            self.vis_refTraj.poses.append(self.Array2Pose(point))
         self.vis_pubRefTraj.publish(self.vis_refTraj)
 
     def Array2Pose(self, point):

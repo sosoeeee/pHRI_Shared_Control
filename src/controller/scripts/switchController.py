@@ -23,7 +23,7 @@ import numpy as np
 
 class SwitchController(BaseController):
     def __init__(self):
-        super(SharedController, self).__init__()
+        super(SwitchController, self).__init__()
 
         # controller parameters
         # Impedance Model
@@ -201,7 +201,7 @@ class SwitchController(BaseController):
 
     def computeCmd(self):
         # copy sensor data
-        humCmd = self.humanCmd.copy()
+        # humCmd = self.humanCmd.copy()
         curStates = self.currentStates.copy()
         self.curIdx += 1
 
@@ -214,7 +214,7 @@ class SwitchController(BaseController):
 
         self.ctr += 1
 
-        self.updateHumanLocalTraj(self.curIdx, humCmd, curStates)
+        self.updateHumanLocalTraj(self.curIdx, self.humanCmd, curStates)
         # fix lambda
         self.lambda_ = 1
 
@@ -231,7 +231,7 @@ class SwitchController(BaseController):
 
         # rospy.loginfo("idx: %d" % self.curIdx)
 
-        return self.computeLocalTraj(self.curIdx, humCmd, curStates)
+        return self.computeLocalTraj(self.curIdx, self.humanCmd, curStates)
 
     def updateObstacles(self, obstacleSet):
         self.obstacles = obstacleSet.markers
@@ -356,7 +356,7 @@ class SwitchController(BaseController):
 
         # self.lambda_ = 0.8
 
-        rospy.loginfo("lambda_: %.2f" % self.lambda_)
+        # rospy.loginfo("lambda_: %.2f" % self.lambda_)
 
         return self.lambda_
 
@@ -410,6 +410,8 @@ class SwitchController(BaseController):
 
         except rospy.ServiceException as e:
             print("Service call failed: %s" % e)
+
+        # np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/fixTraj.txt", self.robotGlobalTraj.T)
 
     def extendGlobalTraj(self):
         exd_block = np.zeros((2 * len(self.goal), self.replanLen))

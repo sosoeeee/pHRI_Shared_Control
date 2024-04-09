@@ -102,7 +102,7 @@ class simActuator:
         stateVector.dz = self.vel[2]
 
         self.pubRobotState.publish(stateVector)
-
+        
     def run(self):
         self.initRobot()
         rospy.spin()

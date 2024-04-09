@@ -22,7 +22,7 @@ class BaseController:
         self.filter_a = [1, -1.1430, 0.4128]
 
         # subscribe robot states from actuator
-        rospy.Subscriber('/actuator/robotState', StateVector, self.cartesianState_callBack, queue_size=1)
+        rospy.Subscriber('/actuator/robotState', StateVector, self.cartesianState_callBack, queue_size=10)
         self.robotReady = False
         self.currentStates = np.zeros((6, 1))  # pos (x, y, z) and vel (dx, dy, dz) in Cartesian Space(task space)
 
