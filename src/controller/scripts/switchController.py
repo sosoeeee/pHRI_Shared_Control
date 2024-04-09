@@ -413,7 +413,7 @@ class SwitchController(BaseController):
         except rospy.ServiceException as e:
             print("Service call failed: %s" % e)
 
-        # np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/fixTraj.txt", self.robotGlobalTraj.T)
+        np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/fixTraj.txt", self.robotGlobalTraj.T)
 
     def extendGlobalTraj(self):
         exd_block = np.zeros((2 * len(self.goal), self.replanLen))

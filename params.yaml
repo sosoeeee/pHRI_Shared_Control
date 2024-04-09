@@ -1,5 +1,5 @@
 world_frame: "world"
-use_simulate: true
+use_simulate: false
 two_dimesion: true
 
 ## actuator params
@@ -19,7 +19,7 @@ simulate_actuator:
 
 ## env publisher params
 env_publisher:
-  publish_rate: 10
+  publish_rate: 1
   publish_topic: "env_obstacles"
   VICON_topics:
     - "/vicon/shr_obs1/shr_obs1"
@@ -72,7 +72,7 @@ MinimumLocalPlanner:
 controller_type: "Shared"  # Admittance, Shared, Switching
 
 controller:
-  control_frequency: 1 # must slower than the frequency of sampling the sensor data
+  control_frequency: 5 # must slower than the frequency of sampling the sensor data
 
 impedance_controller:
   M: 5
