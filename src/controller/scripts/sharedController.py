@@ -561,25 +561,33 @@ class SharedController(BaseController):
         wx = np.vstack((curStates, X_d))
 
         # tmp1_L_h = np.linalg.pinv(np.vstack((SQ.dot(self.theta_hg), np.sqrt(self.lambda_) * SP)))
-        tmp1_L_h = np.linalg.pinv(np.vstack((SQ.dot(self.theta_hg), np.sqrt(1 - self.lambda_) * SP)))
-        tmp2_L_h = np.vstack((SQ, np.zeros((3 * self.localLen, 6 * self.localLen))))
-        L_h = tmp1_L_h.dot(tmp2_L_h)
+        # tmp1_L_h = np.linalg.pinv(np.vstack((SQ.dot(self.theta_hg), np.sqrt(1 - self.lambda_) * SP)))
+        # tmp2_L_h = np.vstack((SQ, np.zeros((3 * self.localLen, 6 * self.localLen))))
+        # L_h = tmp1_L_h.dot(tmp2_L_h)
+
+        L_h = np.linalg.inv(
+            np.dot(self.theta_hg.T, Q).dot(self.theta_hg) + (1 - self.lambda_) * np.eye(3 * self.localLen)).dot(
+            self.theta_hg.T).dot(Q)
 
         # tmp1_L_r = np.linalg.pinv(np.vstack((SQ.dot(self.theta_rg), np.sqrt(1 - self.lambda_) * SP)))
-        tmp1_L_r = np.linalg.pinv(np.vstack((SQ.dot(self.theta_rg), np.sqrt(self.lambda_) * SP)))
-        tmp2_L_r = np.vstack((SQ, np.zeros((3 * self.localLen, 6 * self.localLen))))
-        L_r = tmp1_L_r.dot(tmp2_L_r)
+        # tmp1_L_r = np.linalg.pinv(np.vstack((SQ.dot(self.theta_rg), np.sqrt(self.lambda_) * SP)))
+        # tmp2_L_r = np.vstack((SQ, np.zeros((3 * self.localLen, 6 * self.localLen))))
+        # L_r = tmp1_L_r.dot(tmp2_L_r)
+
+        L_r = np.linalg.inv(
+            np.dot(self.theta_rg.T, Q).dot(self.theta_rg) + self.lambda_ * np.eye(3 * self.localLen)).dot(
+            self.theta_rg.T).dot(Q)
 
         H_h = np.hstack((-L_h.dot(self.phi_g), L_h))
         H_r = np.hstack((-L_r.dot(self.phi_g), L_r))
 
         k_r1 = np.eye(3 * self.localLen) - np.dot(L_r.dot(self.theta_hg), L_h.dot(self.theta_rg))
         k_r2 = H_r - np.dot(L_r.dot(self.theta_hg), H_h)
-        k_r = np.linalg.pinv(k_r1).dot(k_r2)
+        k_r = np.linalg.inv(k_r1).dot(k_r2)
 
         k_h1 = np.eye(3 * self.localLen) - np.dot(L_h.dot(self.theta_rg), L_r.dot(self.theta_hg))
         k_h2 = H_h - np.dot(L_h.dot(self.theta_rg), H_r)
-        k_h = np.linalg.pinv(k_h1).dot(k_h2)
+        k_h = np.linalg.inv(k_h1).dot(k_h2)
 
         k_0 = np.zeros((3, 3 * self.localLen))
         k_0[:3, :3] = np.eye(3)
