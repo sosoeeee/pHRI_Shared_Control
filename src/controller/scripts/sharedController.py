@@ -208,6 +208,10 @@ class SharedController(BaseController):
     def computeCmd(self):
         # copy sensor data
         # humCmd = self.humanCmd.copy()
+
+        print('---------')
+        s = time.time()
+
         curStates = self.currentStates.copy() ## ? strange, causing sensor data lag
         self.curIdx += 1
 
@@ -218,9 +222,21 @@ class SharedController(BaseController):
         if self.curIdx == self.robotGlobalTrajLen - self.replanLen:
             self.extendGlobalTraj()
 
+        e = time.time()
+        print('part1:' , e-s)
+        s = time.time()
+
         self.updateHumanLocalTraj(self.curIdx, self.humanCmd, curStates)
-        
+
+        e = time.time()
+        print('part1-human:' , e-s)
+        s = time.time()
+
         self.computeLambda(curStates)
+
+        e = time.time()
+        print('part3-lambda:' , e-s)
+        s = time.time()
 
         # self.ctr += 1
         # if self.ctr > self.controlFrequency / self.replanFreq and self.humanIntent == 2:
@@ -235,16 +251,26 @@ class SharedController(BaseController):
                 self.ctr = 0
         else:
             self.ctr = 0
-
+        
         robotDesPos = Point()
         robotDesPos.x = self.robotGlobalTraj[0, self.curIdx]
         robotDesPos.y = self.robotGlobalTraj[1, self.curIdx]
         robotDesPos.z = self.robotGlobalTraj[2, self.curIdx]
         self.pubRobotDesPos.publish(robotDesPos)
 
+        e = time.time()
+        print('part4-pub:' , e-s)
+        s = time.time()
+
         # rospy.loginfo("idx: %d" % self.curIdx)
 
-        return self.computeLocalTraj(self.curIdx, self.humanCmd, curStates)
+        cmd = self.computeLocalTraj(self.curIdx, self.humanCmd, curStates)
+
+        e = time.time()
+        print('part5-cmd:' , e-s)
+        s = time.time()
+
+        return cmd
 
     def updateObstacles(self, obstacleSet):
         self.obstacles = obstacleSet.markers
@@ -565,6 +591,8 @@ class SharedController(BaseController):
         SP = np.eye(3 * self.localLen)
         wx = np.vstack((curStates, X_d))
 
+        s = time.time()
+
         # tmp1_L_h = np.linalg.pinv(np.vstack((SQ.dot(self.theta_hg), np.sqrt(self.lambda_) * SP)))
         tmp1_L_h = np.linalg.pinv(np.vstack((SQ.dot(self.theta_hg), np.sqrt(1 - self.lambda_) * SP)))
         tmp2_L_h = np.vstack((SQ, np.zeros((3 * self.localLen, 6 * self.localLen))))
@@ -574,6 +602,10 @@ class SharedController(BaseController):
         tmp1_L_r = np.linalg.pinv(np.vstack((SQ.dot(self.theta_rg), np.sqrt(self.lambda_) * SP)))
         tmp2_L_r = np.vstack((SQ, np.zeros((3 * self.localLen, 6 * self.localLen))))
         L_r = tmp1_L_r.dot(tmp2_L_r)
+
+        e = time.time()
+        print('part5-1-pinv:' , e-s)
+        s = time.time()
 
         H_h = np.hstack((-L_h.dot(self.phi_g), L_h))
         H_r = np.hstack((-L_r.dot(self.phi_g), L_r))
@@ -591,6 +623,10 @@ class SharedController(BaseController):
 
         u_r = np.dot(k_0, k_r.dot(wx))
         u_h = np.dot(k_0, k_h.dot(wx))
+
+        e = time.time()
+        print('part5-2-pinv:' , e-s)
+        s = time.time()
 
         # limit max ||u_r|| and ||u_h||
         limit = 8.5

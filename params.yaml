@@ -72,7 +72,7 @@ MinimumLocalPlanner:
 controller_type: "Shared"  # Admittance, Shared, Switching
 
 controller:
-  control_frequency: 10 # must slower than the frequency of sampling the sensor data
+  control_frequency: 1 # must slower than the frequency of sampling the sensor data
 
 impedance_controller:
   M: 5
