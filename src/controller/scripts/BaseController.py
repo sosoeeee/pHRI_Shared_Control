@@ -8,6 +8,9 @@ from controller.msg import StateCmd
 
 from abc import abstractmethod
 import numpy as np
+import threading
+
+Lock = threading.Lock()
 
 
 class BaseController:
@@ -116,8 +119,10 @@ class BaseController:
         rate = rospy.Rate(self.controlFrequency)
         while not rospy.is_shutdown():
             if self.robotReady and self.active:
-                cmd = self.computeCmd()
-                self.pubControlCmd.publish(cmd)
+                
+                with Lock:
+                    cmd = self.computeCmd()
+                    self.pubControlCmd.publish(cmd)
 
                 # rospy.loginfo('cmd' + cmd)
 

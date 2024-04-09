@@ -207,11 +207,11 @@ class SharedController(BaseController):
 
     def computeCmd(self):
         # copy sensor data
-        # humCmd = self.humanCmd.copy()
 
         # print('---------')
         # s = time.time()
 
+        humCmd = self.humanCmd.copy()
         curStates = self.currentStates.copy() ## ? strange, causing sensor data lag
         self.curIdx += 1
 
@@ -226,7 +226,7 @@ class SharedController(BaseController):
         # print('part1:' , e-s)
         # s = time.time()
 
-        self.updateHumanLocalTraj(self.curIdx, self.humanCmd, curStates)
+        self.updateHumanLocalTraj(self.curIdx, humCmd, curStates)
 
         # e = time.time()
         # print('part1-human:' , e-s)
@@ -264,11 +264,13 @@ class SharedController(BaseController):
 
         # rospy.loginfo("idx: %d" % self.curIdx)
 
+        cmd = self.computeLocalTraj(self.curIdx, humCmd, curStates)
+
         # e = time.time()
         # print('part5-cmd:' , e-s)
         # s = time.time()
 
-        return self.computeLocalTraj(self.curIdx, self.humanCmd, curStates)
+        return cmd
 
     def updateObstacles(self, obstacleSet):
         self.obstacles = obstacleSet.markers

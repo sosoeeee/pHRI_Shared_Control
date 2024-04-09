@@ -21,6 +21,7 @@ from controller.msg import StateCmd
 
 
 import numpy as np
+import time
 
 
 class SwitchController(BaseController):
@@ -203,7 +204,11 @@ class SwitchController(BaseController):
 
     def computeCmd(self):
         # copy sensor data
-        # humCmd = self.humanCmd.copy()
+
+        # print('---------')
+        # s = time.time()
+
+        humCmd = self.humanCmd.copy()
         curStates = self.currentStates.copy()
         self.curIdx += 1
 
@@ -216,7 +221,7 @@ class SwitchController(BaseController):
 
         self.ctr += 1
 
-        self.updateHumanLocalTraj(self.curIdx, self.humanCmd, curStates)
+        self.updateHumanLocalTraj(self.curIdx, humCmd, curStates)
         # fix lambda
         self.lambda_ = 1
 
@@ -233,7 +238,12 @@ class SwitchController(BaseController):
 
         # rospy.loginfo("idx: %d" % self.curIdx)
 
-        return self.computeLocalTraj(self.curIdx, self.humanCmd, curStates)
+        cmd = self.computeLocalTraj(self.curIdx, humCmd, curStates)
+
+        # e = time.time()
+        # print('part5-cmd:' , e-s)
+
+        return cmd
 
     def updateObstacles(self, obstacleSet):
         self.obstacles = obstacleSet.markers
@@ -530,6 +540,8 @@ class SwitchController(BaseController):
         #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/local_r_%d.txt" % (idx), self.robotLocalTraj)
         #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/local_h_%d.txt" % (idx), self.humanLocalTraj)
         #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/curStates_%d.txt" % (idx), curStates)
+        #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/lambda_%d.txt" % (idx), np.array([self.lambda_]))
+        #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/humanCmd_%d.txt" % (idx), np.array(humCmd[3:]))
 
         # rospy.loginfo("curState_%d: (%.2f, %.2f, %.2f)" % (
         #     idx, curStates[0, 0], curStates[1, 0], curStates[2, 0]))
@@ -537,30 +549,46 @@ class SwitchController(BaseController):
         # 将Q_h和Q_r对角拼接
         Q = np.vstack((np.hstack((self.Qh * self.lambda_, np.zeros((3 * self.localLen, 3 * self.localLen)))),
                        np.hstack((np.zeros((3 * self.localLen, 3 * self.localLen)), self.Qr * (1 - self.lambda_)))))
-        SQ = np.sqrt(Q)
-        SP = np.eye(3 * self.localLen)
+        # SQ = np.sqrt(Q)
+        # SP = np.eye(3 * self.localLen)
         wx = np.vstack((curStates, X_d))
 
+        # s = time.time()
+
         # tmp1_L_h = np.linalg.pinv(np.vstack((SQ.dot(self.theta_hg), np.sqrt(self.lambda_) * SP)))
-        tmp1_L_h = np.linalg.pinv(np.vstack((SQ.dot(self.theta_hg), np.sqrt(1 - self.lambda_) * SP)))
-        tmp2_L_h = np.vstack((SQ, np.zeros((3 * self.localLen, 6 * self.localLen))))
-        L_h = tmp1_L_h.dot(tmp2_L_h)
+        # tmp1_L_h = np.linalg.pinv(np.vstack((SQ.dot(self.theta_hg), np.sqrt(1 - self.lambda_) * SP)))
+        # tmp2_L_h = np.vstack((SQ, np.zeros((3 * self.localLen, 6 * self.localLen))))
+        # L_h = tmp1_L_h.dot(tmp2_L_h)
+
+        L_h_tmp = np.linalg.inv(np.dot(self.theta_hg.T, Q).dot(self.theta_hg) + (1 - self.lambda_) * np.eye(3 * self.localLen))
+        L_h = L_h_tmp.dot(self.theta_hg.T).dot(Q)
 
         # tmp1_L_r = np.linalg.pinv(np.vstack((SQ.dot(self.theta_rg), np.sqrt(1 - self.lambda_) * SP)))
-        tmp1_L_r = np.linalg.pinv(np.vstack((SQ.dot(self.theta_rg), np.sqrt(self.lambda_) * SP)))
-        tmp2_L_r = np.vstack((SQ, np.zeros((3 * self.localLen, 6 * self.localLen))))
-        L_r = tmp1_L_r.dot(tmp2_L_r)
+        # tmp1_L_r = np.linalg.pinv(np.vstack((SQ.dot(self.theta_rg), np.sqrt(self.lambda_) * SP)))
+        # tmp2_L_r = np.vstack((SQ, np.zeros((3 * self.localLen, 6 * self.localLen))))
+        # L_r = tmp1_L_r.dot(tmp2_L_r)
+
+        L_r_tmp = np.linalg.inv(np.dot(self.theta_rg.T, Q).dot(self.theta_rg) + self.lambda_ * np.eye(3 * self.localLen))
+        L_r = L_r_tmp.dot(self.theta_rg.T).dot(Q)
+
+        # e = time.time()
+        # print('part5-1-inv:' , e-s)
+        # s = time.time()
 
         H_h = np.hstack((-L_h.dot(self.phi_g), L_h))
         H_r = np.hstack((-L_r.dot(self.phi_g), L_r))
 
         k_r1 = np.eye(3 * self.localLen) - np.dot(L_r.dot(self.theta_hg), L_h.dot(self.theta_rg))
         k_r2 = H_r - np.dot(L_r.dot(self.theta_hg), H_h)
-        k_r = np.linalg.pinv(k_r1).dot(k_r2)
+        k_r = np.linalg.inv(k_r1).dot(k_r2)
 
         k_h1 = np.eye(3 * self.localLen) - np.dot(L_h.dot(self.theta_rg), L_r.dot(self.theta_hg))
         k_h2 = H_h - np.dot(L_h.dot(self.theta_rg), H_r)
-        k_h = np.linalg.pinv(k_h1).dot(k_h2)
+        k_h = np.linalg.inv(k_h1).dot(k_h2)
+
+        # e = time.time()
+        # print('part5-2-inv:' , e-s)
+        # s = time.time()
 
         k_0 = np.zeros((3, 3 * self.localLen))
         k_0[:3, :3] = np.eye(3)
@@ -586,6 +614,11 @@ class SwitchController(BaseController):
         # cmd_string = str(w_next[0, 0]) + ',' + str(w_next[1, 0]) + ',' + str(w_next[2, 0]) + ',' + str(
         #     w_next[3, 0]) + ',' + str(w_next[4, 0]) + ',' + str(w_next[5, 0])
 
+        # np.set_printoptions(precision = 4)
+        # print('-----------')
+        # print(curStates.T)
+        # print(w_next.T)
+
         # rospy.loginfo("u_r (%.2f, %.2f, %.2f) u_h (%.2f, %.2f, %.2f)" % (u_r[0], u_r[1], u_r[2], u_h[0], u_h[1], u_h[2]))
 
         stateCmd = StateCmd()
@@ -596,7 +629,6 @@ class SwitchController(BaseController):
         stateCmd.vx = w_next[3, 0]
         stateCmd.vy = w_next[4, 0]
         stateCmd.vz = w_next[5, 0]
-
 
         return stateCmd
 
