@@ -240,6 +240,8 @@ class SharedController(BaseController):
         # update offset_N
         if offset > 2 * self.avrDiff:
             self.offset_N = minIdx - self.curIdx
+        # when the robot is ahead of robot desired position
+        # if decay step of N is precisely equal to 1 the robot will stay there
         if self.offset_N > 0:
             self.offset_N -= 1
         elif self.offset_N < 0:
