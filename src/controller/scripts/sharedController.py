@@ -234,9 +234,9 @@ class SharedController(BaseController):
 
         # update robot local desired traj
         offset = np.linalg.norm(curStates[0:3].reshape((3, 1)) - self.robotGlobalTraj[:3, self.curIdx + 1 + self.offset_N])
-        print('============')
-        print(minIdx)
-        print(offset)
+        # print('============')
+        # print(minIdx)
+        # print(offset)
         # update offset_N
         if offset > 2 * self.avrDiff:
             self.offset_N = minIdx - self.curIdx
@@ -250,11 +250,12 @@ class SharedController(BaseController):
         print('N:', self.offset_N)
 
         deviation = np.linalg.norm(curStates[0:3].reshape((3, 1)) - self.robotGlobalTraj[0:3, minIdx].reshape((3, 1)))
+        print('devi', deviation)
         if deviation > self.replanThreshold:
             self.ctr += 1
             if self.ctr > self.controlFrequency / self.replanFreq:
                 # do re-planning from " self.curIdx + 1 + self.offset_N "
-                # self.changeGlobalTraj(self.curIdx, self.humanCmd)
+                self.changeGlobalTraj(self.curIdx + 1 + self.offset_N, self.humanCmd)
                 self.ctr = 0
                 print('should re-plan')
                 pass
@@ -382,10 +383,10 @@ class SharedController(BaseController):
                 N = self.offset_N - i if self.offset_N > 0 else self.offset_N + i
                 self.robotLocalTraj[:, i] = self.robotGlobalTraj[0:3, self.curIdx + 1 + N]
         else:
-            for i in range(self.offset_N):
+            for i in range(abs(self.offset_N)):
                 N = self.offset_N - i if self.offset_N > 0 else self.offset_N + i
                 self.robotLocalTraj[:, i] = self.robotGlobalTraj[0:3, self.curIdx + 1 + N]
-            self.robotLocalTraj[:, self.offset_N:] = self.robotGlobalTraj[0:3, self.curIdx + 1:(self.curIdx + 1 + (self.localLen - self.offset_N))]
+            self.robotLocalTraj[:, abs(self.offset_N):] = self.robotGlobalTraj[0:3, self.curIdx + 1:(self.curIdx + 1 + (self.localLen - abs(self.offset_N)))]
 
     def updateHumanLocalTraj(self, humCmd, curStates):
         force = (humCmd[3] ** 2 + humCmd[4] ** 2 + humCmd[5] ** 2) ** 0.5
@@ -535,8 +536,8 @@ class SharedController(BaseController):
         endPoint = self.robotGlobalTraj[:3, currentTrajIndex + self.replanLen - 1].copy().tolist()
         # startVel = self.robotGlobalTraj[3:6, currentTrajIndex].copy().tolist()
         startVel = np.array([0, 0, 0]).tolist()
-        endVel = self.robotGlobalTraj[3:6, currentTrajIndex + self.replanLen - 1].copy().tolist()
-        # endVel = np.array([0, 0, 0]).tolist()
+        # endVel = self.robotGlobalTraj[3:6, currentTrajIndex + self.replanLen - 1].copy().tolist()
+        endVel = np.array([0, 0, 0]).tolist()
         startAcc = np.array([0, 0, 0]).tolist()
         endAcc = np.array([0, 0, 0]).tolist()
 
@@ -644,11 +645,11 @@ class SharedController(BaseController):
         #     self.local_human_traj.poses.append(self.Array2Pose(point))
         # self.vis_pubLocalTraj_h.publish(self.local_human_traj)
 
-        if self.humanIntent == 0:
-            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/local_r_%d.txt" % (idx), self.robotLocalTraj)
-            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/local_h_%d.txt" % (idx), self.humanLocalTraj)
-            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/curStates_%d.txt" % (idx), curStates)
-            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/lambda_%d.txt" % (idx), np.array([self.lambda_]))
+        # if self.humanIntent == 0:
+        #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/local_r_%d.txt" % (idx), self.robotLocalTraj)
+        #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/local_h_%d.txt" % (idx), self.humanLocalTraj)
+        #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/curStates_%d.txt" % (idx), curStates)
+        #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/lambda_%d.txt" % (idx), np.array([self.lambda_]))
             # np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/humanCmd_%d.txt" % (idx), np.array(humCmd[3:]))
 
         # rospy.loginfo("curState_%d: (%.2f, %.2f, %.2f)" % (
@@ -715,8 +716,6 @@ class SharedController(BaseController):
 
         if self.humanIntent == 0:
             w_next = self.Ad.dot(curStates) + self.Brd.dot(u_r) + self.Bhd.dot(u_h)
-            print('uh:', np.linalg.norm(u_h))
-            print('ur:', np.linalg.norm(u_r))
         else:
             w_next = self.Ad.dot(curStates) + self.Brd.dot(u_r) + self.Bhd.dot(humCmd[3:])
 

@@ -65,14 +65,12 @@ class MinimumLocalPlanner(BaseLocalPlanner):
         if self.optimizeT and optimize_need and self.refPath.shape[1] > 2:
             self.avr_arrangeTime()  # initialize ts
             self.optimizeTime(interation)
-            # update the time parameters
-            for i in range(self.dim):
-                self.polyTrajectories[i].arrangeTime(self.ts)
         else:
             self.avr_arrangeTime()
-            for i in range(self.dim):
-                self.polyTrajectories[i].arrangeTime(self.ts)
-
+        
+        for i in range(self.dim):
+            self.polyTrajectories[i].arrangeTime(self.ts)
+        
         for i in range(self.dim):
             coeffs, _ = self.computeSingleAxisTraj(self.refPath[i],
                                                    self.start_vel[i] * self.total_time,

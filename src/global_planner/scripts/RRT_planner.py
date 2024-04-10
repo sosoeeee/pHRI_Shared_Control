@@ -78,7 +78,7 @@ class RRTPlanner(BaseGlobalPlanner):
             self.humanForce = np.array([-float(posAndForce[3]), float(posAndForce[5]), -float(posAndForce[4])])
         
         # only use valid force
-        if np.linalg.norm(self.humanForce) > self.thresholdForce:
+        if np.linalg.norm(self.humanForce) > 0.001:
             self.humanForce_valid = self.humanForce
     
     def cartesianState_callBack(self, msg):
@@ -128,26 +128,27 @@ class RRTPlanner(BaseGlobalPlanner):
         self.obstaclesNormalization()
 
         # shrink search space
-        shrinkSpace = self.searchSpace.copy()
-        if np.linalg.norm(self.humanForce_valid) > 0.001:
-            rospy.loginfo("shrink search space")
-            # shrink x dimension
-            if self.humanForce_valid[0] > 0:
-                shrinkSpace[0][0] = self.currentStates[0] - self.deviation
-            elif self.humanForce_valid[0] < 0:
-                shrinkSpace[0][1] = self.currentStates[0] + self.deviation
-            # shrink y dimension
-            if self.humanForce_valid[1] > 0:
-                shrinkSpace[1][0] = self.currentStates[1] - self.deviation
-            elif self.humanForce_valid[1] < 0:
-                shrinkSpace[1][1] = self.currentStates[1] + self.deviation
+        # shrinkSpace = self.searchSpace.copy()
+        # if np.linalg.norm(self.humanForce_valid) > 0.001:
+        #     rospy.loginfo("shrink search space")
+        #     # shrink x dimension
+        #     if self.humanForce_valid[0] > 0:
+        #         shrinkSpace[0][0] = self.currentStates[0] - self.deviation
+        #     elif self.humanForce_valid[0] < 0:
+        #         shrinkSpace[0][1] = self.currentStates[0] + self.deviation
+        #     # shrink y dimension
+        #     if self.humanForce_valid[1] > 0:
+        #         shrinkSpace[1][0] = self.currentStates[1] - self.deviation
+        #     elif self.humanForce_valid[1] < 0:
+        #         shrinkSpace[1][1] = self.currentStates[1] + self.deviation
             
-            X = SearchSpace(shrinkSpace, self.normalizedObstacles)
-        else:
-            X = SearchSpace(self.searchSpace, self.normalizedObstacles)
-
-        # rrt = RRT(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb)
-        # self.path = np.array(rrt.rrt_search())
+        #     X = SearchSpace(shrinkSpace, self.normalizedObstacles)
+        # else:
+        #     X = SearchSpace(self.searchSpace, self.normalizedObstacles)
+        
+        X = SearchSpace(self.searchSpace, self.normalizedObstacles)
+        rrt = RRT(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb)
+        self.path = np.array(rrt.rrt_search())
 
         # more smoooooooooooth
         # rrt = RRTStarBidirectionalHeuristic(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb, 32)
@@ -156,8 +157,8 @@ class RRTPlanner(BaseGlobalPlanner):
         # rrt = RRTStarBidirectional(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb, 16)
         # self.path = np.array(rrt.rrt_star_bidirectional())
         
-        rrt = RRTStar(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb, 4)
-        self.path = np.array(rrt.rrt_star())
+        # rrt = RRTStar(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb, 4)
+        # self.path = np.array(rrt.rrt_star())
 
         if len(self.path.shape) != 0 and self.dimension == 2:
             if self.start[2] != self.goal[2]:
