@@ -13,7 +13,7 @@ from visualization_msgs.msg import MarkerArray
 from visualization_msgs.msg import Marker
 from geometry_msgs.msg import Point, PoseStamped
 # debug
-# from nav_msgs.msg import Path
+from nav_msgs.msg import Path
 import tf
 from local_planner.srv import *
 from controller.msg import VisualTraj
@@ -40,6 +40,7 @@ class SharedController(BaseController):
         # local desired trajectory
         self.localLen = None  # predicted local trajectory length used by MPC
         self.robotLocalTraj = None  # 3*localLen
+        self.offset_N = 0
         self.humanLocalTraj = None  # 3*localLen
 
         # global robot desired trajectory
@@ -47,6 +48,7 @@ class SharedController(BaseController):
         self.robotGlobalTraj = None
         self.robotGlobalTrajLen = None
         self.ori_robotGlobalTrajLen = None
+        self.avrDiff = None
         self.vis_pubRawTraj = rospy.Publisher('/controller/globalTraj', VisualTraj, queue_size=10)
         self.loadTraj = False
 
@@ -83,6 +85,7 @@ class SharedController(BaseController):
         self.replanFreq = None  # control frequency must be the multiples of re-plan frequency
         self.ctr = 0
         self.replanTimeOut = None
+        self.replanThreshold = None
 
         self.curIdx = -1
         self.pubRobotDesPos = rospy.Publisher('/controller/robotDesPos', Point, queue_size=1)
@@ -90,19 +93,21 @@ class SharedController(BaseController):
         self.loadParams()
 
         # debug
-        # self.vis_pubLocalTraj_h = rospy.Publisher('/controller/Traj_h', Path, queue_size=1)
-        # self.vis_pubLocalTraj_r = rospy.Publisher('/controller/Traj_r', Path, queue_size=1)
+        self.vis_pubLocalTraj_h = rospy.Publisher('/controller/Traj_h', Path, queue_size=1)
+        self.vis_pubLocalTraj_r = rospy.Publisher('/controller/Traj_r', Path, queue_size=1)
 
     def reInitial(self):
         # local desired trajectory
         self.robotLocalTraj = None  # 3*localLen
         self.humanLocalTraj = None  # 3*localLen
+        self.offset_N = 0
 
         # global robot desired trajectory
         self.computeGlobalTraj = False
         self.robotGlobalTraj = None
         self.robotGlobalTrajLen = None
         self.ori_robotGlobalTrajLen = None
+        self.avrDiff = None
 
         # predicted safety index
         self.lambda_ = None
@@ -132,7 +137,8 @@ class SharedController(BaseController):
         self.weight_r = rospy.get_param("/shared_controller/weight_r", 10)
         self.weight_tracking = rospy.get_param("/shared_controller/weight_tracking", 10000)
         self.loadTraj = rospy.get_param("/shared_controller/load_traj", False)
-        self.deviation = rospy.get_param("/shared_controller/deviation", 0.1)
+        # self.deviation = rospy.get_param("/shared_controller/deviation", 0.1)  # useless due to normalization of PSI
+        self.replanThreshold = rospy.get_param("/shared_controller/replan_threshold", 0.05)
 
         # state space model
         # Md_inv = np.linalg.inv(self.Md * np.eye(3))
@@ -209,30 +215,55 @@ class SharedController(BaseController):
         # copy sensor data
         humCmd = self.humanCmd.copy()
         curStates = self.currentStates.copy()  # ? strange, causing sensor data lag
+        self.curIdx += 1
 
         # calculate global traj
         if self.computeGlobalTraj is False:
             # compute global trajectory
             self.planGlobalTraj(curStates)
 
+        # need modify !!!
         if self.curIdx == self.robotGlobalTrajLen - self.replanLen:
             self.extendGlobalTraj()
 
         # print('---------')
         # s = time.time()
 
-        # update robot local desired traj
-        self.curIdx += 1
-
         # search for closest point in trajectory to current pos (search whole trajectory, also low efficiency)
         minIdx = np.argmin(np.linalg.norm(self.robotGlobalTraj[:3, :] - curStates[0:3].reshape((3, 1)), axis=0))
+
+        # update robot local desired traj
+        offset = np.linalg.norm(curStates[0:3].reshape((3, 1)) - self.robotGlobalTraj[:3, self.curIdx + 1 + self.offset_N], axis=0)
+        # update offset_N
+        if offset > 2 * self.avrDiff:
+            self.offset_N = minIdx - self.curIdx
+        if self.offset_N > 0:
+            self.offset_N -= 1
+        elif self.offset_N < 0:
+            self.offset_N += 1
+
+        print('N:', self.offset_N)
+
+        deviation = np.linalg.norm(curStates[0:3].reshape((3, 1)) - self.robotGlobalTraj[0:3, minIdx].reshape((3, 1)))
+        if deviation > self.replanThreshold:
+            self.ctr += 1
+            if self.ctr > self.controlFrequency / self.replanFreq:
+                # do re-planning from " self.curIdx + 1 + self.offset_N "
+                # self.changeGlobalTraj(self.curIdx, self.humanCmd)
+                self.ctr = 0
+                print('should re-plan')
+                pass
+        else:
+            self.ctr = 0
+
+        self.updateRobotLocalTraj()
 
         # e = time.time()
         # print('part1:' , e-s)
         # s = time.time()
 
         # update human local desired traj
-        self.updateHumanLocalTraj(self.curIdx, humCmd, curStates)
+        self.updateHumanLocalTraj(humCmd, curStates)
 
         # e = time.time()
         # print('part1-human:' , e-s)
@@ -250,18 +281,18 @@ class SharedController(BaseController):
         #     self.changeGlobalTraj(self.curIdx, humCmd)
 
         # trigger re-planning until interaction force exceed threshold and last for '1/self.replanFreq'
-        if self.humanIntent == 2:
-            self.ctr += 1
-            if self.ctr == self.controlFrequency / self.replanFreq:
-                self.changeGlobalTraj(self.curIdx, self.humanCmd)
-                self.ctr = 0
-        else:
-            self.ctr = 0
+        # if self.humanIntent == 2:
+        #     self.ctr += 1
+        #     if self.ctr == self.controlFrequency / self.replanFreq:
+        #         self.changeGlobalTraj(self.curIdx, self.humanCmd)
+        #         self.ctr = 0
+        # else:
+        #     self.ctr = 0
         
         robotDesPos = Point()
-        robotDesPos.x = self.robotGlobalTraj[0, self.curIdx]
-        robotDesPos.y = self.robotGlobalTraj[1, self.curIdx]
-        robotDesPos.z = self.robotGlobalTraj[2, self.curIdx]
+        robotDesPos.x = self.robotGlobalTraj[0, self.curIdx + 1 + self.offset_N]
+        robotDesPos.y = self.robotGlobalTraj[1, self.curIdx + 1 + self.offset_N]
+        robotDesPos.z = self.robotGlobalTraj[2, self.curIdx + 1 + self.offset_N]
         self.pubRobotDesPos.publish(robotDesPos)
 
         # e = time.time()
@@ -339,13 +370,26 @@ class SharedController(BaseController):
 
         return reshaped
 
-    def updateHumanLocalTraj(self, idx, humCmd, curStates):
+    def updateRobotLocalTraj(self):
+        self.robotLocalTraj = np.zeros((3, self.localLen))
+        if abs(self.offset_N) >= self.localLen:
+            for i in range(self.localLen):
+                N = self.offset_N - i if self.offset_N > 0 else self.offset_N + i
+                self.robotLocalTraj[:, i] = self.robotGlobalTraj[0:3, self.curIdx + 1 + N]
+        else:
+            for i in range(self.offset_N):
+                N = self.offset_N - i if self.offset_N > 0 else self.offset_N + i
+                self.robotLocalTraj[:, i] = self.robotGlobalTraj[0:3, self.curIdx + 1 + N]
+            self.robotLocalTraj[:, self.offset_N:] = self.robotGlobalTraj[0:3, self.curIdx + 1:(self.curIdx + 1 + (self.localLen - self.offset_N))]
+
+    def updateHumanLocalTraj(self, humCmd, curStates):
         force = (humCmd[3] ** 2 + humCmd[4] ** 2 + humCmd[5] ** 2) ** 0.5
         distance = (humCmd[0] ** 2 + humCmd[1] ** 2 + humCmd[2] ** 2) ** 0.5
 
         # By default, human desired traj is equal to robot desired traj
         # 这里之前发生了一个地址上的copy，对humanLocalTraj的修改同时修改了robotGlobalTraj
-        self.humanLocalTraj = self.robotGlobalTraj[:3, idx + 1:(idx + 1 + self.localLen)].copy()
+        # self.humanLocalTraj = self.robotGlobalTraj[:3, idx + 1:(idx + 1 + self.localLen)].copy()
+        self.humanLocalTraj = self.robotLocalTraj.copy()
 
         if distance > 0.01:
             next_state = self.Ad.dot(curStates) + self.Brd.dot(np.zeros((3, 1))) + self.Bhd.dot(
@@ -383,7 +427,7 @@ class SharedController(BaseController):
         obsPoint = self.obstaclesPoints[:, obsIdx].reshape((3, 1))  # nearest obstacle point to current state
         d_res = np.linalg.norm(nearestPoint - obsPoint)
 
-        print('dres', d_res)
+        # print('dres', d_res)
 
         # when obstacles are relative sparse, the value of 'd_res' may be really large 
         # it will lead to overflow error when calculating d_sat
@@ -397,7 +441,7 @@ class SharedController(BaseController):
         vectorToObstacle = obsPoint - nearestPoint
         cos_theta = np.dot(humanForce.T, vectorToObstacle) / (np.linalg.norm(humanForce) * np.linalg.norm(vectorToObstacle))
 
-        print('cosTheta: ', cos_theta)
+        # print('cosTheta: ', cos_theta)
 
         d = d * cos_theta if cos_theta > 0 else 0
 
@@ -416,7 +460,7 @@ class SharedController(BaseController):
 
         # self.lambda_ = 0.8
 
-        rospy.loginfo("lambda_: %.2f" % self.lambda_)
+        # rospy.loginfo("lambda_: %.2f" % self.lambda_)
 
     def pubGlobalTraj(self):
         visualTraj = VisualTraj()
@@ -437,6 +481,7 @@ class SharedController(BaseController):
             self.robotGlobalTrajLen = self.robotGlobalTraj.shape[1]
             self.ori_robotGlobalTrajLen = self.robotGlobalTrajLen
             self.computeGlobalTraj = True
+            self.avrDiff = np.mean(np.linalg.norm(np.diff(self.robotGlobalTraj[0:3, :], axis=1), axis=0))
 
             # visualization
             self.pubGlobalTraj()
@@ -464,6 +509,7 @@ class SharedController(BaseController):
             self.robotGlobalTrajLen = self.robotGlobalTraj.shape[1]
             self.ori_robotGlobalTrajLen = self.robotGlobalTrajLen
             self.computeGlobalTraj = True
+            self.avrDiff = np.mean(np.linalg.norm(np.diff(self.robotGlobalTraj[0:3, :], axis=1), axis=0))
 
             # visualization
             self.pubGlobalTraj()
@@ -568,21 +614,21 @@ class SharedController(BaseController):
             raise Exception("Error: Index out of the range of robotGlobalTraj")
 
         # 当人类有意图时，返回共享控制器计算的局部轨迹
-        self.robotLocalTraj = self.robotGlobalTraj[:3, idx + 1:(idx + 1 + self.localLen)]
+        # self.robotLocalTraj = self.robotGlobalTraj[:3, idx + 1:(idx + 1 + self.localLen)]
 
         X_dr = self.reshapeLocalTraj(self.robotLocalTraj)
         X_dh = self.reshapeLocalTraj(self.humanLocalTraj)
         X_d = np.vstack((X_dh, X_dr))
 
         # debug
-        # self.local_robot_traj = Path()
-        # self.local_robot_traj.header.frame_id = self.world_frame
-        # pathArray = self.robotLocalTraj.T
-        # self.local_robot_traj.poses = []
-        # for point in pathArray:
-        #     # rospy.loginfo("vis traj append point (%.2f, %.2f, %.2f)" % (point[0], point[1], point[2]))
-        #     self.local_robot_traj.poses.append(self.Array2Pose(point))
-        # self.vis_pubLocalTraj_r.publish(self.local_robot_traj)
+        self.local_robot_traj = Path()
+        self.local_robot_traj.header.frame_id = self.world_frame
+        pathArray = self.robotLocalTraj.T
+        self.local_robot_traj.poses = []
+        for point in pathArray:
+            # rospy.loginfo("vis traj append point (%.2f, %.2f, %.2f)" % (point[0], point[1], point[2]))
+            self.local_robot_traj.poses.append(self.Array2Pose(point))
+        self.vis_pubLocalTraj_r.publish(self.local_robot_traj)
 
         # self.local_human_traj = Path()
         # self.local_human_traj.header.frame_id = self.world_frame
@@ -750,15 +796,15 @@ class SharedController(BaseController):
         return cuboidPoints
 
     # debug
-    # def Array2Pose(self, point):
-    #     pose = PoseStamped()
-    #     pose.header.frame_id = self.world_frame
-    #     pose.header.stamp = rospy.Time.now()
-    #     pose.pose.position.x = point[0]
-    #     pose.pose.position.y = point[1]
-    #     pose.pose.position.z = point[2]
-    #     pose.pose.orientation.x = 0
-    #     pose.pose.orientation.y = 0
-    #     pose.pose.orientation.z = 0
-    #     pose.pose.orientation.w = 1
-    #     return pose
+    def Array2Pose(self, point):
+        pose = PoseStamped()
+        pose.header.frame_id = self.world_frame
+        pose.header.stamp = rospy.Time.now()
+        pose.pose.position.x = point[0]
+        pose.pose.position.y = point[1]
+        pose.pose.position.z = point[2]
+        pose.pose.orientation.x = 0
+        pose.pose.orientation.y = 0
+        pose.pose.orientation.z = 0
+        pose.pose.orientation.w = 1
+        return pose
