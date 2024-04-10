@@ -207,17 +207,10 @@ class SharedController(BaseController):
 
     def computeCmd(self):
         # copy sensor data
-
-        # print('---------')
-        # s = time.time()
-
         humCmd = self.humanCmd.copy()
         curStates = self.currentStates.copy()  # ? strange, causing sensor data lag
-        self.curIdx += 1
 
-        # search for closest point in trajectory to current pos (search whole trajectory, also low efficiency)
-        minIdx = np.argmin(np.linalg.norm(self.robotGlobalTraj[:3, :] - curStates[0:3].reshape((3, 1)), axis=0))
-
+        # calculate global traj
         if self.computeGlobalTraj is False:
             # compute global trajectory
             self.planGlobalTraj(curStates)
@@ -225,10 +218,20 @@ class SharedController(BaseController):
         if self.curIdx == self.robotGlobalTrajLen - self.replanLen:
             self.extendGlobalTraj()
 
+        # print('---------')
+        # s = time.time()
+
+        # update robot local desired traj
+        self.curIdx += 1
+
+        # search for closest point in trajectory to current pos (search whole trajectory, also low efficiency)
+        minIdx = np.argmin(np.linalg.norm(self.robotGlobalTraj[:3, :] - curStates[0:3].reshape((3, 1)), axis=0))
+
         # e = time.time()
         # print('part1:' , e-s)
         # s = time.time()
 
+        # update human local desired traj
         self.updateHumanLocalTraj(self.curIdx, humCmd, curStates)
 
         # e = time.time()
@@ -277,13 +280,13 @@ class SharedController(BaseController):
 
     def updateObstacles(self, obstacleSet):
         self.obstacles = obstacleSet.markers
-        self.obstaclesPoints = None
         # transform obstacles into world frame
         for obstacle in self.obstacles:
-            (trans, _) = self.tf_listener.lookupTransform(self.world_frame, obstacle.header.frame_id, rospy.Time(0))
-            obstacle.pose.position.x += trans[0]
-            obstacle.pose.position.y += trans[1]
-            obstacle.pose.position.z += trans[2]
+            ori_pose = PoseStamped()
+            ori_pose.pose = obstacle.pose
+            ori_pose.header = obstacle.header
+            tar_pose = self.tf_listener.transformPose(self.world_frame, ori_pose)
+            obstacle.pose = tar_pose.pose
 
         # generate discrete points to represent obstacles, really low efficiency :(
         sample_step = 0.03
@@ -364,54 +367,56 @@ class SharedController(BaseController):
         #                 idx, curStates[0, 0], curStates[1, 0], curStates[2, 0]))
 
     def computeLambda(self, curStates, humCmd, minIdx):
-        nearestPoint = self.robotGlobalTraj[0:3, minIdx].copy().reshape((3, 1))
+        # if no human interaction force, supposed safe
+        humanForce = humCmd[3:].reshape((3, 1))
+        if np.linalg.norm(humanForce) == 0:
+            self.lambda_ = 1
+            return 
 
         # need to optimaize in future works
         if self.obstaclesPoints is None:  # if obstacles is updating, use last lambda value
-            return self.lambda_
-        d_res_old = min(np.linalg.norm(nearestPoint - self.obstaclesPoints, axis=0))
+            return
 
-        distance = np.linalg.norm(nearestPoint - self.obstaclesPoints, axis=0)
+        nearestPoint = self.robotGlobalTraj[0:3, minIdx].copy().reshape((3, 1)) # nearest global traj point to current state
+        distance = np.linalg.norm(curStates[0:3].reshape((3, 1)) - self.obstaclesPoints, axis=0)
         obsIdx = np.argmin(distance)
-        d_res = distance[obsIdx]
-        obsPoint = self.obstaclesPoints[:, obsIdx].reshape((3, 1))
+        obsPoint = self.obstaclesPoints[:, obsIdx].reshape((3, 1))  # nearest obstacle point to current state
+        d_res = np.linalg.norm(nearestPoint - obsPoint)
 
-        print('debug: ', d_res_old - d_res)
+        print('dres', d_res)
 
         # when obstacles are relative sparse, the value of 'd_res' may be really large 
         # it will lead to overflow error when calculating d_sat
         # so we will set a limits to d_res
-        if d_res > self.deviation:
-            # d_res = self.deviation
-            self.lambda_ = 1   # safe
-        else:
-            d = np.linalg.norm(curStates[0:3].reshape((3, 1)) - nearestPoint)
-            humanForce = humCmd[3:].reshape((3, 1))
-            vectorToObstacle = obsPoint - nearestPoint
-            cos_theta = np.dot(humanForce, vectorToObstacle) / (np.linalg.norm(humanForce) * np.linalg.norm(vectorToObstacle))
+        # if d_res > self.deviation:
+        #     # d_res = self.deviation
+        #     self.lambda_ = 1   # safe
+        # else:
 
-            print('cosTheta: ', cos_theta)
+        d = np.linalg.norm(curStates[0:3].reshape((3, 1)) - nearestPoint)
+        vectorToObstacle = obsPoint - nearestPoint
+        cos_theta = np.dot(humanForce.T, vectorToObstacle) / (np.linalg.norm(humanForce) * np.linalg.norm(vectorToObstacle))
 
-            d = d * cos_theta if cos_theta > 0 else 0
+        print('cosTheta: ', cos_theta)
 
-            # normalization --- d_res to 0.1
-            norm_k = 0.1 / d_res
-            d_norm = d * norm_k
+        d = d * cos_theta if cos_theta > 0 else 0
 
-            d_max = min(d_norm, 0.1)
-            a1_ = 1  # 在不取max时，d趋向无穷的时候，d_sat趋向于 d_res * a1_
-            a2_ = 0.4  # a2_越大，lambda曲线开始时死区越长
-            mu_ = 100  # mu_越大，曲线越早达到极限值
-            eta_ = 0.1
-            d_sat = (a1_ * 0.1) / (1 + eta_ * math.exp(-mu_ * (d_max - a2_ * 0.1))) ** (1 / eta_)
+        # normalization --- d_res to 0.1
+        norm_k = 0.1 / d_res
+        d_norm = d * norm_k
 
-            self.lambda_ = np.sqrt(0.1 ** 2 - d_sat ** 2) / 0.1
+        d_max = min(d_norm, 0.1)
+        a1_ = 1  # 在不取max时，d趋向无穷的时候，d_sat趋向于 d_res * a1_
+        a2_ = 0.1  # a2_越大，lambda曲线开始时死区越长
+        mu_ = 200  # mu_越大，曲线越早达到极限值
+        eta_ = 0.1
+        d_sat = (a1_ * 0.1) / (1 + eta_ * math.exp(-mu_ * (d_max - a2_ * 0.1))) ** (1 / eta_)
+
+        self.lambda_ = np.sqrt(0.1 ** 2 - d_sat ** 2) / 0.1
 
         # self.lambda_ = 0.8
 
         rospy.loginfo("lambda_: %.2f" % self.lambda_)
-
-        return self.lambda_
 
     def pubGlobalTraj(self):
         visualTraj = VisualTraj()
@@ -649,7 +654,7 @@ class SharedController(BaseController):
         u_h = np.dot(k_0, k_h.dot(wx))
 
         # limit max ||u_r|| and ||u_h||
-        limit = 8.5
+        limit = 12.5
         if np.linalg.norm(u_r) > limit:
             u_r = u_r / np.linalg.norm(u_r) * limit
         if np.linalg.norm(u_h) > limit:

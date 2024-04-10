@@ -36,14 +36,14 @@ env_publisher:
     - {id: 1, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, cor_x: 0.018, cor_y: 0.065, cor_z: -0.055} 
     - {id: 2, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, ref: 0, offset_x: 0, offset_y: -0.15, offset_z: 0}
     - {id: 3, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, ref: 0, offset_x: 0, offset_y: -0.3, offset_z: 0}
-    - {id: 4, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, ref: 1, offset_x: 0, offset_y: -0.1, offset_z: 0}
+    - {id: 4, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, ref: 1, offset_x: 0, offset_y: -0.15, offset_z: 0}
 
 
 ## Global planner params
 global_planner:
   publish_rate: 10
   publish_topic: "global_plan"
-  obstacles_dilate: 0.02
+  obstacles_dilate: 0.015 
   smooth_step: 0.02  # actual distance between path points next to each other
   
 RRT_planner:
@@ -76,13 +76,13 @@ controller:
   control_frequency: 10 # must slower than the frequency of sampling the sensor data
 
 impedance_controller:
-  M: 5
+  M: 2
   C: 75
 
 shared_controller:
-  M: 5
+  M: 2
   C: 75
-  threshold_force: 2.7
+  threshold_force: 3.3
   local_len: 50
   replan_len: 350
   replan_len_num: 20
