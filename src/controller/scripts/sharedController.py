@@ -212,8 +212,11 @@ class SharedController(BaseController):
         # s = time.time()
 
         humCmd = self.humanCmd.copy()
-        curStates = self.currentStates.copy() ## ? strange, causing sensor data lag
+        curStates = self.currentStates.copy()  # ? strange, causing sensor data lag
         self.curIdx += 1
+
+        # search for closest point in trajectory to current pos (search whole trajectory, also low efficiency)
+        minIdx = np.argmin(np.linalg.norm(self.robotGlobalTraj[:3, :] - curStates[0:3].reshape((3, 1)), axis=0))
 
         if self.computeGlobalTraj is False:
             # compute global trajectory
@@ -232,7 +235,7 @@ class SharedController(BaseController):
         # print('part1-human:' , e-s)
         # s = time.time()
 
-        self.computeLambda(curStates)
+        self.computeLambda(curStates, humCmd, minIdx)
 
         # e = time.time()
         # print('part3-lambda:' , e-s)
@@ -360,42 +363,53 @@ class SharedController(BaseController):
         # rospy.loginfo("human_%d: (%.2f, %.2f, %.2f)" % (
         #                 idx, curStates[0, 0], curStates[1, 0], curStates[2, 0]))
 
-    def computeLambda(self, curStates):
-        endEffectorPos = curStates[0:3].reshape((3, 1))
-
-        # search for closest point in trajectory to current pos (search whole trajectory, also low efficiency)
-        index = np.argmin(np.linalg.norm(self.robotGlobalTraj[:3, :] - endEffectorPos, axis=0))
-        desiredPos = self.robotGlobalTraj[0:3, index].copy().reshape((3, 1))
+    def computeLambda(self, curStates, humCmd, minIdx):
+        nearestPoint = self.robotGlobalTraj[0:3, minIdx].copy().reshape((3, 1))
 
         # need to optimaize in future works
         if self.obstaclesPoints is None:  # if obstacles is updating, use last lambda value
             return self.lambda_
-        d_res = min(np.linalg.norm(desiredPos - self.obstaclesPoints, axis=0))
+        d_res_old = min(np.linalg.norm(nearestPoint - self.obstaclesPoints, axis=0))
+
+        distance = np.linalg.norm(nearestPoint - self.obstaclesPoints, axis=0)
+        obsIdx = np.argmin(distance)
+        d_res = distance[obsIdx]
+        obsPoint = self.obstaclesPoints[:, obsIdx].reshape((3, 1))
+
+        print('debug: ', d_res_old - d_res)
 
         # when obstacles are relative sparse, the value of 'd_res' may be really large 
         # it will lead to overflow error when calculating d_sat
         # so we will set a limits to d_res
-        # limits = 0.2
         if d_res > self.deviation:
-            d_res = self.deviation
-        d = np.linalg.norm(endEffectorPos - desiredPos)
+            # d_res = self.deviation
+            self.lambda_ = 1   # safe
+        else:
+            d = np.linalg.norm(curStates[0:3].reshape((3, 1)) - nearestPoint)
+            humanForce = humCmd[3:].reshape((3, 1))
+            vectorToObstacle = obsPoint - nearestPoint
+            cos_theta = np.dot(humanForce, vectorToObstacle) / (np.linalg.norm(humanForce) * np.linalg.norm(vectorToObstacle))
 
-        # normalization --- d_res to 0.1
-        norm_k = 0.1 / d_res
-        d_norm = d * norm_k
+            print('cosTheta: ', cos_theta)
 
-        d_max = min(d_norm, 0.1)
-        a1_ = 1  # 在不取max时，d趋向无穷的时候，d_sat趋向于 d_res * a1_
-        a2_ = 0.4  # a2_越大，lambda曲线开始时死区越长
-        mu_ = 100  # mu_越大，曲线越早达到极限值
-        eta_ = 0.1
-        d_sat = (a1_ * 0.1) / (1 + eta_ * math.exp(-mu_ * (d_max - a2_ * 0.1))) ** (1 / eta_)
+            d = d * cos_theta if cos_theta > 0 else 0
 
-        self.lambda_ = np.sqrt(0.1 ** 2 - d_sat ** 2) / 0.1
+            # normalization --- d_res to 0.1
+            norm_k = 0.1 / d_res
+            d_norm = d * norm_k
+
+            d_max = min(d_norm, 0.1)
+            a1_ = 1  # 在不取max时，d趋向无穷的时候，d_sat趋向于 d_res * a1_
+            a2_ = 0.4  # a2_越大，lambda曲线开始时死区越长
+            mu_ = 100  # mu_越大，曲线越早达到极限值
+            eta_ = 0.1
+            d_sat = (a1_ * 0.1) / (1 + eta_ * math.exp(-mu_ * (d_max - a2_ * 0.1))) ** (1 / eta_)
+
+            self.lambda_ = np.sqrt(0.1 ** 2 - d_sat ** 2) / 0.1
 
         # self.lambda_ = 0.8
 
-        # rospy.loginfo("lambda_: %.2f" % self.lambda_)
+        rospy.loginfo("lambda_: %.2f" % self.lambda_)
 
         return self.lambda_
 
