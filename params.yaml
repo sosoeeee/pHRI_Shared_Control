@@ -30,13 +30,14 @@ env_publisher:
     - "/ref2_2"
     - "/ref3_1"
     - "/ref3_2"
+  static: true
 
 
   VICON_transform: {x: 2.36, y: -0.47, z: -0.54, qx: 0, qy: 0, qz: -0.707, qw: 0.707} # VICON frame according to world frame
   obstacle_args:
-    - {id: 0, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, cor_x: -0.012, cor_y: 0.062, cor_z: -0.075}  
-    - {id: 1, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, cor_x: 0.018, cor_y: 0.065, cor_z: -0.055} 
-    - {id: 2, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, cor_x: 0.01, cor_y: 0.07, cor_z: -0.072} 
+    - {id: 0, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, cor_x: -0.012, cor_y: 0.062, cor_z: -0.075, x: -0.1785, y: -1.6509, z: 0.7231}  
+    - {id: 1, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, cor_x: 0.018, cor_y: 0.065, cor_z: -0.055, x: -0.1496, y: -1.9582, z: 0.7229}  
+    - {id: 2, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, cor_x: 0.01, cor_y: 0.07, cor_z: -0.072, x: -0.3478, y: -1.8496, z: 0.7139}  
     - {id: 3, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, ref: 0, offset_x: 0, offset_y: 0, offset_z: -0.1}
     - {id: 4, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, ref: 0, offset_x: -0.1, offset_y: 0, offset_z: -0.1}
     - {id: 5, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, ref: 1, offset_x: 0, offset_y: 0, offset_z: -0.1}

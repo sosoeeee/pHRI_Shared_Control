@@ -24,7 +24,7 @@ class EnvPublisher:
         # subscribe to the VICON data
         if not self.static:
             for topic, args in zip(self.VICON_topics, self.obstacle_args):
-                rospy.Subscriber(topic, TransformStamped, self.updateObstacles, args, queue_size=1)
+                rospy.Subscriber(topic, TransformStamped, self.updateObstacles, args, queue_size=3)
 
         # publish the transform between the map and the VICON frame
         self.br = tf.TransformBroadcaster()
@@ -77,8 +77,6 @@ class EnvPublisher:
             if self.static:
                 if 'x' in self.obstacle_args[i]:
                     marker.pose.position.x = self.obstacle_args[i]['x']
-                    print('----------')
-                    print(marker.pose.position.x)
                 if 'y' in self.obstacle_args[i]:
                     marker.pose.position.y = self.obstacle_args[i]['y']
                 if 'z' in self.obstacle_args[i]:
@@ -108,11 +106,10 @@ class EnvPublisher:
         self.obstacles.markers[i].pose.orientation.z = 0
         self.obstacles.markers[i].pose.orientation.w = 1
 
-        # print('----------')
-        # print(i)
-        # print('x:', data.transform.translation.x + args['cor_x'])
-        # print('y:', data.transform.translation.y + args['cor_y'])
-        # print('z:', data.transform.translation.z + args['cor_z'])
+        print('----------')
+        print('x%d:' % i, data.transform.translation.x + args['cor_x'])
+        print('y%d:' % i, data.transform.translation.y + args['cor_y'])
+        print('z%d:' % i, data.transform.translation.z + args['cor_z'])
 
         # update obs refered to it
         for obs in self.obstacle_args:
