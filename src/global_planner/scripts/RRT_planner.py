@@ -114,7 +114,7 @@ class RRTPlanner(BaseGlobalPlanner):
 
     def planPath(self):
         # RRT算法
-        startTime = time.time()
+        # startTime = time.time()
 
         # update start and goal
         if self.dimension == 3:
@@ -144,7 +144,7 @@ class RRTPlanner(BaseGlobalPlanner):
             
         #     X = SearchSpace(shrinkSpace, self.normalizedObstacles)
         # else:
-        #     X = SearchSpace(self.searchSpace, self.normalizedObstacles)
+        X = SearchSpace(self.searchSpace, self.normalizedObstacles)
 
         rrt = RRT(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb)
         self.path = np.array(rrt.rrt_search())
@@ -164,5 +164,5 @@ class RRTPlanner(BaseGlobalPlanner):
                 rospy.logerr("RRT search dimension is two but start cooridinate isn't equal to end cooridinate in Z axis")
             self.path = np.hstack((self.path, np.ones((self.path.shape[0], 1)) * self.start[2]))
 
-        endTime = time.time()
+        # endTime = time.time()
         # rospy.loginfo("RTT finished: " + str(endTime - startTime))
