@@ -165,7 +165,7 @@ Visualization Manager:
       Marker Topic: /task/visual/humanForce
       Name: Marker
       Namespaces:
-        task: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -181,7 +181,7 @@ Visualization Manager:
       Marker Topic: /task/visual/goal
       Name: Marker
       Namespaces:
-        task: true
+        {}
       Queue Size: 100
       Value: true
     - Alpha: 1
@@ -266,7 +266,7 @@ Visualization Manager:
       Marker Topic: /task/visual/followPoint
       Name: Marker
       Namespaces:
-        task: true
+        {}
       Queue Size: 100
       Value: true
     - Alpha: 1
@@ -320,26 +320,20 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Class: rviz/Orbit
-      Distance: 0.6551263928413391
+      Angle: -0.005000009201467037
+      Class: rviz/TopDownOrtho
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
-      Field of View: 0.7853981852531433
-      Focal Point:
-        X: -1.7994577884674072
-        Y: 0.27739688754081726
-        Z: 0.6117637753486633
-      Focal Shape Fixed Size: true
-      Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.3097965717315674
+      Scale: 1307.6260986328125
       Target Frame: VICON
-      Yaw: 4.711611270904541
+      X: -1.8025953769683838
+      Y: 0.23370347917079926
     Saved: ~
 Window Geometry:
   Displays:
