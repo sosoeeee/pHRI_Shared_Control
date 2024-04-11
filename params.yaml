@@ -45,7 +45,7 @@ global_planner:
   publish_topic: "global_plan"
   obstacles_dilate: 0.02 
   smooth_step: 0.02  # distance between path points after smooth by averaging
-  insert_step: 0.005
+  insert_step: 0.01
   
 RRT_planner:
     max_iter: 10000
@@ -77,19 +77,19 @@ controller:
   control_frequency: 10 # must slower than the frequency of sampling the sensor data
 
 impedance_controller:
-  M: 2
-  C: 75
+  M: 1
+  C: 40
 
 shared_controller:
-  M: 2
-  C: 75
+  M: 1
+  C: 40
   threshold_force: 3.3
   local_len: 50
-  replan_len: 400
+  replan_len: 380
   replan_len_num: 50
-  replan_freq: 5
+  replan_freq: 2
   replan_timeout: 0.5
-  replan_threshold: 0.03
+  # replan_threshold: 0.03
   alpha: 100
   weight_r: 1       # 追踪机器人期望轨迹的误差权重为 weight_r*weight_tracking
   weight_h: 10
