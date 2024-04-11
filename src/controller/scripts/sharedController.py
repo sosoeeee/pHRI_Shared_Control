@@ -206,7 +206,8 @@ class SharedController(BaseController):
 
     def computeCmd(self):
         # copy sensor data
-        # humCmd = self.humanCmd.copy()
+
+        humCmd = self.humanCmd.copy()
         curStates = self.currentStates.copy() ## ? strange, causing sensor data lag
         self.curIdx += 1
 
@@ -217,13 +218,9 @@ class SharedController(BaseController):
         if self.curIdx == self.robotGlobalTrajLen - self.replanLen:
             self.extendGlobalTraj()
 
-        self.updateHumanLocalTraj(self.curIdx, self.humanCmd, curStates)
-        self.computeLambda(curStates)
+        self.updateHumanLocalTraj(self.curIdx, humCmd, curStates)
 
-        # self.ctr += 1
-        # if self.ctr > self.controlFrequency / self.replanFreq and self.humanIntent == 2:
-        #     self.ctr = 0
-        #     self.changeGlobalTraj(self.curIdx, humCmd)
+        self.computeLambda(curStates)
 
         # trigger re-planning until interaction force exceed threshold and last for '1/self.replanFreq'
         if self.humanIntent == 2:
@@ -233,16 +230,16 @@ class SharedController(BaseController):
                 self.ctr = 0
         else:
             self.ctr = 0
-
+        
         robotDesPos = Point()
         robotDesPos.x = self.robotGlobalTraj[0, self.curIdx]
         robotDesPos.y = self.robotGlobalTraj[1, self.curIdx]
         robotDesPos.z = self.robotGlobalTraj[2, self.curIdx]
         self.pubRobotDesPos.publish(robotDesPos)
 
-        # rospy.loginfo("idx: %d" % self.curIdx)
+        cmd = self.computeLocalTraj(self.curIdx, humCmd, curStates)
 
-        return self.computeLocalTraj(self.curIdx, self.humanCmd, curStates)
+        return cmd
 
     def updateObstacles(self, obstacleSet):
         self.obstacles = obstacleSet.markers
