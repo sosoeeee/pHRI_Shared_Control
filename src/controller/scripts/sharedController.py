@@ -386,7 +386,7 @@ class SharedController(BaseController):
 
         d_max = min(d_norm, 0.1)
         a1_ = 1  # 在不取max时，d趋向无穷的时候，d_sat趋向于 d_res * a1_
-        a2_ = 0.4  # a2_越大，lambda曲线开始时死区越长
+        a2_ = 0.3  # a2_越大，lambda曲线开始时死区越长
         mu_ = 100  # mu_越大，曲线越早达到极限值
         eta_ = 0.1
         d_sat = (a1_ * 0.1) / (1 + eta_ * math.exp(-mu_ * (d_max - a2_ * 0.1))) ** (1 / eta_)
