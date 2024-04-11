@@ -330,24 +330,23 @@ class SharedController(BaseController):
         #                 idx, curStates[0, 0], curStates[1, 0], curStates[2, 0]))
 
     def computeLambda(self, curStates):
-        endEffectorPos = curStates[0:3].reshape((3, 1))
-
-        # search for closest point in trajectory to current pos (search whole trajectory, also low efficiency)
-        index = np.argmin(np.linalg.norm(self.robotGlobalTraj[:3, :] - endEffectorPos, axis=0))
-        desiredPos = self.robotGlobalTraj[0:3, index].copy().reshape((3, 1))
-
         # need to optimaize in future works
         if self.obstaclesPoints is None:  # if obstacles is updating, use last lambda value
             return self.lambda_
-        d_res = min(np.linalg.norm(desiredPos - self.obstaclesPoints, axis=0))
 
-        # when obstacles are relative sparse, the value of 'd_res' may be really large 
-        # it will lead to overflow error when calculating d_sat
-        # so we will set a limits to d_res
+        # d_res = min(np.linalg.norm(nearestPoint - self.obstaclesPoints, axis=0))
+
+        endEffectorPoint = curStates[0:3].reshape((3, 1))
+
+        # select robot desire point rather than nearest point
+        d_res = min(np.linalg.norm(self.robotGlobalTraj[0:3, self.curIdx+1].reshape((3, 1)) - self.obstaclesPoints, axis=0))
+
         # limits = 0.2
         if d_res > self.deviation:
             d_res = self.deviation
-        d = np.linalg.norm(endEffectorPos - desiredPos)
+
+        # robot desired version
+        d = np.linalg.norm(endEffectorPoint - self.robotGlobalTraj[0:3, self.curIdx+1].reshape((3, 1)))
 
         # normalization --- d_res to 0.1
         norm_k = 0.1 / d_res
@@ -355,8 +354,8 @@ class SharedController(BaseController):
 
         d_max = min(d_norm, 0.1)
         a1_ = 1  # 在不取max时，d趋向无穷的时候，d_sat趋向于 d_res * a1_
-        a2_ = 0.4  # a2_越大，lambda曲线开始时死区越长
-        mu_ = 100  # mu_越大，曲线越早达到极限值
+        a2_ = 0.2  # a2_越大，lambda曲线开始时死区越长
+        mu_ = 200  # mu_越大，曲线越早达到极限值
         eta_ = 0.1
         d_sat = (a1_ * 0.1) / (1 + eta_ * math.exp(-mu_ * (d_max - a2_ * 0.1))) ** (1 / eta_)
 
@@ -366,7 +365,7 @@ class SharedController(BaseController):
 
         # rospy.loginfo("lambda_: %.2f" % self.lambda_)
 
-        return self.lambda_
+        # return self.lambda_
 
     def pubGlobalTraj(self):
         visualTraj = VisualTraj()
