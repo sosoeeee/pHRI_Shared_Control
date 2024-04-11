@@ -55,7 +55,7 @@ RRT_planner:
     check_goal_prob: 0.01
     search_space:
       x:
-        - 0.37
+        - 0.40
         - 0.8
       y:
         - -0.45
