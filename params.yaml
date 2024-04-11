@@ -45,6 +45,7 @@ global_planner:
   publish_topic: "global_plan"
   obstacles_dilate: 0.02
   smooth_step: 0.02  # actual distance between path points next to each other
+  insert_step: 0.01
   
 RRT_planner:
     max_iter: 2000
@@ -86,7 +87,7 @@ shared_controller:
   local_len: 50
   replan_len: 350
   replan_len_num: 20
-  replan_freq: 1
+  replan_freq: 2
   replan_timeout: 0.5
   alpha: 100
   weight_r: 1       # 追踪机器人期望轨迹的误差权重为 weight_r*weight_tracking
