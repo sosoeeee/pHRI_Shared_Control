@@ -45,17 +45,17 @@ class MinimumLocalPlanner(BaseLocalPlanner):
         # In order to ignore unnessary optimization, add "optimize_need" variable
         # whether to optimizing time params depends on the std of distance between two next ref 
         # not depends on the number of ref points
-        interation = 8
+        interation = 5
         optimize_need = True
-        dis = np.linalg.norm(np.diff(self.refPath, axis=1), axis=0)
-        std = np.std(dis)
-        if std < 0.2:
-            optimize_need = False
-        else:
-            optimize_need = True
-            if std > 0.5:
-                interation = 10
-        rospy.loginfo("std: %.5f" % std)
+        # dis = np.linalg.norm(np.diff(self.refPath, axis=1), axis=0)
+        # std = np.std(dis)
+        # if std < 0.2:
+        #     optimize_need = False
+        # else:
+        #     optimize_need = True
+        #     if std > 0.5:
+        #         interation = 10
+        # rospy.loginfo("std: %.5f" % std)
 
         # debug
         # if self.refPath.shape[1] > 30:

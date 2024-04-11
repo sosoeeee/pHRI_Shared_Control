@@ -17,6 +17,7 @@ from geometry_msgs.msg import Point, PoseStamped
 import tf
 from local_planner.srv import *
 from controller.msg import VisualTraj
+from controller.msg import StateCmd
 
 import numpy as np
 import time
@@ -206,7 +207,6 @@ class SharedController(BaseController):
 
     def computeCmd(self):
         # copy sensor data
-
         humCmd = self.humanCmd.copy()
         curStates = self.currentStates.copy() ## ? strange, causing sensor data lag
         self.curIdx += 1
@@ -236,6 +236,8 @@ class SharedController(BaseController):
         robotDesPos.y = self.robotGlobalTraj[1, self.curIdx]
         robotDesPos.z = self.robotGlobalTraj[2, self.curIdx]
         self.pubRobotDesPos.publish(robotDesPos)
+
+        # rospy.loginfo("idx: %d" % self.curIdx)
 
         cmd = self.computeLocalTraj(self.curIdx, humCmd, curStates)
 
@@ -330,6 +332,8 @@ class SharedController(BaseController):
         #                 idx, curStates[0, 0], curStates[1, 0], curStates[2, 0]))
 
     def computeLambda(self, curStates):
+
+
         # need to optimaize in future works
         if self.obstaclesPoints is None:  # if obstacles is updating, use last lambda value
             return self.lambda_
@@ -338,12 +342,26 @@ class SharedController(BaseController):
 
         endEffectorPoint = curStates[0:3].reshape((3, 1))
 
+        # search for closest point in trajectory to current pos (search whole trajectory, also low efficiency)
+        # nearestIndex = np.argmin(np.linalg.norm(self.robotGlobalTraj[:3, :] - endEffectorPoint, axis=0))
+        # nearestPoint = self.robotGlobalTraj[0:3, nearestIndex].copy().reshape((3, 1))
+        # distance = np.linalg.norm(curStates[0:3].reshape((3, 1)) - self.obstaclesPoints, axis=0)
+        # obsIdx = np.argmin(distance)
+        # obsPoint = self.obstaclesPoints[:, obsIdx].reshape((3, 1))  # nearest obstacle point to current state
+        # d_res = np.linalg.norm(nearestPoint - obsPoint)
+
         # select robot desire point rather than nearest point
         d_res = min(np.linalg.norm(self.robotGlobalTraj[0:3, self.curIdx+1].reshape((3, 1)) - self.obstaclesPoints, axis=0))
 
+        # when obstacles are relative sparse, the value of 'd_res' may be really large 
+        # it will lead to overflow error when calculating d_sat
+        # so we will set a limits to d_res
         # limits = 0.2
         if d_res > self.deviation:
             d_res = self.deviation
+
+        # nearest version
+        # d = np.linalg.norm(endEffectorPoint - nearestPoint)
 
         # robot desired version
         d = np.linalg.norm(endEffectorPoint - self.robotGlobalTraj[0:3, self.curIdx+1].reshape((3, 1)))
@@ -363,7 +381,7 @@ class SharedController(BaseController):
 
         # self.lambda_ = 0.8
 
-        # rospy.loginfo("lambda_: %.2f" % self.lambda_)
+        rospy.loginfo("lambda_: %.2f" % self.lambda_)
 
         # return self.lambda_
 
@@ -555,27 +573,31 @@ class SharedController(BaseController):
         # 将Q_h和Q_r对角拼接
         Q = np.vstack((np.hstack((self.Qh * self.lambda_, np.zeros((3 * self.localLen, 3 * self.localLen)))),
                        np.hstack((np.zeros((3 * self.localLen, 3 * self.localLen)), self.Qr * (1 - self.lambda_)))))
-        SQ = np.sqrt(Q)
-        SP = np.eye(3 * self.localLen)
+        # SQ = np.sqrt(Q)
+        # SP = np.eye(3 * self.localLen)
         wx = np.vstack((curStates, X_d))
+
+        # s = time.time()
 
         # tmp1_L_h = np.linalg.pinv(np.vstack((SQ.dot(self.theta_hg), np.sqrt(self.lambda_) * SP)))
         # tmp1_L_h = np.linalg.pinv(np.vstack((SQ.dot(self.theta_hg), np.sqrt(1 - self.lambda_) * SP)))
         # tmp2_L_h = np.vstack((SQ, np.zeros((3 * self.localLen, 6 * self.localLen))))
         # L_h = tmp1_L_h.dot(tmp2_L_h)
 
-        L_h = np.linalg.inv(
-            np.dot(self.theta_hg.T, Q).dot(self.theta_hg) + (1 - self.lambda_) * np.eye(3 * self.localLen)).dot(
-            self.theta_hg.T).dot(Q)
+        L_h_tmp = np.linalg.inv(np.dot(self.theta_hg.T, Q).dot(self.theta_hg) + (1 - self.lambda_) * np.eye(3 * self.localLen))
+        L_h = L_h_tmp.dot(self.theta_hg.T).dot(Q)
 
         # tmp1_L_r = np.linalg.pinv(np.vstack((SQ.dot(self.theta_rg), np.sqrt(1 - self.lambda_) * SP)))
         # tmp1_L_r = np.linalg.pinv(np.vstack((SQ.dot(self.theta_rg), np.sqrt(self.lambda_) * SP)))
         # tmp2_L_r = np.vstack((SQ, np.zeros((3 * self.localLen, 6 * self.localLen))))
         # L_r = tmp1_L_r.dot(tmp2_L_r)
 
-        L_r = np.linalg.inv(
-            np.dot(self.theta_rg.T, Q).dot(self.theta_rg) + self.lambda_ * np.eye(3 * self.localLen)).dot(
-            self.theta_rg.T).dot(Q)
+        L_r_tmp = np.linalg.inv(np.dot(self.theta_rg.T, Q).dot(self.theta_rg) + self.lambda_ * np.eye(3 * self.localLen))
+        L_r = L_r_tmp.dot(self.theta_rg.T).dot(Q)
+
+        # e = time.time()
+        # print('part5-1-inv:' , e-s)
+        # s = time.time()
 
         H_h = np.hstack((-L_h.dot(self.phi_g), L_h))
         H_r = np.hstack((-L_r.dot(self.phi_g), L_r))
@@ -588,6 +610,10 @@ class SharedController(BaseController):
         k_h2 = H_h - np.dot(L_h.dot(self.theta_rg), H_r)
         k_h = np.linalg.inv(k_h1).dot(k_h2)
 
+        # e = time.time()
+        # print('part5-2-inv:' , e-s)
+        # s = time.time()
+
         k_0 = np.zeros((3, 3 * self.localLen))
         k_0[:3, :3] = np.eye(3)
 
@@ -595,7 +621,7 @@ class SharedController(BaseController):
         u_h = np.dot(k_0, k_h.dot(wx))
 
         # limit max ||u_r|| and ||u_h||
-        limit = 8.5
+        limit = 12.5
         if np.linalg.norm(u_r) > limit:
             u_r = u_r / np.linalg.norm(u_r) * limit
         if np.linalg.norm(u_h) > limit:
@@ -609,8 +635,8 @@ class SharedController(BaseController):
             w_next = self.Ad.dot(curStates) + self.Brd.dot(u_r) + self.Bhd.dot(humCmd[3:])
 
         # w_next = self.Ad.dot(curStates) + self.Brd.dot(u_r) + self.Bhd.dot(u_h)
-        cmd_string = str(w_next[0, 0]) + ',' + str(w_next[1, 0]) + ',' + str(w_next[2, 0]) + ',' + str(
-            w_next[3, 0]) + ',' + str(w_next[4, 0]) + ',' + str(w_next[5, 0])
+        # cmd_string = str(w_next[0, 0]) + ',' + str(w_next[1, 0]) + ',' + str(w_next[2, 0]) + ',' + str(
+        #     w_next[3, 0]) + ',' + str(w_next[4, 0]) + ',' + str(w_next[5, 0])
 
         # np.set_printoptions(precision = 4)
         # print('-----------')
@@ -619,7 +645,18 @@ class SharedController(BaseController):
 
         # rospy.loginfo("u_r (%.2f, %.2f, %.2f) u_h (%.2f, %.2f, %.2f)" % (u_r[0], u_r[1], u_r[2], u_h[0], u_h[1], u_h[2]))
 
-        return cmd_string
+        stateCmd = StateCmd()
+        stateCmd.stamp = rospy.Time.now()
+        stateCmd.x = w_next[0, 0]
+        stateCmd.y = w_next[1, 0]
+        stateCmd.z = w_next[2, 0]
+        stateCmd.vx = w_next[3, 0]
+        stateCmd.vy = w_next[4, 0]
+        stateCmd.vz = w_next[5, 0]
+
+        return stateCmd
+
+        # return cmd_string
 
     # generate discrete points on a sphere
     def generateSphericalPoints(self, center, radius, distanceStep):

@@ -16,13 +16,15 @@ class EnvPublisher:
         self.publish_rate = rospy.get_param('/env_publisher/publish_rate', 10)
         self.publish_topic = rospy.get_param('env_publisher/publish_topic', 'env_obstacles')
         self.world_frame = rospy.get_param('/world_frame', 'map')
+        self.static = rospy.get_param('/env_publisher/static', False)
 
         if len(self.VICON_topics) != len(self.obstacle_args):
             raise Exception('Number of VICON topics and obstacle arguments do not match')
 
         # subscribe to the VICON data
-        for topic, args in zip(self.VICON_topics, self.obstacle_args):
-            rospy.Subscriber(topic, TransformStamped, self.updateObstacles, args, queue_size=1)
+        if not self.static:
+            for topic, args in zip(self.VICON_topics, self.obstacle_args):
+                rospy.Subscriber(topic, TransformStamped, self.updateObstacles, args, queue_size=1)
 
         # publish the transform between the map and the VICON frame
         self.br = tf.TransformBroadcaster()
@@ -61,13 +63,6 @@ class EnvPublisher:
                 marker.scale.y = self.obstacle_args[i]['size_y']
                 marker.scale.z = self.obstacle_args[i]['size_z']
 
-            # static scenario
-            if 'x' in self.obstacle_args[i]:
-                marker.pose.position.x = self.obstacle_args[i]['x']
-            if 'y' in self.obstacle_args[i]:
-                marker.pose.position.y = self.obstacle_args[i]['y']
-            if 'z' in self.obstacle_args[i]:
-                marker.pose.position.z = self.obstacle_args[i]['z']
             marker.pose.orientation.x = 0
             marker.pose.orientation.y = 0
             marker.pose.orientation.z = 0
@@ -77,6 +72,26 @@ class EnvPublisher:
             marker.color.g = 0
             marker.color.b = 0
             marker.color.a = 1
+
+            # static scenario
+            if self.static:
+                if 'x' in self.obstacle_args[i]:
+                    marker.pose.position.x = self.obstacle_args[i]['x']
+                    print('----------')
+                    print(marker.pose.position.x)
+                if 'y' in self.obstacle_args[i]:
+                    marker.pose.position.y = self.obstacle_args[i]['y']
+                if 'z' in self.obstacle_args[i]:
+                    marker.pose.position.z = self.obstacle_args[i]['z']
+                marker.pose.orientation.x = 0
+                marker.pose.orientation.y = 0
+                marker.pose.orientation.z = 0
+                marker.pose.orientation.w = 1
+                if 'ref' in self.obstacle_args[i]:
+                    marker.pose.position.x = self.obstacle_args[self.obstacle_args[i]['ref']]['x'] + self.obstacle_args[i]['offset_x']
+                    marker.pose.position.y = self.obstacle_args[self.obstacle_args[i]['ref']]['y'] + self.obstacle_args[i]['offset_y']
+                    marker.pose.position.z = self.obstacle_args[self.obstacle_args[i]['ref']]['z'] + self.obstacle_args[i]['offset_z']
+
             self.obstacles.markers.append(marker)
 
     def updateObstacles(self, data, args):
@@ -92,6 +107,12 @@ class EnvPublisher:
         self.obstacles.markers[i].pose.orientation.y = 0
         self.obstacles.markers[i].pose.orientation.z = 0
         self.obstacles.markers[i].pose.orientation.w = 1
+
+        # print('----------')
+        # print(i)
+        # print('x:', data.transform.translation.x + args['cor_x'])
+        # print('y:', data.transform.translation.y + args['cor_y'])
+        # print('z:', data.transform.translation.z + args['cor_z'])
 
         # update obs refered to it
         for obs in self.obstacle_args:
@@ -120,7 +141,7 @@ class EnvPublisher:
 
         # debug
         # index = 0
-        self.generateRandomObstacles(len(self.VICON_topics))
+        # self.generateRandomObstacles(len(self.VICON_topics))
 
         while not rospy.is_shutdown():
             self.env_publisher.publish(self.obstacles)

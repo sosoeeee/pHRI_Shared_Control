@@ -51,6 +51,7 @@ global_planner:
   publish_topic: "global_plan"
   obstacles_dilate: 0.03
   smooth_step: 0.02  # actual distance between path points next to each other
+  insert_step: 0.01
   
 RRT_planner:
     max_iter: 2000

@@ -30,6 +30,7 @@ class BaseGlobalPlanner:
         # initialize the planner
         self.obstacles_dilate = rospy.get_param('/global_planner/obstacles_dilate', 0.01)
         self.smooth_step = rospy.get_param('/global_planner/smooth_step', 0.1)
+        self.insert_step = rospy.get_param('/global_planner/insert_step', 0.01)
         self.world_frame = rospy.get_param('/world_frame', 'map')
         self.initPlanner()
 
@@ -77,10 +78,11 @@ class BaseGlobalPlanner:
         #     self.path = np.vstack((self.path[:-1], addPoints, self.path[-1]))
         
         # only used for RRT algorithm with huersitic optimazition
+        # insert more path points
         insertPath = self.path[0].copy()
         for i in range(self.path.shape[0] - 1):
-            if np.linalg.norm(self.path[i] - self.path[i+1]) > self.smooth_step:
-                N = int(np.ceil(np.linalg.norm(self.path[i] - self.path[i+1]) / self.smooth_step))
+            if np.linalg.norm(self.path[i] - self.path[i+1]) > self.insert_step:
+                N = int(np.ceil(np.linalg.norm(self.path[i] - self.path[i+1]) / self.insert_step))
 
                 addPoints = self.path[i] + (self.path[i+1] - self.path[i]) / N
                 for j in range(1, N - 1):
