@@ -247,10 +247,10 @@ class SharedController(BaseController):
         elif self.offset_N < 0:
             self.offset_N += 1
 
-        print('N:', self.offset_N)
+        # print('N:', self.offset_N)
 
         deviation = np.linalg.norm(curStates[0:3].reshape((3, 1)) - self.robotGlobalTraj[0:3, minIdx].reshape((3, 1)))
-        print('devi', deviation)
+        # print('devi', deviation)
         if deviation > self.replanThreshold:
             self.ctr += 1
             if self.ctr > self.controlFrequency / self.replanFreq:

@@ -30,6 +30,7 @@ class BaseGlobalPlanner:
         # initialize the planner
         self.obstacles_dilate = rospy.get_param('/global_planner/obstacles_dilate', 0.01)
         self.smooth_step = rospy.get_param('/global_planner/smooth_step', 0.1)
+        self.insert_step = rospy.get_param('/global_planner/insert_step', 0.01)
         self.world_frame = rospy.get_param('/world_frame', 'map')
         self.initPlanner()
 
@@ -77,19 +78,19 @@ class BaseGlobalPlanner:
             self.path = np.vstack((self.path[:-1], addPoints, self.path[-1]))
         
         # only used for RRT algorithm with huersitic optimazition
+        # insert more path points
+        insertPath = self.path[0].copy()
+        for i in range(self.path.shape[0] - 1):
+            if np.linalg.norm(self.path[i] - self.path[i+1]) > self.insert_step:
+                N = int(np.ceil(np.linalg.norm(self.path[i] - self.path[i+1]) / self.insert_step))
 
-        # insertPath = self.path[0].copy()
-        # for i in range(self.path.shape[0] - 1):
-        #     if np.linalg.norm(self.path[i] - self.path[i+1]) > self.smooth_step:
-        #         N = int(np.ceil(np.linalg.norm(self.path[i] - self.path[i+1]) / self.smooth_step))
+                addPoints = self.path[i] + (self.path[i+1] - self.path[i]) / N
+                for j in range(1, N - 1):
+                    newPoint = self.path[i] + (self.path[i+1] - self.path[i]) / N * (j + 1)
+                    addPoints = np.vstack((addPoints, newPoint))
 
-        #         addPoints = self.path[i] + (self.path[i+1] - self.path[i]) / N
-        #         for j in range(1, N - 1):
-        #             newPoint = self.path[i] + (self.path[i+1] - self.path[i]) / N * (j + 1)
-        #             addPoints = np.vstack((addPoints, newPoint))
-
-        #         insertPath = np.vstack((insertPath, addPoints, self.path[i+1]))
-        # self.path = insertPath.copy()
+                insertPath = np.vstack((insertPath, addPoints, self.path[i+1]))
+        self.path = insertPath.copy()
                 # rospy.loginfo('add points: %d' % addPoints.shape[0])
 
     def handle_GlobalPlanning(self, req):
@@ -150,7 +151,7 @@ class BaseGlobalPlanner:
     #     pose.pose.orientation.y = 0
     #     pose.pose.orientation.z = 0
     #     pose.pose.orientation.w = 1
-    #     return pose
+        # return pose
 
     def run(self):
         # debug
@@ -158,8 +159,9 @@ class BaseGlobalPlanner:
         #     self.path_visual = Path()
         #     self.path_visual.header.frame_id = self.world_frame
         #     if self.path is not None:
-        #         for point in self.path:
-        #             self.path_visual.poses.append(self.Array2Pose(point))
+        #         if len(self.path.shape) != 0: 
+        #             for point in self.path:
+        #                 self.path_visual.poses.append(self.Array2Pose(point))
         
         #     self.path_publisher.publish(self.path_visual)
         
