@@ -33,11 +33,11 @@ env_publisher:
 
   VICON_transform: {x: 2.36, y: -0.47, z: -0.54, qx: 0, qy: 0, qz: -0.707, qw: 0.707} # VICON frame according to world frame
   obstacle_args:
-    - {id: 0, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, cor_x: 0.005, cor_y: 0.052, cor_z: -0.075, x: -0.168, y: -1.648, z: 0.620}  
-    - {id: 1, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, cor_x: 0.018, cor_y: 0.06, cor_z: -0.055, x: -0.338, y: -1.705, z: 0.620}  
+    - {id: 0, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, cor_x: 0.005, cor_y: 0.052, cor_z: -0.075, x: -0.1431, y: -1.6597, z: 0.625}  
+    - {id: 1, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, cor_x: 0.018, cor_y: 0.06, cor_z: -0.055, x: -0.3561, y: -1.7491, z: 0.617}  
     - {id: 2, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, ref: 0, offset_x: 0, offset_y: -0.15, offset_z: 0}
     - {id: 3, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, ref: 0, offset_x: 0, offset_y: -0.3, offset_z: 0}
-    - {id: 4, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, ref: 1, offset_x: 0, offset_y: -0.15, offset_z: 0}
+    - {id: 4, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, ref: 1, offset_x: 0, offset_y: -0.1, offset_z: 0}
 
 
 ## Global planner params
@@ -45,7 +45,7 @@ global_planner:
   publish_rate: 10
   publish_topic: "global_plan"
   obstacles_dilate: 0.02
-  smooth_step: 0.02  # actual distance between path points next to each other
+  smooth_step: 0.04  # actual distance between path points next to each other
   insert_step: 0.01
   
 RRT_planner:
@@ -56,7 +56,7 @@ RRT_planner:
     search_space:
       x:
         - 0.37
-        - 0.7
+        - 0.8
       y:
         - -0.45
         - 0.03
@@ -84,15 +84,15 @@ impedance_controller:
 shared_controller:
   M: 1
   C: 40
-  threshold_force: 3.3
+  threshold_force: 3.0
   local_len: 50
   replan_len: 380
-  replan_len_num: 20
-  replan_freq: 1
-  replan_timeout: 0.5
+  replan_len_num: 40
+  replan_freq: 2
+  replan_timeout: 1
   alpha: 100
   weight_r: 1       # 追踪机器人期望轨迹的误差权重为 weight_r*weight_tracking
   weight_h: 10
   weight_tracking: 1000
   load_traj: true
-  deviation: 0.03   # the max tolerated deviation from robot desired traj
+  deviation: 0.02   # the max tolerated deviation from robot desired traj

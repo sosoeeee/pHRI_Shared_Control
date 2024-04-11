@@ -114,7 +114,7 @@ class RRTPlanner(BaseGlobalPlanner):
 
     def planPath(self):
         # RRT算法
-        startTime = time.time()
+        # startTime = time.time()
 
         # update start and goal
         if self.dimension == 3:
@@ -128,26 +128,26 @@ class RRTPlanner(BaseGlobalPlanner):
         self.obstaclesNormalization()
 
         # shrink search space
-        shrinkSpace = self.searchSpace.copy()
-        if np.linalg.norm(self.humanForce_valid) > 0.001:
-            rospy.loginfo("shrink search space")
-            # shrink x dimension
-            if self.humanForce_valid[0] > 0:
-                shrinkSpace[0][0] = self.currentStates[0] - self.deviation
-            elif self.humanForce_valid[0] < 0:
-                shrinkSpace[0][1] = self.currentStates[0] + self.deviation
-            # shrink y dimension
-            if self.humanForce_valid[1] > 0:
-                shrinkSpace[1][0] = self.currentStates[1] - self.deviation
-            elif self.humanForce_valid[1] < 0:
-                shrinkSpace[1][1] = self.currentStates[1] + self.deviation
+        # shrinkSpace = self.searchSpace.copy()
+        # if np.linalg.norm(self.humanForce_valid) > 0.001:
+        #     rospy.loginfo("shrink search space")
+        #     # shrink x dimension
+        #     if self.humanForce_valid[0] > 0:
+        #         shrinkSpace[0][0] = self.currentStates[0] - self.deviation
+        #     elif self.humanForce_valid[0] < 0:
+        #         shrinkSpace[0][1] = self.currentStates[0] + self.deviation
+        #     # shrink y dimension
+        #     if self.humanForce_valid[1] > 0:
+        #         shrinkSpace[1][0] = self.currentStates[1] - self.deviation
+        #     elif self.humanForce_valid[1] < 0:
+        #         shrinkSpace[1][1] = self.currentStates[1] + self.deviation
             
-            X = SearchSpace(shrinkSpace, self.normalizedObstacles)
-        else:
-            X = SearchSpace(self.searchSpace, self.normalizedObstacles)
+        #     X = SearchSpace(shrinkSpace, self.normalizedObstacles)
+        # else:
+        X = SearchSpace(self.searchSpace, self.normalizedObstacles)
 
-        # rrt = RRT(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb)
-        # self.path = np.array(rrt.rrt_search())
+        rrt = RRT(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb)
+        self.path = np.array(rrt.rrt_search())
 
         # more smoooooooooooth
         # rrt = RRTStarBidirectionalHeuristic(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb, 32)
@@ -156,13 +156,13 @@ class RRTPlanner(BaseGlobalPlanner):
         # rrt = RRTStarBidirectional(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb, 16)
         # self.path = np.array(rrt.rrt_star_bidirectional())
         
-        rrt = RRTStar(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb, 4)
-        self.path = np.array(rrt.rrt_star())
+        # rrt = RRTStar(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb, 4)
+        # self.path = np.array(rrt.rrt_star())
 
         if len(self.path.shape) != 0 and self.dimension == 2:
             if self.start[2] != self.goal[2]:
                 rospy.logerr("RRT search dimension is two but start cooridinate isn't equal to end cooridinate in Z axis")
             self.path = np.hstack((self.path, np.ones((self.path.shape[0], 1)) * self.start[2]))
 
-        endTime = time.time()
+        # endTime = time.time()
         # rospy.loginfo("RTT finished: " + str(endTime - startTime))

@@ -246,7 +246,7 @@ class SharedController(BaseController):
         # trigger re-planning until interaction force exceed threshold and last for '1/self.replanFreq'
         if self.humanIntent == 2:
             self.ctr += 1
-            if self.ctr == self.controlFrequency / self.replanFreq:
+            if self.ctr > self.controlFrequency / self.replanFreq:
                 self.changeGlobalTraj(self.curIdx, self.humanCmd)
                 self.ctr = 0
         else:
@@ -410,7 +410,7 @@ class SharedController(BaseController):
 
         # self.lambda_ = 0.8
 
-        rospy.loginfo("lambda_: %.2f" % self.lambda_)
+        # rospy.loginfo("lambda_: %.2f" % self.lambda_)
 
         # return self.lambda_
 
