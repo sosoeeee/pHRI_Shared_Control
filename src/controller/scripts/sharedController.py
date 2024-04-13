@@ -381,7 +381,7 @@ class SharedController(BaseController):
         # d_res = np.linalg.norm(nearestPoint - obsPoint)
 
         # select robot desire point rather than nearest point
-        d_res = min(np.linalg.norm(self.robotGlobalTraj[0:3, self.curIdx+1].reshape((3, 1)) - self.obstaclesPoints, axis=0))
+        d_res = min(np.linalg.norm(self.robotGlobalTraj[0:3, self.curIdx].reshape((3, 1)) - self.obstaclesPoints, axis=0))
 
         # when obstacles are relative sparse, the value of 'd_res' may be really large 
         # it will lead to overflow error when calculating d_sat
