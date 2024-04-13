@@ -72,7 +72,7 @@ MinimumLocalPlanner:
   optimizeT: false
 
 ## controller params
-controller_type: "Switching"  # Admittance, Shared, Switching
+controller_type: "Shared"  # Admittance, Shared, Switching
 
 controller:
   control_frequency: 10 # must slower than the frequency of sampling the sensor data
@@ -86,10 +86,10 @@ shared_controller:
   C: 40
   threshold_force: 3.8
   local_len: 50
-  replan_len: 230
-  replan_len_num: 100
+  replan_len: 380
+  replan_len_num: 20
   replan_freq: 2
-  replan_timeout: 4
+  replan_timeout: 1
   alpha: 100
   weight_r: 1       # 追踪机器人期望轨迹的误差权重为 weight_r*weight_tracking
   weight_h: 10
