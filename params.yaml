@@ -1,5 +1,5 @@
 world_frame: "world"
-use_simulate: true
+use_simulate: false
 two_dimesion: true
 
 ## actuator params
@@ -95,4 +95,4 @@ shared_controller:
   weight_h: 10
   weight_tracking: 1000
   load_traj: true
-  deviation: 0.02   # the max tolerated deviation from robot desired traj
+  deviation: 0.03   # the max tolerated deviation from robot desired traj
