@@ -73,12 +73,13 @@ class PubGoalActionServer(BaseTaskServer):
         self.vis_human.action = Marker.ADD
         self.vis_human.ns = 'task'
         self.vis_human.type = Marker.ARROW
-        self.vis_human.scale.x = 0.02
-        self.vis_human.scale.y = 0.04
+        self.vis_human.scale.x = 0.01
+        self.vis_human.scale.y = 0.03
         self.vis_human.color.r = 1
         self.vis_human.color.g = 1
         self.vis_human.color.b = 0
         self.vis_human.color.a = 1
+        self.thresholdForce = rospy.get_param("/shared_controller/threshold_force", 3.5)
 
         self.vis_curPos = PointStamped()
         self.vis_curPos.header.frame_id = self.world_frame
@@ -156,6 +157,10 @@ class PubGoalActionServer(BaseTaskServer):
         self.vis_human.points[1].x = self.currentStates[0] + self.humanForce[0] * 0.05
         self.vis_human.points[1].y = self.currentStates[1] + self.humanForce[1] * 0.05
         self.vis_human.points[1].z = self.currentStates[2] + self.humanForce[2] * 0.05
+        if np.linalg.norm(self.humanForce) > self.thresholdForce:
+            self.vis_human.color.g = 0
+        else:
+            self.vis_human.color.g = 1
         self.vis_pubHuman.publish(self.vis_human)
 
         # current position
