@@ -262,10 +262,11 @@ class SwitchController(BaseController):
         self.obstaclesPoints = None
         # transform obstacles into world frame
         for obstacle in self.obstacles:
-            (trans, _) = self.tf_listener.lookupTransform(self.world_frame, obstacle.header.frame_id, rospy.Time(0))
-            obstacle.pose.position.x += trans[0]
-            obstacle.pose.position.y += trans[1]
-            obstacle.pose.position.z += trans[2]
+            ori_pose = PoseStamped()
+            ori_pose.pose = obstacle.pose
+            ori_pose.header = obstacle.header
+            tar_pose = self.tf_listener.transformPose(self.world_frame, ori_pose)
+            obstacle.pose = tar_pose.pose
 
         # generate discrete points to represent obstacles, really low efficiency :(
         sample_step = 0.03
