@@ -222,8 +222,20 @@ class SwitchController(BaseController):
         self.ctr += 1
 
         self.updateHumanLocalTraj(self.curIdx, humCmd, curStates)
-        # fix lambda
-        self.lambda_ = 1
+
+        # switching controller
+        # lambda = 1, human leading
+        # lambda = 0, robot leading
+        interactionForce = (humCmd[3] ** 2 + humCmd[4] ** 2 + humCmd[5] ** 2) ** 0.5
+        d_res = min(np.linalg.norm(curStates[0:3].reshape((3, 1)) - self.obstaclesPoints, axis=0))
+        if interactionForce > 0.01:
+            self.lambda_ = 1
+        elif d_res < self.deviation:
+            self.lambda_ = 1
+        else:
+            self.lambda_ = 0
+        print('d_res: ', d_res)
+        # rospy.loginfo("lambda_: %.2f" % self.lambda_)
 
         # no traj replan
         # if self.ctr > self.controlFrequency / self.replanFreq and self.humanIntent == 2:
@@ -307,31 +319,15 @@ class SwitchController(BaseController):
         return reshaped
 
     def updateHumanLocalTraj(self, idx, humCmd, curStates):
-        force = (humCmd[3] ** 2 + humCmd[4] ** 2 + humCmd[5] ** 2) ** 0.5
-        distance = (humCmd[0] ** 2 + humCmd[1] ** 2 + humCmd[2] ** 2) ** 0.5
+        self.humanLocalTraj = np.zeros((3, self.localLen))
+        next_state = self.Ad.dot(curStates) + self.Brd.dot(np.zeros((3, 1))) + self.Bhd.dot(
+            humCmd[3:])
+        forceCmd = humCmd[3:]
+        for i in range(self.localLen):
+            self.humanLocalTraj[:, i] = next_state[:3].copy().reshape((3,))
+            # iterate state space model without robot input to estimate human desired trajectory
+            next_state = self.Ad.dot(next_state) + self.Brd.dot(np.zeros((3, 1))) + self.Bhd.dot(forceCmd)
 
-        # By default, human desired traj is equal to robot desired traj
-        # 这里之前发生了一个地址上的copy，对humanLocalTraj的修改同时修改了robotGlobalTraj
-        self.humanLocalTraj = self.robotGlobalTraj[:3, idx + 1:(idx + 1 + self.localLen)].copy()
-
-        if distance > 0.01:
-            next_state = self.Ad.dot(curStates) + self.Brd.dot(np.zeros((3, 1))) + self.Bhd.dot(
-                humCmd[3:])
-            forceCmd = humCmd[3:]
-            for i in range(self.localLen):
-                self.humanLocalTraj[:, i] = next_state[:3].copy().reshape((3,))
-                # iterate state space model without robot input to estimate human desired trajectory
-                next_state = self.Ad.dot(next_state) + self.Brd.dot(np.zeros((3, 1))) + self.Bhd.dot(forceCmd)
-
-            if force > self.thresholdForce:
-                self.humanIntent = 2
-            else:
-                self.humanIntent = 1
-        else:
-            self.humanIntent = 0
-
-        # rospy.loginfo("human_%d: (%.2f, %.2f, %.2f)" % (
-        #                 idx, curStates[0, 0], curStates[1, 0], curStates[2, 0]))
 
     def computeLambda(self, curStates):
         endEffectorPos = curStates[0:3].reshape((3, 1))

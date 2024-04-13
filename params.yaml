@@ -1,5 +1,5 @@
 world_frame: "world"
-use_simulate: false
+use_simulate: true
 two_dimesion: true
 
 ## actuator params
@@ -72,7 +72,7 @@ MinimumLocalPlanner:
   optimizeT: false
 
 ## controller params
-controller_type: "Shared"  # Admittance, Shared, Switching
+controller_type: "Switching"  # Admittance, Shared, Switching
 
 controller:
   control_frequency: 10 # must slower than the frequency of sampling the sensor data
