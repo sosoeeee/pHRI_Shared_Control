@@ -72,7 +72,7 @@ MinimumLocalPlanner:
   optimizeT: false
 
 ## controller params
-controller_type: "Switching"  # Admittance, Shared, Switching
+controller_type: "Admittance"  # Admittance, Shared, Switching
 
 controller:
   control_frequency: 10 # must slower than the frequency of sampling the sensor data

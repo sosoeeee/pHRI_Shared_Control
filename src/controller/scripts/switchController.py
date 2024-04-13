@@ -226,17 +226,15 @@ class SwitchController(BaseController):
         # switching controller
         # lambda = 1, human leading
         # lambda = 0, robot leading
-        interactionForce = (humCmd[3] ** 2 + humCmd[4] ** 2 + humCmd[5] ** 2) ** 0.5
-        d_res = min(np.linalg.norm(curStates[0:3].reshape((3, 1)) - self.obstaclesPoints, axis=0))
-        if interactionForce > 0.01:
-            self.lambda_ = 1
-        elif d_res < self.deviation:
-            self.lambda_ = 1
-        else:
-            self.lambda_ = 0
-        print('d_res: ', d_res)
-        # rospy.loginfo("lambda_: %.2f" % self.lambda_)
-
+        if self.obstaclesPoints is not None:  # if obstacles is updating, use last lambda value
+            interactionForce = (humCmd[3] ** 2 + humCmd[4] ** 2 + humCmd[5] ** 2) ** 0.5
+            d_res_obs = min(np.linalg.norm(curStates[0:3].reshape((3, 1)) - self.obstaclesPoints, axis=0))
+            if interactionForce > 0.01:
+                self.lambda_ = 1
+            elif d_res_obs < self.deviation:
+                self.lambda_ = 1
+            else:
+                self.lambda_ = 0
         # no traj replan
         # if self.ctr > self.controlFrequency / self.replanFreq and self.humanIntent == 2:
         #     self.ctr = 0
