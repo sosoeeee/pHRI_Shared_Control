@@ -71,6 +71,9 @@ MinimumLocalPlanner:
   order: 5
   optimizeT: false
 
+local_planner:
+  ## add any params you want to change in teb local planner
+
 ## controller params
 controller_type: "Shared"  # Admittance, Shared, Switching
 

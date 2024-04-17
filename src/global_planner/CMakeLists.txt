@@ -106,8 +106,16 @@ generate_messages(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-#  LIBRARIES global_planner
-#  CATKIN_DEPENDS rospy
+  LIBRARIES global_planner
+  CATKIN_DEPENDS 
+    rospy
+    std_msgs
+    visualization_msgs
+    nav_msgs
+    geometry_msgs
+    message_generation
+    message_runtime 
+    tf
 #  DEPENDS system_lib
 )
 

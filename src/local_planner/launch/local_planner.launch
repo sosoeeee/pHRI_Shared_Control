@@ -1,4 +1,8 @@
 <launch>
   <node name="local_planner" pkg="local_planner" type="main.py">
   </node>
+
+  <!-- <node name="local_planner" pkg="local_planner" type="local_planner_node">
+  </node> -->
+
 </launch>
