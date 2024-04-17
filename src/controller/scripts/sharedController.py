@@ -17,6 +17,7 @@ from geometry_msgs.msg import Point, PoseStamped
 import tf
 from local_planner.srv import *
 from controller.msg import VisualTraj
+from controller.msg import StateCmd
 
 import numpy as np
 import time
@@ -45,6 +46,7 @@ class SharedController(BaseController):
         self.computeGlobalTraj = False
         self.robotGlobalTraj = None
         self.robotGlobalTrajLen = None
+        self.ori_robotGlobalTrajLen = None
         self.vis_pubRawTraj = rospy.Publisher('/controller/globalTraj', VisualTraj, queue_size=10)
         self.loadTraj = False
 
@@ -100,6 +102,7 @@ class SharedController(BaseController):
         self.computeGlobalTraj = False
         self.robotGlobalTraj = None
         self.robotGlobalTrajLen = None
+        self.ori_robotGlobalTrajLen = None
 
         # predicted safety index
         self.lambda_ = None
@@ -204,8 +207,12 @@ class SharedController(BaseController):
 
     def computeCmd(self):
         # copy sensor data
+
+        # print('---------')
+        # s = time.time()
+
         humCmd = self.humanCmd.copy()
-        curStates = self.currentStates.copy()
+        curStates = self.currentStates.copy() ## ? strange, causing sensor data lag
         self.curIdx += 1
 
         if self.computeGlobalTraj is False:
@@ -215,8 +222,21 @@ class SharedController(BaseController):
         if self.curIdx == self.robotGlobalTrajLen - self.replanLen:
             self.extendGlobalTraj()
 
+        # e = time.time()
+        # print('part1:' , e-s)
+        # s = time.time()
+
         self.updateHumanLocalTraj(self.curIdx, humCmd, curStates)
+
+        # e = time.time()
+        # print('part1-human:' , e-s)
+        # s = time.time()
+
         self.computeLambda(curStates)
+
+        # e = time.time()
+        # print('part3-lambda:' , e-s)
+        # s = time.time()
 
         # self.ctr += 1
         # if self.ctr > self.controlFrequency / self.replanFreq and self.humanIntent == 2:
@@ -226,31 +246,42 @@ class SharedController(BaseController):
         # trigger re-planning until interaction force exceed threshold and last for '1/self.replanFreq'
         if self.humanIntent == 2:
             self.ctr += 1
-            if self.ctr == self.controlFrequency / self.replanFreq:
-                self.changeGlobalTraj(self.curIdx, humCmd)
+            if self.ctr > self.controlFrequency / self.replanFreq:
+                self.changeGlobalTraj(self.curIdx, self.humanCmd)
                 self.ctr = 0
         else:
             self.ctr = 0
-
+        
         robotDesPos = Point()
         robotDesPos.x = self.robotGlobalTraj[0, self.curIdx]
         robotDesPos.y = self.robotGlobalTraj[1, self.curIdx]
         robotDesPos.z = self.robotGlobalTraj[2, self.curIdx]
         self.pubRobotDesPos.publish(robotDesPos)
 
+        # e = time.time()
+        # print('part4-pub:' , e-s)
+        # s = time.time()
+
         # rospy.loginfo("idx: %d" % self.curIdx)
 
-        return self.computeLocalTraj(self.curIdx, humCmd, curStates)
+        cmd = self.computeLocalTraj(self.curIdx, humCmd, curStates)
+
+        # e = time.time()
+        # print('part5-cmd:' , e-s)
+        # s = time.time()
+
+        return cmd
 
     def updateObstacles(self, obstacleSet):
         self.obstacles = obstacleSet.markers
         self.obstaclesPoints = None
         # transform obstacles into world frame
         for obstacle in self.obstacles:
-            (trans, _) = self.tf_listener.lookupTransform(self.world_frame, obstacle.header.frame_id, rospy.Time(0))
-            obstacle.pose.position.x += trans[0]
-            obstacle.pose.position.y += trans[1]
-            obstacle.pose.position.z += trans[2]
+            ori_pose = PoseStamped()
+            ori_pose.pose = obstacle.pose
+            ori_pose.header = obstacle.header
+            tar_pose = self.tf_listener.transformPose(self.world_frame, ori_pose)
+            obstacle.pose = tar_pose.pose
 
         # generate discrete points to represent obstacles, really low efficiency :(
         sample_step = 0.03
@@ -331,16 +362,26 @@ class SharedController(BaseController):
         #                 idx, curStates[0, 0], curStates[1, 0], curStates[2, 0]))
 
     def computeLambda(self, curStates):
-        endEffectorPos = curStates[0:3].reshape((3, 1))
 
-        # search for closest point in trajectory to current pos (search whole trajectory, also low efficiency)
-        index = np.argmin(np.linalg.norm(self.robotGlobalTraj[:3, :] - endEffectorPos, axis=0))
-        desiredPos = self.robotGlobalTraj[0:3, index].copy().reshape((3, 1))
 
         # need to optimaize in future works
         if self.obstaclesPoints is None:  # if obstacles is updating, use last lambda value
             return self.lambda_
-        d_res = min(np.linalg.norm(desiredPos - self.obstaclesPoints, axis=0))
+
+        # d_res = min(np.linalg.norm(nearestPoint - self.obstaclesPoints, axis=0))
+
+        endEffectorPoint = curStates[0:3].reshape((3, 1))
+
+        # search for closest point in trajectory to current pos (search whole trajectory, also low efficiency)
+        # nearestIndex = np.argmin(np.linalg.norm(self.robotGlobalTraj[:3, :] - endEffectorPoint, axis=0))
+        # nearestPoint = self.robotGlobalTraj[0:3, nearestIndex].copy().reshape((3, 1))
+        # distance = np.linalg.norm(curStates[0:3].reshape((3, 1)) - self.obstaclesPoints, axis=0)
+        # obsIdx = np.argmin(distance)
+        # obsPoint = self.obstaclesPoints[:, obsIdx].reshape((3, 1))  # nearest obstacle point to current state
+        # d_res = np.linalg.norm(nearestPoint - obsPoint)
+
+        # select robot desire point rather than nearest point
+        d_res = min(np.linalg.norm(self.robotGlobalTraj[0:3, self.curIdx].reshape((3, 1)) - self.obstaclesPoints, axis=0))
 
         # when obstacles are relative sparse, the value of 'd_res' may be really large 
         # it will lead to overflow error when calculating d_sat
@@ -348,7 +389,12 @@ class SharedController(BaseController):
         # limits = 0.2
         if d_res > self.deviation:
             d_res = self.deviation
-        d = np.linalg.norm(endEffectorPos - desiredPos)
+
+        # nearest version
+        # d = np.linalg.norm(endEffectorPoint - nearestPoint)
+
+        # robot desired version
+        d = np.linalg.norm(endEffectorPoint - self.robotGlobalTraj[0:3, self.curIdx+1].reshape((3, 1)))
 
         # normalization --- d_res to 0.1
         norm_k = 0.1 / d_res
@@ -356,8 +402,8 @@ class SharedController(BaseController):
 
         d_max = min(d_norm, 0.1)
         a1_ = 1  # 在不取max时，d趋向无穷的时候，d_sat趋向于 d_res * a1_
-        a2_ = 0.4  # a2_越大，lambda曲线开始时死区越长
-        mu_ = 100  # mu_越大，曲线越早达到极限值
+        a2_ = 0.2  # a2_越大，lambda曲线开始时死区越长
+        mu_ = 200  # mu_越大，曲线越早达到极限值
         eta_ = 0.1
         d_sat = (a1_ * 0.1) / (1 + eta_ * math.exp(-mu_ * (d_max - a2_ * 0.1))) ** (1 / eta_)
 
@@ -367,7 +413,7 @@ class SharedController(BaseController):
 
         # rospy.loginfo("lambda_: %.2f" % self.lambda_)
 
-        return self.lambda_
+        # return self.lambda_
 
     def pubGlobalTraj(self):
         visualTraj = VisualTraj()
@@ -386,6 +432,7 @@ class SharedController(BaseController):
                 raise Exception("check your globalTraj file, trajectory need to be (6, N), currently is (%d, %d)"
                                 % (self.robotGlobalTraj.shape[0], self.robotGlobalTraj.shape[1]))
             self.robotGlobalTrajLen = self.robotGlobalTraj.shape[1]
+            self.ori_robotGlobalTrajLen = self.robotGlobalTrajLen
             self.computeGlobalTraj = True
 
             # visualization
@@ -412,6 +459,7 @@ class SharedController(BaseController):
                 raise Exception("Error: The shape of global trajectory is wrong")
 
             self.robotGlobalTrajLen = self.robotGlobalTraj.shape[1]
+            self.ori_robotGlobalTrajLen = self.robotGlobalTrajLen
             self.computeGlobalTraj = True
 
             # visualization
@@ -419,6 +467,8 @@ class SharedController(BaseController):
 
         except rospy.ServiceException as e:
             print("Service call failed: %s" % e)
+
+        # np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/fixTraj.txt", self.robotGlobalTraj.T)
 
     def extendGlobalTraj(self):
         exd_block = np.zeros((2 * len(self.goal), self.replanLen))
@@ -443,25 +493,42 @@ class SharedController(BaseController):
 
         # generate feasible trajectories
         while i < self.replanPathNum:
+            if time.time() - startTime > self.replanTimeOut:
+                rospy.loginfo("Timeout occurs while replanning traj")
+                # break
+                i = self.replanPathNum
+
             i += 1
             # generate trajectory
             rospy.wait_for_service('local_planner')
             try:
                 plan_trajectory = rospy.ServiceProxy('local_planner', LocalPlanning)
-                trajectoryFlatten = plan_trajectory(startPoint, startVel, startAcc,
+                res = plan_trajectory(startPoint, startVel, startAcc,
                                                     endPoint, endVel, endAcc,
                                                     -1, -1,
-                                                    self.replanLen * (1 / self.controlFrequency),
-                                                    self.controlFrequency).trajectory
+                                                    min(self.replanLen, self.ori_robotGlobalTrajLen - currentTrajIndex) * (1 / self.controlFrequency),
+                                                    self.controlFrequency)
+                if res.success is False:
+                    continue
+                else:
+                    trajectoryFlatten = res.trajectory
 
                 trajectory = np.array(trajectoryFlatten).reshape((-1, 2 * len(startPoint))).T
 
-                if trajectory.shape != (6, self.replanLen):
-                    raise Exception("Error: The shape of re-planned trajectory is wrong")
+                # if trajectory.shape != (6, self.replanLen):
+                #     raise Exception("Error: The shape of re-planned trajectory is wrong")
 
             except rospy.ServiceException as e:
                 print("Service call failed: %s" % e)
                 continue
+
+            if trajectory.shape != (6, self.replanLen):
+                exd_block = np.zeros((2 * len(self.goal), self.replanLen - trajectory.shape[1]))
+                exd_block[0:3, :] = np.array(self.goal).reshape((3, 1))
+                trajectory = np.hstack((trajectory, exd_block))
+            
+            if trajectory.shape != (6, self.replanLen):
+                raise Exception("Error: The shape of re-planned trajectory is wrong")
 
             # rospy.loginfo("Generate feasible trajectories")
 
@@ -483,16 +550,13 @@ class SharedController(BaseController):
                 minEnergy = curEnergy
                 optimalTraj = trajectory
 
-            if time.time() - startTime > self.replanTimeOut:
-                rospy.loginfo("Timeout occurs while replanning traj")
-                # break
-                i = self.replanPathNum
-
         # change global trajectory
-        self.robotGlobalTraj[:, currentTrajIndex:(currentTrajIndex + self.replanLen)] = optimalTraj[:, :self.replanLen].copy()
-
-        # visualization
-        self.pubGlobalTraj()
+        if optimalTraj is None:
+            rospy.loginfo("update global trajectory failed!")
+        else:
+            self.robotGlobalTraj[:, currentTrajIndex:(currentTrajIndex + self.replanLen)] = optimalTraj[:, :self.replanLen].copy()
+            # visualization
+            self.pubGlobalTraj()
 
         # return self.robotGlobalTraj
 
@@ -530,6 +594,8 @@ class SharedController(BaseController):
         #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/local_r_%d.txt" % (idx), self.robotLocalTraj)
         #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/local_h_%d.txt" % (idx), self.humanLocalTraj)
         #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/curStates_%d.txt" % (idx), curStates)
+        #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/lambda_%d.txt" % (idx), np.array([self.lambda_]))
+        #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/humanCmd_%d.txt" % (idx), np.array(humCmd[3:]))
 
         # rospy.loginfo("curState_%d: (%.2f, %.2f, %.2f)" % (
         #     idx, curStates[0, 0], curStates[1, 0], curStates[2, 0]))
@@ -537,30 +603,46 @@ class SharedController(BaseController):
         # 将Q_h和Q_r对角拼接
         Q = np.vstack((np.hstack((self.Qh * self.lambda_, np.zeros((3 * self.localLen, 3 * self.localLen)))),
                        np.hstack((np.zeros((3 * self.localLen, 3 * self.localLen)), self.Qr * (1 - self.lambda_)))))
-        SQ = np.sqrt(Q)
-        SP = np.eye(3 * self.localLen)
+        # SQ = np.sqrt(Q)
+        # SP = np.eye(3 * self.localLen)
         wx = np.vstack((curStates, X_d))
 
+        # s = time.time()
+
         # tmp1_L_h = np.linalg.pinv(np.vstack((SQ.dot(self.theta_hg), np.sqrt(self.lambda_) * SP)))
-        tmp1_L_h = np.linalg.pinv(np.vstack((SQ.dot(self.theta_hg), np.sqrt(1 - self.lambda_) * SP)))
-        tmp2_L_h = np.vstack((SQ, np.zeros((3 * self.localLen, 6 * self.localLen))))
-        L_h = tmp1_L_h.dot(tmp2_L_h)
+        # tmp1_L_h = np.linalg.pinv(np.vstack((SQ.dot(self.theta_hg), np.sqrt(1 - self.lambda_) * SP)))
+        # tmp2_L_h = np.vstack((SQ, np.zeros((3 * self.localLen, 6 * self.localLen))))
+        # L_h = tmp1_L_h.dot(tmp2_L_h)
+
+        L_h_tmp = np.linalg.inv(np.dot(self.theta_hg.T, Q).dot(self.theta_hg) + (1 - self.lambda_) * np.eye(3 * self.localLen))
+        L_h = L_h_tmp.dot(self.theta_hg.T).dot(Q)
 
         # tmp1_L_r = np.linalg.pinv(np.vstack((SQ.dot(self.theta_rg), np.sqrt(1 - self.lambda_) * SP)))
-        tmp1_L_r = np.linalg.pinv(np.vstack((SQ.dot(self.theta_rg), np.sqrt(self.lambda_) * SP)))
-        tmp2_L_r = np.vstack((SQ, np.zeros((3 * self.localLen, 6 * self.localLen))))
-        L_r = tmp1_L_r.dot(tmp2_L_r)
+        # tmp1_L_r = np.linalg.pinv(np.vstack((SQ.dot(self.theta_rg), np.sqrt(self.lambda_) * SP)))
+        # tmp2_L_r = np.vstack((SQ, np.zeros((3 * self.localLen, 6 * self.localLen))))
+        # L_r = tmp1_L_r.dot(tmp2_L_r)
+
+        L_r_tmp = np.linalg.inv(np.dot(self.theta_rg.T, Q).dot(self.theta_rg) + self.lambda_ * np.eye(3 * self.localLen))
+        L_r = L_r_tmp.dot(self.theta_rg.T).dot(Q)
+
+        # e = time.time()
+        # print('part5-1-inv:' , e-s)
+        # s = time.time()
 
         H_h = np.hstack((-L_h.dot(self.phi_g), L_h))
         H_r = np.hstack((-L_r.dot(self.phi_g), L_r))
 
         k_r1 = np.eye(3 * self.localLen) - np.dot(L_r.dot(self.theta_hg), L_h.dot(self.theta_rg))
         k_r2 = H_r - np.dot(L_r.dot(self.theta_hg), H_h)
-        k_r = np.linalg.pinv(k_r1).dot(k_r2)
+        k_r = np.linalg.inv(k_r1).dot(k_r2)
 
         k_h1 = np.eye(3 * self.localLen) - np.dot(L_h.dot(self.theta_rg), L_r.dot(self.theta_hg))
         k_h2 = H_h - np.dot(L_h.dot(self.theta_rg), H_r)
-        k_h = np.linalg.pinv(k_h1).dot(k_h2)
+        k_h = np.linalg.inv(k_h1).dot(k_h2)
+
+        # e = time.time()
+        # print('part5-2-inv:' , e-s)
+        # s = time.time()
 
         k_0 = np.zeros((3, 3 * self.localLen))
         k_0[:3, :3] = np.eye(3)
@@ -583,12 +665,28 @@ class SharedController(BaseController):
             w_next = self.Ad.dot(curStates) + self.Brd.dot(u_r) + self.Bhd.dot(humCmd[3:])
 
         # w_next = self.Ad.dot(curStates) + self.Brd.dot(u_r) + self.Bhd.dot(u_h)
-        cmd_string = str(w_next[0, 0]) + ',' + str(w_next[1, 0]) + ',' + str(w_next[2, 0]) + ',' + str(
-            w_next[3, 0]) + ',' + str(w_next[4, 0]) + ',' + str(w_next[5, 0])
+        # cmd_string = str(w_next[0, 0]) + ',' + str(w_next[1, 0]) + ',' + str(w_next[2, 0]) + ',' + str(
+        #     w_next[3, 0]) + ',' + str(w_next[4, 0]) + ',' + str(w_next[5, 0])
+
+        # np.set_printoptions(precision = 4)
+        # print('-----------')
+        # print(curStates.T)
+        # print(w_next.T)
 
         # rospy.loginfo("u_r (%.2f, %.2f, %.2f) u_h (%.2f, %.2f, %.2f)" % (u_r[0], u_r[1], u_r[2], u_h[0], u_h[1], u_h[2]))
 
-        return cmd_string
+        stateCmd = StateCmd()
+        stateCmd.stamp = rospy.Time.now()
+        stateCmd.x = w_next[0, 0]
+        stateCmd.y = w_next[1, 0]
+        stateCmd.z = w_next[2, 0]
+        stateCmd.vx = w_next[3, 0]
+        stateCmd.vy = w_next[4, 0]
+        stateCmd.vz = w_next[5, 0]
+
+        return stateCmd
+
+        # return cmd_string
 
     # generate discrete points on a sphere
     def generateSphericalPoints(self, center, radius, distanceStep):

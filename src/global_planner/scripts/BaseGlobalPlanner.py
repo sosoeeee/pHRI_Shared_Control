@@ -30,6 +30,7 @@ class BaseGlobalPlanner:
         # initialize the planner
         self.obstacles_dilate = rospy.get_param('/global_planner/obstacles_dilate', 0.01)
         self.smooth_step = rospy.get_param('/global_planner/smooth_step', 0.1)
+        self.insert_step = rospy.get_param('/global_planner/insert_step', 0.01)
         self.world_frame = rospy.get_param('/world_frame', 'map')
         self.initPlanner()
 
@@ -52,43 +53,44 @@ class BaseGlobalPlanner:
 
     def smoothPath(self):
         # rospy.loginfo("before smoothing points number" + str(self.path.shape))
-        step = np.sum((self.path[1] - self.path[0]) ** 2) ** 0.5
-        if step <= self.smooth_step:
-            n = math.ceil(self.smooth_step / step)
-            iterations = int((self.path.shape[0] - 2) / n)  # remove start and end point
-            smoothPath = np.zeros((iterations, self.path.shape[1]))
-            averageVector = np.ones((1, n)) * (1 / n)
-            for i in range(iterations):
-                smoothPath[i] = np.dot(averageVector, self.path[(1 + i*n):(i+1)*n + 1, :])
-            # add start and end point
-            smoothPath = np.vstack((self.path[0], smoothPath))
-            smoothPath = np.vstack((smoothPath, self.path[-1]))
-            self.path = smoothPath
+        # step = np.sum((self.path[1] - self.path[0]) ** 2) ** 0.5
+        # if step <= self.smooth_step:
+        #     n = math.ceil(self.smooth_step / step)
+        #     iterations = int((self.path.shape[0] - 2) / n)  # remove start and end point
+        #     smoothPath = np.zeros((iterations, self.path.shape[1]))
+        #     averageVector = np.ones((1, n)) * (1 / n)
+        #     for i in range(iterations):
+        #         smoothPath[i] = np.dot(averageVector, self.path[(1 + i*n):(i+1)*n + 1, :])
+        #     # add start and end point
+        #     smoothPath = np.vstack((self.path[0], smoothPath))
+        #     smoothPath = np.vstack((smoothPath, self.path[-1]))
+        #     self.path = smoothPath
             # rospy.loginfo("before smoothing points number: %d, after smoothing: %d" % (self.path.shape[0], smoothPath.shape[0]))
 
         # add extra path points
-        if np.linalg.norm(self.path[-1] - self.path[-2]) > self.smooth_step:
-            N = int(np.ceil(np.linalg.norm(self.path[-1] - self.path[-2]) / self.smooth_step))
+        # if np.linalg.norm(self.path[-1] - self.path[-2]) > self.smooth_step:
+        #     N = int(np.ceil(np.linalg.norm(self.path[-1] - self.path[-2]) / self.smooth_step))
 
-            addPoints = self.path[-2] + (self.path[-1] - self.path[-2]) / N
-            for j in range(1, N - 1):
-                newPoint = self.path[-2] + (self.path[-1] - self.path[-2]) / N * (j + 1)
-                addPoints = np.vstack((addPoints, newPoint))
-            self.path = np.vstack((self.path[:-1], addPoints, self.path[-1]))
+        #     addPoints = self.path[-2] + (self.path[-1] - self.path[-2]) / N
+        #     for j in range(1, N - 1):
+        #         newPoint = self.path[-2] + (self.path[-1] - self.path[-2]) / N * (j + 1)
+        #         addPoints = np.vstack((addPoints, newPoint))
+        #     self.path = np.vstack((self.path[:-1], addPoints, self.path[-1]))
         
         # only used for RRT algorithm with huersitic optimazition
-        # insertPath = self.path[0].copy()
-        # for i in range(self.path.shape[0] - 1):
-        #     if np.linalg.norm(self.path[i] - self.path[i+1]) > self.smooth_step:
-        #         N = int(np.ceil(np.linalg.norm(self.path[i] - self.path[i+1]) / self.smooth_step))
+        # insert more path points
+        insertPath = self.path[0].copy()
+        for i in range(self.path.shape[0] - 1):
+            if np.linalg.norm(self.path[i] - self.path[i+1]) > self.insert_step:
+                N = int(np.ceil(np.linalg.norm(self.path[i] - self.path[i+1]) / self.insert_step))
 
-        #         addPoints = self.path[i] + (self.path[i+1] - self.path[i]) / N
-        #         for j in range(1, N - 1):
-        #             newPoint = self.path[i] + (self.path[i+1] - self.path[i]) / N * (j + 1)
-        #             addPoints = np.vstack((addPoints, newPoint))
+                addPoints = self.path[i] + (self.path[i+1] - self.path[i]) / N
+                for j in range(1, N - 1):
+                    newPoint = self.path[i] + (self.path[i+1] - self.path[i]) / N * (j + 1)
+                    addPoints = np.vstack((addPoints, newPoint))
 
-        #         insertPath = np.vstack((insertPath, addPoints, self.path[i+1]))
-        # self.path = insertPath.copy()
+                insertPath = np.vstack((insertPath, addPoints, self.path[i+1]))
+        self.path = insertPath.copy()
                 # rospy.loginfo('add points: %d' % addPoints.shape[0])
 
     def handle_GlobalPlanning(self, req):
@@ -102,10 +104,13 @@ class BaseGlobalPlanner:
         
         # plan the path, self.path is (N, dimension)
         self.planPath()
-        while len(self.path.shape) == 0:
-            self.planPath()
-
-        self.smoothPath()
+        if len(self.path.shape) != 0: 
+            self.smoothPath()
+            success = True
+        else:
+            rospy.loginfo("RRT path not found")
+            success = False
+            self.path = np.array([0])
 
         # debug
         # rospy.loginfo("RRT plan finish")
@@ -117,6 +122,7 @@ class BaseGlobalPlanner:
         # return the response
         res = GlobalPlanningResponse()
         res.path = self.path.flatten().tolist()   # switch to float32[]
+        res.success = success
         return res
 
     def updateObstacles(self, obstacleSet):
@@ -133,7 +139,7 @@ class BaseGlobalPlanner:
             tar_pose = self.tf_listener.transformPose(self.world_frame, ori_pose)
             obstacle.pose = tar_pose.pose
 
-    # debug
+    # # debug
     # def Array2Pose(self, point):
     #     pose = PoseStamped()
     #     pose.header.frame_id = self.world_frame

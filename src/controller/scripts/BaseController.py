@@ -4,9 +4,13 @@ from std_msgs.msg import String
 from task_publisher.msg import ReachGoal
 from actuator.srv import *
 from actuator.msg import StateVector
+from controller.msg import StateCmd
 
 from abc import abstractmethod
 import numpy as np
+import threading
+
+Lock = threading.Lock()
 
 
 class BaseController:
@@ -22,13 +26,13 @@ class BaseController:
         self.filter_a = [1, -1.1430, 0.4128]
 
         # subscribe robot states from actuator
-        rospy.Subscriber('/actuator/robotState', StateVector, self.cartesianState_callBack, queue_size=1)
+        rospy.Subscriber('/actuator/robotState', StateVector, self.cartesianState_callBack, queue_size=10)
         self.robotReady = False
         self.currentStates = np.zeros((6, 1))  # pos (x, y, z) and vel (dx, dy, dz) in Cartesian Space(task space)
 
         # publish control command to robot
         self.controlFrequency = rospy.get_param("/controller/control_frequency", 10)
-        self.pubControlCmd = rospy.Publisher('nextState', String, queue_size=1)
+        self.pubControlCmd = rospy.Publisher('nextState', StateCmd, queue_size=1)
         # self.pubCmdTimer = rospy.Timer(rospy.Duration(1/self.controlFrequency), self.pubCmd_callback)
 
         # subscribe task publisher (currently care about "ReachGoal" task only)
@@ -91,7 +95,7 @@ class BaseController:
         self.goal = [msg.goal[0], msg.goal[1], msg.goal[2]]
         self.time_taken = msg.time_taken
         self.tolerance = msg.tolerance
-        rospy.loginfo("Controller is activated !")
+        # rospy.loginfo("Controller is activated !")
 
     # unstable
     # def pubCmd_callback(self, event):
@@ -115,13 +119,15 @@ class BaseController:
         rate = rospy.Rate(self.controlFrequency)
         while not rospy.is_shutdown():
             if self.robotReady and self.active:
-                cmd = self.computeCmd()
-                self.pubControlCmd.publish(cmd)
+                
+                with Lock:
+                    cmd = self.computeCmd()
+                    self.pubControlCmd.publish(cmd)
 
                 # rospy.loginfo('cmd' + cmd)
 
                 # deactivate the controller when task is completed
-                if np.linalg.norm(self.currentStates[:3] - np.array(self.goal)) < self.tolerance:
+                if np.linalg.norm(self.currentStates[:3] - np.array(self.goal).reshape((3, 1))) < self.tolerance:
                     self.active = False
                     self.reInitial()
                     rospy.loginfo("Task has completed, controller is deactivated !")

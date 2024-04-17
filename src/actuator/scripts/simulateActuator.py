@@ -11,7 +11,7 @@ from std_msgs.msg import String
 from geometry_msgs.msg import PoseStamped, PointStamped
 from actuator.srv import isRobotReady, isRobotReadyResponse, initRobot, initRobotResponse
 from actuator.msg import StateVector
-
+from controller.msg import StateCmd
 
 import numpy as np
 
@@ -23,12 +23,12 @@ class simActuator:
         # self.pubPosCmd = rospy.Publisher('/simulate_actuator/pos', PointStamped, queue_size=10)
 
         # publish simulate point state to controller
-        self.pubRobotState = rospy.Publisher('/actuator/robotState', StateVector, queue_size=10)
+        self.pubRobotState = rospy.Publisher('/actuator/robotState', StateVector, queue_size=1)
         self.pubStateFreq = rospy.get_param("/simulate_actuator/pub_frequency", 100)
         self.pubStateTimer = rospy.Timer(rospy.Duration(1/self.pubStateFreq), self.pubStateTimer_callback)
 
         # subscribe controller cmd
-        rospy.Subscriber('/nextState', String, self.controlCmd_callback, queue_size=1)
+        rospy.Subscriber('/nextState', StateCmd, self.controlCmd_callback, queue_size=1)
 
         # simulate point variable
         self.pos = np.zeros((3, 1))
@@ -68,14 +68,21 @@ class simActuator:
         return True
 
     def controlCmd_callback(self, msg):
-        cmd = msg.data
-        [x, y, z, vx, vy, vz] = cmd.split(',')
-        x = float(x)
-        y = float(y)
-        z = float(z)
-        vx = float(vx)
-        vy = float(vy)
-        vz = float(vz)
+        # cmd = msg.data
+        # [x, y, z, vx, vy, vz] = cmd.split(',')
+        # x = float(x)
+        # y = float(y)
+        # z = float(z)
+        # vx = float(vx)
+        # vy = float(vy)
+        # vz = float(vz)
+
+        x = msg.x
+        y = msg.y
+        z = msg.z
+        vx = msg.vx
+        vy = msg.vy
+        vz = msg.vz
 
         self.pos[0] = x
         self.pos[1] = y
@@ -102,7 +109,7 @@ class simActuator:
         stateVector.dz = self.vel[2]
 
         self.pubRobotState.publish(stateVector)
-
+        
     def run(self):
         self.initRobot()
         rospy.spin()

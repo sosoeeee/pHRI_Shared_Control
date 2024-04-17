@@ -14,6 +14,7 @@ from task_publisher.msg import ReachGoal
 from task_publisher.msg import pubGoalAction, pubGoalFeedback, pubGoalResult
 from task_publisher.msg import pubPathAction, pubPathFeedback, pubPathResult
 from task_publisher.msg import pubTrajAction, pubTrajFeedback, pubTrajResult
+from controller.msg import StateCmd
 
 # visualization
 from geometry_msgs.msg import PointStamped, PoseStamped
@@ -59,9 +60,9 @@ class PubGoalActionServer(BaseTaskServer):
         self.vis_goal.action = Marker.ADD
         self.vis_goal.ns = 'task'
         self.vis_goal.type = Marker.SPHERE
-        self.vis_goal.scale.x = 0.4
-        self.vis_goal.scale.y = 0.4
-        self.vis_goal.scale.z = 0.4
+        self.vis_goal.scale.x = 0.04
+        self.vis_goal.scale.y = 0.04
+        self.vis_goal.scale.z = 0.04
         self.vis_goal.color.r = 1
         self.vis_goal.color.g = 1
         self.vis_goal.color.b = 0
@@ -72,12 +73,13 @@ class PubGoalActionServer(BaseTaskServer):
         self.vis_human.action = Marker.ADD
         self.vis_human.ns = 'task'
         self.vis_human.type = Marker.ARROW
-        self.vis_human.scale.x = 0.05
-        self.vis_human.scale.y = 0.08
+        self.vis_human.scale.x = 0.01
+        self.vis_human.scale.y = 0.03
         self.vis_human.color.r = 1
         self.vis_human.color.g = 1
         self.vis_human.color.b = 0
         self.vis_human.color.a = 1
+        self.thresholdForce = rospy.get_param("/shared_controller/threshold_force", 3.5)
 
         self.vis_curPos = PointStamped()
         self.vis_curPos.header.frame_id = self.world_frame
@@ -152,9 +154,15 @@ class PubGoalActionServer(BaseTaskServer):
         self.vis_human.points[0].x = self.currentStates[0]
         self.vis_human.points[0].y = self.currentStates[1]
         self.vis_human.points[0].z = self.currentStates[2]
-        self.vis_human.points[1].x = self.currentStates[0] + self.humanForce[0] * 0.7
-        self.vis_human.points[1].y = self.currentStates[1] + self.humanForce[1] * 0.7
-        self.vis_human.points[1].z = self.currentStates[2] + self.humanForce[2] * 0.7
+        self.vis_human.points[1].x = self.currentStates[0] + self.humanForce[0] * 0.05
+        self.vis_human.points[1].y = self.currentStates[1] + self.humanForce[1] * 0.05
+        self.vis_human.points[1].z = self.currentStates[2] + self.humanForce[2] * 0.05
+
+        if np.linalg.norm(self.humanForce) > self.thresholdForce:
+            self.vis_human.color.g = 0
+        else:
+            self.vis_human.color.g = 1
+
         self.vis_pubHuman.publish(self.vis_human)
 
         # current position
@@ -164,11 +172,11 @@ class PubGoalActionServer(BaseTaskServer):
         self.vis_pubPos.publish(self.vis_curPos)
 
         if np.linalg.norm(self.humanForce) != 0:
-            self.q  = self.getQuaternion([1, 0, 0], self.humanForce[:3].flatten())
+            self.q = self.getQuaternion([1, 0, 0], self.humanForce[:3].flatten())
             # rospy.loginfo("quaternion: (%.2f, %.2f, %.2f, %.2f)" % (self.q [0], self.q [1], self.q [2], self.q [3]))
 
         self.br.sendTransform((self.vis_curPos.point.x, self.vis_curPos.point.y, self.vis_curPos.point.z),
-                              (self.q [0], self.q [1], self.q [2], self.q [3]),
+                              (self.q[0], self.q[1], self.q[2], self.q[3]),
                               rospy.Time.now(),
                               "camera",
                               self.world_frame)
@@ -211,10 +219,10 @@ class PubGoalActionServer(BaseTaskServer):
         pose.pose.orientation.z = 0
         pose.pose.orientation.w = 1
         return pose
-  
+
     def getQuaternion(self, ori_vec, loc_vec):
         ori_vec = np.array(ori_vec)
-        loc_vec = np.array(loc_vec)              
+        loc_vec = np.array(loc_vec)
         ori_vec = ori_vec / np.linalg.norm(ori_vec)
         loc_vec = loc_vec / np.linalg.norm(loc_vec)
         axis = np.cross(ori_vec, loc_vec)
@@ -236,6 +244,7 @@ class PubPathActionServer(BaseTaskServer):
 
         # recorded data (customize by yourself)
         self.data_reachError = None
+        self.data_realTimeError = None
         self.data_humanForce = None
         self.pathPoints = None
 
@@ -250,8 +259,8 @@ class PubPathActionServer(BaseTaskServer):
         self.vis_PathPoints.ns = "task"
         self.vis_PathPoints.type = Marker.SPHERE_LIST
         self.vis_PathPoints.action = Marker.ADD
-        self.vis_PathPoints.scale.x = 0.1
-        self.vis_PathPoints.scale.y = 0.1
+        self.vis_PathPoints.scale.x = 0.02
+        self.vis_PathPoints.scale.y = 0.02
         self.vis_PathPoints.color.r = 0
         self.vis_PathPoints.color.g = 1
         self.vis_PathPoints.color.b = 0
@@ -270,6 +279,7 @@ class PubPathActionServer(BaseTaskServer):
         endPoint = np.array(goal.end_point).reshape((3, 1))  # generally same as goal in task "ReachGoal"
         self._feedback.distance_to_path = 0
         self.data_reachError = [np.inf for _ in range(self.pathPoints.shape[0])]
+        self.data_realTimeError = []
         self.data_humanForce = np.zeros((3, 1))
 
         # publish info to the console for the user
@@ -301,6 +311,7 @@ class PubPathActionServer(BaseTaskServer):
                 rospy.loginfo('%s: Completed' % self._action_name)
                 self._result.reach_error = self.data_reachError
                 self._result.human_force = self.data_humanForce.T.flatten().tolist()
+                self._result.real_time_error = self.data_realTimeError
                 self._as.set_succeeded(self._result)
                 break
 
@@ -321,10 +332,14 @@ class PubPathActionServer(BaseTaskServer):
         # collect interact force
         self.data_humanForce = np.hstack((self.data_humanForce, self.humanForce))  # shape is (dim, N)
         # compute error in real time
+        miniError = np.inf
         for i in range(len(self.data_reachError)):
             error = np.linalg.norm(self.currentStates[:3, :] - self.pathPoints[i].reshape((3, 1)))
             if error < self.data_reachError[i]:
                 self.data_reachError[i] = error
+            if error < miniError:
+                miniError = error
+        self.data_realTimeError.append(miniError)
 
 
 class PubTrajActionServer(BaseTaskServer):
@@ -341,9 +356,13 @@ class PubTrajActionServer(BaseTaskServer):
 
         # recorded data (customize by yourself)
         self.data_sumError = None
+        self.data_realTimeError = None
         self.data_humanForce = None
         self.refTraj = None
         self.idx = 0
+        # wait robot start to move
+        rospy.Subscriber('/nextState', StateCmd, self.controlCmd_callback, queue_size=1)
+        self.startTask = False
 
         # visual publisher
         self.vis_pubFollowPoint = rospy.Publisher('/task/visual/followPoint', Marker, queue_size=1)
@@ -358,9 +377,9 @@ class PubTrajActionServer(BaseTaskServer):
         self.vis_followPoint.ns = "task"
         self.vis_followPoint.type = Marker.CUBE
         self.vis_followPoint.action = Marker.ADD
-        self.vis_followPoint.scale.x = 0.1
-        self.vis_followPoint.scale.y = 0.1
-        self.vis_followPoint.scale.Z = 0.1
+        self.vis_followPoint.scale.x = 0.02
+        self.vis_followPoint.scale.y = 0.02
+        self.vis_followPoint.scale.z = 0.02
         self.vis_followPoint.color.r = 0
         self.vis_followPoint.color.g = 1
         self.vis_followPoint.color.b = 0
@@ -380,12 +399,18 @@ class PubTrajActionServer(BaseTaskServer):
         # initialize feedback and result msg
         rospack = rospkg.RosPack()
         self.refTraj = np.loadtxt(rospack.get_path('task_publisher') + '/' + goal.file_path)
+        if self.refTraj.shape[1] == 6:
+            self.refTraj = self.refTraj[:, :3]
         length = self.refTraj.shape[0]
         if self.refTraj.shape[1] != 3:
-            raise Exception("check your trajectory txt file! Each line only contains one point")
+            rospy.logerr("check your trajectory txt file! Each line only contains one point")
         self._feedback.current_error = 0
         self.data_sumError = 0
+        self.data_realTimeError = []
         self.data_humanForce = np.zeros((3, 1))
+
+        while self.startTask is False:
+            rospy.sleep(0.01)
 
         # publish info to the console for the user
         rospy.loginfo('%s: Executing' % self._action_name)
@@ -410,15 +435,16 @@ class PubTrajActionServer(BaseTaskServer):
             self._feedback.current_error = error
             self._as.publish_feedback(self._feedback)
 
+            self.idx += 1
+
             # check end and send result to client
             if self.idx == length:
                 rospy.loginfo('%s: Completed' % self._action_name)
                 self._result.average_error = self.data_sumError / length
+                self._result.real_time_error = self.data_realTimeError
                 self._result.human_force = self.data_humanForce.T.flatten().tolist()
                 self._as.set_succeeded(self._result)
                 break
-
-            self.idx += 1
 
             r.sleep()
 
@@ -430,11 +456,9 @@ class PubTrajActionServer(BaseTaskServer):
         self.vis_pubFollowPoint.publish(self.vis_followPoint)
 
         # ref Traj
-        if self.firstPub:
-            self.vis_refTraj.poses = []
-            for point in self.refTraj:
-                self.vis_refTraj.poses.append(self.Array2Pose(point))
-            self.firstPub = False
+        self.vis_refTraj.poses = []
+        for point in self.refTraj:
+            self.vis_refTraj.poses.append(self.Array2Pose(point))
         self.vis_pubRefTraj.publish(self.vis_refTraj)
 
     def Array2Pose(self, point):
@@ -454,4 +478,12 @@ class PubTrajActionServer(BaseTaskServer):
         # collect interact force
         self.data_humanForce = np.hstack((self.data_humanForce, self.humanForce))  # shape is (dim, N)
         # compute error in real time
-        self.data_sumError += np.linalg.norm(self.currentStates[:3, :] - self.refTraj[self.idx].reshape((3, 1)))
+        error = np.linalg.norm(self.currentStates[:3, :] - self.refTraj[self.idx].reshape((3, 1)))
+        self.data_sumError += error
+        self.data_realTimeError.append(error)
+
+    def controlCmd_callback(self, msg):
+        if self.startTask is False:
+            self.startTask = True
+        else:
+            pass

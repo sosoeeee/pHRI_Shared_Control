@@ -7,6 +7,7 @@ string file_path                 # a file containing an array of key points
 ---
 # Define the result
 float32[] reach_error            # the minimum distances to each key points
+float32[] real_time_error        # the minimum distances to each key points at each sampling time
 float32[] human_force            # the interaction force during the task sampled in control_frequency
 ---
 # Define a feedback message

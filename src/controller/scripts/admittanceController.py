@@ -8,6 +8,7 @@ sys.path.append(os.path.dirname(__file__))
 
 import rospy
 from BaseController import BaseController
+from controller.msg import StateCmd
 
 import numpy as np
 
@@ -63,7 +64,17 @@ class AdmittanceController(BaseController):
     def computeCmd(self):
         nextState = self.Ad.dot(self.currentStates) + self.Brd.dot(np.zeros((3, 1))) + self.Bhd.dot(self.humanCmd[3:])
         # nextState = self.Ad.dot(self.currentStates) + self.Brd.dot(np.zeros((3, 1))) + self.Bhd.dot(np.zeros((3, 1)))
-        cmd_string = str(nextState[0, 0]) + ',' + str(nextState[1, 0]) + ',' + str(nextState[2, 0]) + ',' + str(nextState[3, 0]) + ',' + str(nextState[4, 0]) + ',' + str(nextState[5, 0])
+        # cmd_string = str(nextState[0, 0]) + ',' + str(nextState[1, 0]) + ',' + str(nextState[2, 0]) + ',' + str(nextState[3, 0]) + ',' + str(nextState[4, 0]) + ',' + str(nextState[5, 0])
 
-        return cmd_string
+        stateCmd = StateCmd()
+        stateCmd.stamp = rospy.Time.now()
+        stateCmd.x = nextState[0, 0]
+        stateCmd.y = nextState[1, 0]
+        stateCmd.z = nextState[2, 0]
+        stateCmd.vx = nextState[3, 0]
+        stateCmd.vy = nextState[4, 0]
+        stateCmd.vz = nextState[5, 0]
+
+
+        return stateCmd
 

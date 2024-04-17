@@ -58,7 +58,7 @@ class PubGoalActionClient:
                     (controller_type, self._id, res.real_time_taken), actualTraj)
         k = 1
         for traj in self.robotTrajSet:
-            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/robotTraj_id%d_%d_%.3f" %
+            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/robotTraj_id%d_%d_%.3f.txt" %
                         (controller_type, self._id, k, traj['time']), traj['path'])
             k += 1
         self.done = True
@@ -102,6 +102,8 @@ class PubPathActionClient:
 
         np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/pathError_id%d.txt" %
                    (controller_type, self._id), np.array(res.reach_error).reshape((-1, 1)))
+        np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/pathRealTimeError_id%d.txt" %
+                   (controller_type, self._id), np.array(res.real_time_error).reshape((-1, 1)))
         np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/humanForce_id%d.txt" %
                    (controller_type, self._id), np.array(res.human_force).reshape((-1, 3)))
 
@@ -128,19 +130,22 @@ class PubTrajActionClient:
 
     def sendReq(self):
         self.client.send_goal(self.goal, done_cb=self.done_callback, feedback_cb=self.feedback_callback)
+        # self.client.send_goal(self.goal)
 
     # return true, if status is one of the terminal states
     def isDone(self):
         return self.done
 
     def done_callback(self, status, res):
-        rospy.loginfo("FollowPath task (id: %d) is done!" % self._id)
+        rospy.loginfo("FollowTraj task (id: %d) is done!" % self._id)
 
         # store data
         controller_type = rospy.get_param("/controller_type", "Impedance")
 
         np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/TrajAvrError_id%d.txt" %
-                   (controller_type, self._id), res.average_error)
+                   (controller_type, self._id), np.array([res.average_error]))
+        np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/TrajRealTimeError_id%d.txt" %
+                   (controller_type, self._id), np.array(res.real_time_error).reshape((-1, 1)))
         np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/humanForce_id%d.txt" %
                    (controller_type, self._id), np.array(res.human_force).reshape((-1, 3)))
 

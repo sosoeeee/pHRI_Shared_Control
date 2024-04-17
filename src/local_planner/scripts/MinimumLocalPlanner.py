@@ -46,19 +46,20 @@ class MinimumLocalPlanner(BaseLocalPlanner):
         # whether to optimizing time params depends on the std of distance between two next ref 
         # not depends on the number of ref points
         interation = 5
-        dis = np.linalg.norm(np.diff(self.refPath, axis=1), axis=0)
-        std = np.std(dis)
-        if std < 0.2:
-            optimize_need = False
-        else:
-            optimize_need = True
-            if std > 0.5:
-                interation = 10
+        optimize_need = True
+        # dis = np.linalg.norm(np.diff(self.refPath, axis=1), axis=0)
+        # std = np.std(dis)
+        # if std < 0.2:
+        #     optimize_need = False
+        # else:
+        #     optimize_need = True
+        #     if std > 0.5:
+        #         interation = 10
         # rospy.loginfo("std: %.5f" % std)
 
         # debug
-        if self.refPath.shape[1] > 30:
-            optimize_need = False
+        # if self.refPath.shape[1] > 30:
+        #     optimize_need = False
 
         # whether to optimize the time parameters
         if self.optimizeT and optimize_need and self.refPath.shape[1] > 2:
@@ -93,9 +94,9 @@ class MinimumLocalPlanner(BaseLocalPlanner):
 
     def optimizeTime(self, interation):
         interation_N = interation
-        for _ in range(interation_N):
+        for n in range(interation_N):
 
-            # rospy.loginfo("start time parameters optimization, iteration is %d" % n)
+            rospy.loginfo("start time parameters optimization, iteration is %d" % n)
 
             # get duration of each segment
             self.durations = np.diff(self.ts)

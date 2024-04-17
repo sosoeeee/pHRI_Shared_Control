@@ -15,7 +15,7 @@ from std_msgs.msg import String
 from actuator.srv import isRobotReady, isRobotReadyResponse, initRobot, initRobotResponse
 from actuator.msg import StateVector
 from geometry_msgs.msg import TwistStamped, PoseStamped
-
+from controller.msg import StateCmd
 
 import numpy as np
 import time
@@ -35,7 +35,7 @@ class Actuator:
         self.pubRobotState = rospy.Publisher('/actuator/robotState', StateVector, queue_size=10)
 
         # subscribe controller cmd
-        rospy.Subscriber('/nextState', String, self.controlCmd_callback, queue_size=1)
+        rospy.Subscriber('/nextState', StateCmd, self.controlCmd_callback, queue_size=1)
         self.firstSubFlag = True
         self.startTime = None
         self.endTime = None
@@ -57,7 +57,7 @@ class Actuator:
         self.readyFlag = False
         self.initJointPose = rospy.get_param("/actuator/initJointPoses", None)
 
-        self.z_deviation = 0.15
+        self.z_deviation = rospy.get_param("/actuator/endDeviation", 0.15)
 
     def initRobot(self):
         while self.currentJointPosition is None:
@@ -100,14 +100,21 @@ class Actuator:
         return True
 
     def controlCmd_callback(self, msg):
-        cmd = msg.data
-        [x, y, z, vx, vy, vz] = cmd.split(',')
-        x = float(x)
-        y = float(y)
-        z = float(z)
-        vx = float(vx)
-        vy = float(vy)
-        vz = float(vz)
+        # cmd = msg.data
+        # [x, y, z, vx, vy, vz] = cmd.split(',')
+        # x = float(x)
+        # y = float(y)
+        # z = float(z)
+        # vx = float(vx)
+        # vy = float(vy)
+        # vz = float(vz)
+
+        x = msg.x
+        y = msg.y
+        z = msg.z
+        vx = msg.vx
+        vy = msg.vy
+        vz = msg.vz
 
         # switch to robot end
         z += self.z_deviation

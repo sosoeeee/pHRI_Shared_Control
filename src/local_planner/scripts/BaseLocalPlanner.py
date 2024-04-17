@@ -26,6 +26,7 @@ class BaseLocalPlanner:
         self.control_frequency = None
 
         self.refPath = None         # type float32[]
+        self.global_plan_success = False
 
         self.initPlanner()
 
@@ -59,9 +60,14 @@ class BaseLocalPlanner:
         # plan the trajectory
         res = LocalPlanningResponse()
         
-        s = time.time()
-        res.trajectory = self.planTrajectory().T.flatten().tolist()
-        e = time.time()
+        # s = time.time()
+        if self.global_plan_success:
+            res.success = True
+            res.trajectory = self.planTrajectory().T.flatten().tolist()
+        else:
+            res.success = False
+            res.trajectory = []
+        # e = time.time()
         # rospy.loginfo("Minisnap traj finished: " + str(e - s))
         # rospy.loginfo("traj length: %d" % (len(res.trajectory)/(len(self.start_pos)*2)))
 
@@ -72,7 +78,12 @@ class BaseLocalPlanner:
         rospy.wait_for_service('global_plan')
         try:
             plan_path = rospy.ServiceProxy('global_plan', GlobalPlanning)
-            self.refPath = plan_path(start, goal).path
+            res = plan_path(start, goal)
+            if res.success:
+                self.refPath = res.path
+                self.global_plan_success = True
+            else:
+                self.global_plan_success = False
         except rospy.ServiceException as e:
             print("Service call failed: %s" % e)
 

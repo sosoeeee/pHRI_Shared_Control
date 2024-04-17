@@ -17,13 +17,16 @@ from geometry_msgs.msg import Point, PoseStamped
 import tf
 from local_planner.srv import *
 from controller.msg import VisualTraj
+from controller.msg import StateCmd
+
 
 import numpy as np
+import time
 
 
 class SwitchController(BaseController):
     def __init__(self):
-        super(SharedController, self).__init__()
+        super(SwitchController, self).__init__()
 
         # controller parameters
         # Impedance Model
@@ -201,6 +204,10 @@ class SwitchController(BaseController):
 
     def computeCmd(self):
         # copy sensor data
+
+        # print('---------')
+        # s = time.time()
+
         humCmd = self.humanCmd.copy()
         curStates = self.currentStates.copy()
         self.curIdx += 1
@@ -215,9 +222,19 @@ class SwitchController(BaseController):
         self.ctr += 1
 
         self.updateHumanLocalTraj(self.curIdx, humCmd, curStates)
-        # fix lambda
-        self.lambda_ = 1
 
+        # switching controller
+        # lambda = 1, human leading
+        # lambda = 0, robot leading
+        if self.obstaclesPoints is not None:  # if obstacles is updating, use last lambda value
+            interactionForce = (humCmd[3] ** 2 + humCmd[4] ** 2 + humCmd[5] ** 2) ** 0.5
+            # d_res_obs = min(np.linalg.norm(curStates[0:3].reshape((3, 1)) - self.obstaclesPoints, axis=0))
+            if interactionForce > 0.01:
+                self.lambda_ = 1
+            # elif d_res_obs < self.deviation:
+                # self.lambda_ = 1
+            else:
+                self.lambda_ = 0
         # no traj replan
         # if self.ctr > self.controlFrequency / self.replanFreq and self.humanIntent == 2:
         #     self.ctr = 0
@@ -231,17 +248,23 @@ class SwitchController(BaseController):
 
         # rospy.loginfo("idx: %d" % self.curIdx)
 
-        return self.computeLocalTraj(self.curIdx, humCmd, curStates)
+        cmd = self.computeLocalTraj(self.curIdx, humCmd, curStates)
+
+        # e = time.time()
+        # print('part5-cmd:' , e-s)
+
+        return cmd
 
     def updateObstacles(self, obstacleSet):
         self.obstacles = obstacleSet.markers
         self.obstaclesPoints = None
         # transform obstacles into world frame
         for obstacle in self.obstacles:
-            (trans, _) = self.tf_listener.lookupTransform(self.world_frame, obstacle.header.frame_id, rospy.Time(0))
-            obstacle.pose.position.x += trans[0]
-            obstacle.pose.position.y += trans[1]
-            obstacle.pose.position.z += trans[2]
+            ori_pose = PoseStamped()
+            ori_pose.pose = obstacle.pose
+            ori_pose.header = obstacle.header
+            tar_pose = self.tf_listener.transformPose(self.world_frame, ori_pose)
+            obstacle.pose = tar_pose.pose
 
         # generate discrete points to represent obstacles, really low efficiency :(
         sample_step = 0.03
@@ -295,31 +318,15 @@ class SwitchController(BaseController):
         return reshaped
 
     def updateHumanLocalTraj(self, idx, humCmd, curStates):
-        force = (humCmd[3] ** 2 + humCmd[4] ** 2 + humCmd[5] ** 2) ** 0.5
-        distance = (humCmd[0] ** 2 + humCmd[1] ** 2 + humCmd[2] ** 2) ** 0.5
+        self.humanLocalTraj = np.zeros((3, self.localLen))
+        next_state = self.Ad.dot(curStates) + self.Brd.dot(np.zeros((3, 1))) + self.Bhd.dot(
+            humCmd[3:])
+        forceCmd = humCmd[3:]
+        for i in range(self.localLen):
+            self.humanLocalTraj[:, i] = next_state[:3].copy().reshape((3,))
+            # iterate state space model without robot input to estimate human desired trajectory
+            next_state = self.Ad.dot(next_state) + self.Brd.dot(np.zeros((3, 1))) + self.Bhd.dot(forceCmd)
 
-        # By default, human desired traj is equal to robot desired traj
-        # 这里之前发生了一个地址上的copy，对humanLocalTraj的修改同时修改了robotGlobalTraj
-        self.humanLocalTraj = self.robotGlobalTraj[:3, idx + 1:(idx + 1 + self.localLen)].copy()
-
-        if distance > 0.01:
-            next_state = self.Ad.dot(curStates) + self.Brd.dot(np.zeros((3, 1))) + self.Bhd.dot(
-                humCmd[3:])
-            forceCmd = humCmd[3:]
-            for i in range(self.localLen):
-                self.humanLocalTraj[:, i] = next_state[:3].copy().reshape((3,))
-                # iterate state space model without robot input to estimate human desired trajectory
-                next_state = self.Ad.dot(next_state) + self.Brd.dot(np.zeros((3, 1))) + self.Bhd.dot(forceCmd)
-
-            if force > self.thresholdForce:
-                self.humanIntent = 2
-            else:
-                self.humanIntent = 1
-        else:
-            self.humanIntent = 0
-
-        # rospy.loginfo("human_%d: (%.2f, %.2f, %.2f)" % (
-        #                 idx, curStates[0, 0], curStates[1, 0], curStates[2, 0]))
 
     def computeLambda(self, curStates):
         endEffectorPos = curStates[0:3].reshape((3, 1))
@@ -356,7 +363,7 @@ class SwitchController(BaseController):
 
         # self.lambda_ = 0.8
 
-        rospy.loginfo("lambda_: %.2f" % self.lambda_)
+        # rospy.loginfo("lambda_: %.2f" % self.lambda_)
 
         return self.lambda_
 
@@ -410,6 +417,8 @@ class SwitchController(BaseController):
 
         except rospy.ServiceException as e:
             print("Service call failed: %s" % e)
+
+        # np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/fixTraj.txt", self.robotGlobalTraj.T)
 
     def extendGlobalTraj(self):
         exd_block = np.zeros((2 * len(self.goal), self.replanLen))
@@ -526,6 +535,8 @@ class SwitchController(BaseController):
         #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/local_r_%d.txt" % (idx), self.robotLocalTraj)
         #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/local_h_%d.txt" % (idx), self.humanLocalTraj)
         #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/curStates_%d.txt" % (idx), curStates)
+        #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/lambda_%d.txt" % (idx), np.array([self.lambda_]))
+        #     np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/bug/humanCmd_%d.txt" % (idx), np.array(humCmd[3:]))
 
         # rospy.loginfo("curState_%d: (%.2f, %.2f, %.2f)" % (
         #     idx, curStates[0, 0], curStates[1, 0], curStates[2, 0]))
@@ -533,30 +544,46 @@ class SwitchController(BaseController):
         # 将Q_h和Q_r对角拼接
         Q = np.vstack((np.hstack((self.Qh * self.lambda_, np.zeros((3 * self.localLen, 3 * self.localLen)))),
                        np.hstack((np.zeros((3 * self.localLen, 3 * self.localLen)), self.Qr * (1 - self.lambda_)))))
-        SQ = np.sqrt(Q)
-        SP = np.eye(3 * self.localLen)
+        # SQ = np.sqrt(Q)
+        # SP = np.eye(3 * self.localLen)
         wx = np.vstack((curStates, X_d))
 
+        # s = time.time()
+
         # tmp1_L_h = np.linalg.pinv(np.vstack((SQ.dot(self.theta_hg), np.sqrt(self.lambda_) * SP)))
-        tmp1_L_h = np.linalg.pinv(np.vstack((SQ.dot(self.theta_hg), np.sqrt(1 - self.lambda_) * SP)))
-        tmp2_L_h = np.vstack((SQ, np.zeros((3 * self.localLen, 6 * self.localLen))))
-        L_h = tmp1_L_h.dot(tmp2_L_h)
+        # tmp1_L_h = np.linalg.pinv(np.vstack((SQ.dot(self.theta_hg), np.sqrt(1 - self.lambda_) * SP)))
+        # tmp2_L_h = np.vstack((SQ, np.zeros((3 * self.localLen, 6 * self.localLen))))
+        # L_h = tmp1_L_h.dot(tmp2_L_h)
+
+        L_h_tmp = np.linalg.inv(np.dot(self.theta_hg.T, Q).dot(self.theta_hg) + (1 - self.lambda_) * np.eye(3 * self.localLen))
+        L_h = L_h_tmp.dot(self.theta_hg.T).dot(Q)
 
         # tmp1_L_r = np.linalg.pinv(np.vstack((SQ.dot(self.theta_rg), np.sqrt(1 - self.lambda_) * SP)))
-        tmp1_L_r = np.linalg.pinv(np.vstack((SQ.dot(self.theta_rg), np.sqrt(self.lambda_) * SP)))
-        tmp2_L_r = np.vstack((SQ, np.zeros((3 * self.localLen, 6 * self.localLen))))
-        L_r = tmp1_L_r.dot(tmp2_L_r)
+        # tmp1_L_r = np.linalg.pinv(np.vstack((SQ.dot(self.theta_rg), np.sqrt(self.lambda_) * SP)))
+        # tmp2_L_r = np.vstack((SQ, np.zeros((3 * self.localLen, 6 * self.localLen))))
+        # L_r = tmp1_L_r.dot(tmp2_L_r)
+
+        L_r_tmp = np.linalg.inv(np.dot(self.theta_rg.T, Q).dot(self.theta_rg) + self.lambda_ * np.eye(3 * self.localLen))
+        L_r = L_r_tmp.dot(self.theta_rg.T).dot(Q)
+
+        # e = time.time()
+        # print('part5-1-inv:' , e-s)
+        # s = time.time()
 
         H_h = np.hstack((-L_h.dot(self.phi_g), L_h))
         H_r = np.hstack((-L_r.dot(self.phi_g), L_r))
 
         k_r1 = np.eye(3 * self.localLen) - np.dot(L_r.dot(self.theta_hg), L_h.dot(self.theta_rg))
         k_r2 = H_r - np.dot(L_r.dot(self.theta_hg), H_h)
-        k_r = np.linalg.pinv(k_r1).dot(k_r2)
+        k_r = np.linalg.inv(k_r1).dot(k_r2)
 
         k_h1 = np.eye(3 * self.localLen) - np.dot(L_h.dot(self.theta_rg), L_r.dot(self.theta_hg))
         k_h2 = H_h - np.dot(L_h.dot(self.theta_rg), H_r)
-        k_h = np.linalg.pinv(k_h1).dot(k_h2)
+        k_h = np.linalg.inv(k_h1).dot(k_h2)
+
+        # e = time.time()
+        # print('part5-2-inv:' , e-s)
+        # s = time.time()
 
         k_0 = np.zeros((3, 3 * self.localLen))
         k_0[:3, :3] = np.eye(3)
@@ -579,12 +606,28 @@ class SwitchController(BaseController):
             w_next = self.Ad.dot(curStates) + self.Brd.dot(u_r) + self.Bhd.dot(humCmd[3:])
 
         # w_next = self.Ad.dot(curStates) + self.Brd.dot(u_r) + self.Bhd.dot(u_h)
-        cmd_string = str(w_next[0, 0]) + ',' + str(w_next[1, 0]) + ',' + str(w_next[2, 0]) + ',' + str(
-            w_next[3, 0]) + ',' + str(w_next[4, 0]) + ',' + str(w_next[5, 0])
+        # cmd_string = str(w_next[0, 0]) + ',' + str(w_next[1, 0]) + ',' + str(w_next[2, 0]) + ',' + str(
+        #     w_next[3, 0]) + ',' + str(w_next[4, 0]) + ',' + str(w_next[5, 0])
+
+        # np.set_printoptions(precision = 4)
+        # print('-----------')
+        # print(curStates.T)
+        # print(w_next.T)
 
         # rospy.loginfo("u_r (%.2f, %.2f, %.2f) u_h (%.2f, %.2f, %.2f)" % (u_r[0], u_r[1], u_r[2], u_h[0], u_h[1], u_h[2]))
 
-        return cmd_string
+        stateCmd = StateCmd()
+        stateCmd.stamp = rospy.Time.now()
+        stateCmd.x = w_next[0, 0]
+        stateCmd.y = w_next[1, 0]
+        stateCmd.z = w_next[2, 0]
+        stateCmd.vx = w_next[3, 0]
+        stateCmd.vy = w_next[4, 0]
+        stateCmd.vz = w_next[5, 0]
+
+        return stateCmd
+
+        # return cmd_string
 
     # generate discrete points on a sphere
     def generateSphericalPoints(self, center, radius, distanceStep):

@@ -14,10 +14,14 @@ import time
 
 from visualization_msgs.msg import Marker
 import rospy
+from std_msgs.msg import String
+from actuator.msg import StateVector
 
 # RRT package
 from rrt_algorithms.rrt.rrt import RRT
 from rrt_algorithms.rrt.rrt_star_bid_h import RRTStarBidirectionalHeuristic
+from rrt_algorithms.rrt.rrt_star_bid import RRTStarBidirectional
+from rrt_algorithms.rrt.rrt_star import RRTStar
 from rrt_algorithms.search_space.search_space import SearchSpace
 
 
@@ -28,6 +32,7 @@ class RRTPlanner(BaseGlobalPlanner):
         self.maxIterNum = None
         self.step = None
         self.searchSpace = None
+        self.dimension = None
         self.normalizedObstacles = None
 
         super(RRTPlanner, self).__init__()
@@ -44,39 +49,120 @@ class RRTPlanner(BaseGlobalPlanner):
 
         # 搜索空间尺寸
         self.searchSpace = rospy.get_param('/RRT_planner/search_space', {'x': [0, 0], 'y': [0, 0], 'z': [0, 0]})
-        self.searchSpace = np.array([self.searchSpace['x'], self.searchSpace['y'], self.searchSpace['z']])
+        if self.searchSpace['z'][0] != self.searchSpace['z'][1]:
+            self.dimension = 3
+            self.searchSpace = np.array([self.searchSpace['x'], self.searchSpace['y'], self.searchSpace['z']])
+        elif self.searchSpace['z'][0] == self.searchSpace['z'][1]:
+            self.dimension = 2
+            self.searchSpace = np.array([self.searchSpace['x'], self.searchSpace['y']])
+
+        # 优化采样空间
+        # subscribe human force
+        rospy.Subscriber("stickSignal", String, self.humanCmd_callback, queue_size=1)
+        self.thresholdForce = rospy.get_param("/shared_controller/threshold_force", 3.5)
+        self.twoDimFlag = rospy.get_param("/two_dimesion", False)
+        self.humanForce = np.zeros((3, 1))
+        self.humanForce_valid = np.zeros((3, 1))
+
+        # subscribe robot states from actuator
+        rospy.Subscriber('/actuator/robotState', StateVector, self.cartesianState_callBack, queue_size=1)
+        self.currentStates = np.zeros((6, 1))
+        self.deviation = rospy.get_param("/shared_controller/deviation", 0.1)
+
+    def humanCmd_callback(self, msg):
+        posAndForce = msg.data.split(',')
+        # two dimension setup
+        if self.twoDimFlag:
+            self.humanForce = np.array([-float(posAndForce[3]), -float(posAndForce[4]), 0])
+        else:
+            self.humanForce = np.array([-float(posAndForce[3]), float(posAndForce[5]), -float(posAndForce[4])])
+        
+        # only use valid force
+        if np.linalg.norm(self.humanForce) > self.thresholdForce:
+            self.humanForce_valid = self.humanForce
+    
+    def cartesianState_callBack(self, msg):
+        self.currentStates[0] = msg.x
+        self.currentStates[1] = msg.y
+        self.currentStates[2] = msg.z
+        self.currentStates[3] = msg.dx
+        self.currentStates[4] = msg.dy
+        self.currentStates[5] = msg.dz
 
     def obstaclesNormalization(self):
         self.normalizedObstacles = []
-        for obstacle in self.obstacles:
-            if obstacle.type == Marker.CUBE or obstacle.type == Marker.SPHERE: # treat sphere as cube
-                self.normalizedObstacles.append([obstacle.pose.position.x - obstacle.scale.x / 2 - self.obstacles_dilate,
-                                                 obstacle.pose.position.y - obstacle.scale.y / 2 - self.obstacles_dilate,
-                                                 obstacle.pose.position.z - obstacle.scale.z / 2 - self.obstacles_dilate,
-                                                 obstacle.pose.position.x + obstacle.scale.x / 2 + self.obstacles_dilate,
-                                                 obstacle.pose.position.y + obstacle.scale.y / 2 + self.obstacles_dilate,
-                                                 obstacle.pose.position.z + obstacle.scale.z / 2 + self.obstacles_dilate])
-            else:
-                rospy.logerr("Obstacle type not supported: " + str(obstacle.type))
+        if self.dimension == 3:
+            for obstacle in self.obstacles:
+                if obstacle.type == Marker.CUBE or obstacle.type == Marker.SPHERE: # treat sphere as cube
+                    self.normalizedObstacles.append([obstacle.pose.position.x - obstacle.scale.x / 2 - self.obstacles_dilate,
+                                                    obstacle.pose.position.y - obstacle.scale.y / 2 - self.obstacles_dilate,
+                                                    obstacle.pose.position.z - obstacle.scale.z / 2 - self.obstacles_dilate,
+                                                    obstacle.pose.position.x + obstacle.scale.x / 2 + self.obstacles_dilate,
+                                                    obstacle.pose.position.y + obstacle.scale.y / 2 + self.obstacles_dilate,
+                                                    obstacle.pose.position.z + obstacle.scale.z / 2 + self.obstacles_dilate])
+                else:
+                    rospy.logerr("Obstacle type not supported: " + str(obstacle.type))
+        elif self.dimension == 2:
+            for obstacle in self.obstacles:
+                if obstacle.type == Marker.CUBE or obstacle.type == Marker.SPHERE: # treat sphere as cube
+                    self.normalizedObstacles.append([obstacle.pose.position.x - obstacle.scale.x / 2 - self.obstacles_dilate,
+                                                    obstacle.pose.position.y - obstacle.scale.y / 2 - self.obstacles_dilate,
+                                                    obstacle.pose.position.x + obstacle.scale.x / 2 + self.obstacles_dilate,
+                                                    obstacle.pose.position.y + obstacle.scale.y / 2 + self.obstacles_dilate])
+                else:
+                    rospy.logerr("Obstacle type not supported: " + str(obstacle.type))
 
     def planPath(self):
         # RRT算法
-        startTime = time.time()
+        # startTime = time.time()
 
         # update start and goal
-        x_init = (self.start[0], self.start[1], self.start[2])
-        x_goal = (self.goal[0], self.goal[1], self.goal[2])
+        if self.dimension == 3:
+            x_init = (self.start[0], self.start[1], self.start[2])
+            x_goal = (self.goal[0], self.goal[1], self.goal[2])
+        elif self.dimension == 2:
+            x_init = (self.start[0], self.start[1])
+            x_goal = (self.goal[0], self.goal[1])
 
-        # update obstacles
+        # update obstacles  
         self.obstaclesNormalization()
 
+        # shrink search space
+        # shrinkSpace = self.searchSpace.copy()
+        # if np.linalg.norm(self.humanForce_valid) > 0.001:
+        #     rospy.loginfo("shrink search space")
+        #     # shrink x dimension
+        #     if self.humanForce_valid[0] > 0:
+        #         shrinkSpace[0][0] = self.currentStates[0] - self.deviation
+        #     elif self.humanForce_valid[0] < 0:
+        #         shrinkSpace[0][1] = self.currentStates[0] + self.deviation
+        #     # shrink y dimension
+        #     if self.humanForce_valid[1] > 0:
+        #         shrinkSpace[1][0] = self.currentStates[1] - self.deviation
+        #     elif self.humanForce_valid[1] < 0:
+        #         shrinkSpace[1][1] = self.currentStates[1] + self.deviation
+            
+        #     X = SearchSpace(shrinkSpace, self.normalizedObstacles)
+        # else:
         X = SearchSpace(self.searchSpace, self.normalizedObstacles)
 
         rrt = RRT(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb)
-        # rrt = RRTStarBidirectionalHeuristic(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb, 32)
-
         self.path = np.array(rrt.rrt_search())
+
+        # more smoooooooooooth
+        # rrt = RRTStarBidirectionalHeuristic(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb, 32)
         # self.path = np.array(rrt.rrt_star_bid_h())
 
-        endTime = time.time()
+        # rrt = RRTStarBidirectional(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb, 16)
+        # self.path = np.array(rrt.rrt_star_bidirectional())
+        
+        # rrt = RRTStar(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb, 4)
+        # self.path = np.array(rrt.rrt_star())
+
+        if len(self.path.shape) != 0 and self.dimension == 2:
+            if self.start[2] != self.goal[2]:
+                rospy.logerr("RRT search dimension is two but start cooridinate isn't equal to end cooridinate in Z axis")
+            self.path = np.hstack((self.path, np.ones((self.path.shape[0], 1)) * self.start[2]))
+
+        # endTime = time.time()
         # rospy.loginfo("RTT finished: " + str(endTime - startTime))
