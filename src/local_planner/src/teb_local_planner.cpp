@@ -74,16 +74,16 @@ void TebLocalPlanner::switchToMsg(const TrajectoryMsg &teb_trajectory, std::vect
 {
     trajectory.clear();
     // g(t) = f(kt) 时间尺度变换
-    double teb_total_time = teb_trajectory.back().time_from_start.toSec();
+    double teb_total_time = teb_trajectory.trajectory.back().time_from_start.toSec();
     double K = teb_total_time / double(total_time);
     int N = std::floor(total_time * control_frequency);
 
     // start point
-    trajectory.push_back(teb_trajectory[0].pose.position.x);
-    trajectory.push_back(teb_trajectory[0].pose.position.y);
+    trajectory.push_back(teb_trajectory.trajectory[0].pose.position.x);
+    trajectory.push_back(teb_trajectory.trajectory[0].pose.position.y);
     trajectory.push_back(goal_pos[2]);
-    trajectory.push_back(teb_trajectory[0].velocity.linear.x);
-    trajectory.push_back(teb_trajectory[0].velocity.linear.y);
+    trajectory.push_back(teb_trajectory.trajectory[0].velocity.linear.x);
+    trajectory.push_back(teb_trajectory.trajectory[0].velocity.linear.y);
     trajectory.push_back(0);
 
     int idx = 1;
@@ -91,17 +91,17 @@ void TebLocalPlanner::switchToMsg(const TrajectoryMsg &teb_trajectory, std::vect
     int idx_teb = 0;
     float t_s = 0;
     float t_e = 0;
-    while (idx_teb < teb_trajectory.size() - 1 && idx < N - 1)
+    while (idx_teb < teb_trajectory.trajectory.size() - 1 && idx < N - 1)
     {
-        t_s = teb_trajectory[idx_teb].time_from_start.toSec();
-        t_e = teb_trajectory[idx_teb + 1].time_from_start.toSec();
+        t_s = teb_trajectory.trajectory[idx_teb].time_from_start.toSec();
+        t_e = teb_trajectory.trajectory[idx_teb + 1].time_from_start.toSec();
         if (t_s <= target_time && target_time < t_e)
         {
             float dt = t_s - target_time;
-            float x = teb_trajectory[idx_teb].pose.position.x;
-            float y = teb_trajectory[idx_teb].pose.position.y;
-            float vx = teb_trajectory[idx_teb].velocity.linear.x;
-            float vy = teb_trajectory[idx_teb].velocity.linear.y;
+            float x = teb_trajectory.trajectory[idx_teb].pose.position.x;
+            float y = teb_trajectory.trajectory[idx_teb].pose.position.y;
+            float vx = teb_trajectory.trajectory[idx_teb].velocity.linear.x;
+            float vy = teb_trajectory.trajectory[idx_teb].velocity.linear.y;
 
             trajectory.push_back(x + vx * dt);
             trajectory.push_back(y + vy * dt);
@@ -119,11 +119,11 @@ void TebLocalPlanner::switchToMsg(const TrajectoryMsg &teb_trajectory, std::vect
     }
 
     // end point
-    trajectory.push_back(teb_trajectory.back().pose.position.x);
-    trajectory.push_back(teb_trajectory.back().pose.position.y);
+    trajectory.push_back(teb_trajectory.trajectory.back().pose.position.x);
+    trajectory.push_back(teb_trajectory.trajectory.back().pose.position.y);
     trajectory.push_back(goal_pos[2]);
-    trajectory.push_back(teb_trajectory.back().velocity.linear.x);
-    trajectory.push_back(teb_trajectory.back().velocity.linear.y);
+    trajectory.push_back(teb_trajectory.trajectory.back().velocity.linear.x);
+    trajectory.push_back(teb_trajectory.trajectory.back().velocity.linear.y);
     trajectory.push_back(0);
 }
 

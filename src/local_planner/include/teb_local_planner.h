@@ -3,6 +3,8 @@
 
 # include "base_local_planner.h"
 #include <teb_local_planner/teb_local_planner_ros.h>
+#include <teb_local_planner/TrajectoryMsg.h>
+#include <teb_local_planner/FeedbackMsg.h>
 
 using namespace teb_local_planner;
 
