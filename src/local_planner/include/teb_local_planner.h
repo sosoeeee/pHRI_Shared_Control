@@ -17,8 +17,10 @@ private:
     std::vector<ObstaclePtr> obst_vector;
     ViaPointContainer via_points;
     TebConfig config;
+    RobotFootprintModelPtr robot_model;
     bool is_plan_success;
     TrajectoryMsg teb_trajectory;
+    ros::Subscriber feedback_sub;
 public:
     TebLocalPlanner();
     ~TebLocalPlanner();

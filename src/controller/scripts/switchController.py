@@ -397,9 +397,9 @@ class SwitchController(BaseController):
         endAcc = [0, 0, 0]
 
         # generate trajectory
-        rospy.wait_for_service('local_plan')
+        rospy.wait_for_service('/local_planner/local_plan')
         try:
-            plan_trajectory = rospy.ServiceProxy('local_plan', LocalPlanning)
+            plan_trajectory = rospy.ServiceProxy('/local_planner/local_plan', LocalPlanning)
             trajectoryFlatten = plan_trajectory(curStates.flatten()[:3].tolist(), startVel, startAcc,
                                                 self.goal, endVel, endAcc,
                                                 -1, -1,
@@ -441,9 +441,9 @@ class SwitchController(BaseController):
         # generate feasible trajectories
         for i in range(self.replanPathNum):
             # generate trajectory
-            rospy.wait_for_service('local_planner')
+            rospy.wait_for_service('/local_planner/local_plan')
             try:
-                plan_trajectory = rospy.ServiceProxy('local_planner', LocalPlanning)
+                plan_trajectory = rospy.ServiceProxy('/local_planner/local_plan', LocalPlanning)
                 trajectoryFlatten = plan_trajectory(startPoint, startVel, startAcc,
                                                     endPoint, endVel, endAcc,
                                                     -1, -1,

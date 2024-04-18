@@ -37,6 +37,8 @@ protected:
     std::string target_frame;
 
     ros::NodeHandle nh;
+    ros::ServiceServer local_plan_service;
+    ros::Subscriber sub_obstacle;
 public:
     BaseLocalPlanner();
     ~BaseLocalPlanner();
@@ -52,11 +54,12 @@ BaseLocalPlanner::BaseLocalPlanner()
 {
     nh = ros::NodeHandle("~");
     // Initialize the service server
-    ros::ServiceServer service = nh.advertiseService("local_plan", &BaseLocalPlanner::local_plan_cb, this);
+    local_plan_service = nh.advertiseService("local_plan", &BaseLocalPlanner::local_plan_cb, this);
 
     // subscribe to environment information
-    ros::Subscriber sub = nh.subscribe("/env_obstacles", 1, &BaseLocalPlanner::obstacle_cb, this);
+    sub_obstacle = nh.subscribe("/env_obstacles", 1, &BaseLocalPlanner::obstacle_cb, this);
     nh.getParam("/world_frame", target_frame);
+    ROS_INFO("Initializing the BaseLocalPlanner");
 }
 
 void BaseLocalPlanner::obstacle_cb(const visualization_msgs::MarkerArray::ConstPtr &msg)
@@ -70,7 +73,16 @@ void BaseLocalPlanner::obstacle_cb(const visualization_msgs::MarkerArray::ConstP
         geometry_msgs::PoseStamped pose_in, pose_out;
         pose_in.header = marker.header;
         pose_in.pose = marker.pose;
-        listener.transformPose(target_frame, pose_in, pose_out);
+        try
+        {
+            listener.transformPose(target_frame, pose_in, pose_out);
+        }
+        catch(tf::TransformException ex)
+        {
+            ROS_ERROR("%s",ex.what());
+            ros::Duration(0.1).sleep();
+        }
+        
         marker.pose = pose_out.pose;
         obstacles.markers.push_back(marker);
     }
@@ -116,7 +128,7 @@ void BaseLocalPlanner::global_planner_client()
     global_planner::GlobalPlanning srv;
     srv.request.start = start_pos;
     srv.request.goal = goal_pos;
-
+    
     if (client.call(srv))
     {
         global_plan_success = srv.response.success;
@@ -131,7 +143,7 @@ void BaseLocalPlanner::global_planner_client()
     }
     else
     {
-        ROS_ERROR("Failed to call service global_planner");
+        ROS_ERROR("Failed to call service global_plan");
     }
 }
 

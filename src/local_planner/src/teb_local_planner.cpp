@@ -11,9 +11,9 @@ TebLocalPlanner::~TebLocalPlanner()
 void TebLocalPlanner::initPlanner()
 {
     // Initialize the planner
-    ROS_INFO("Initializing the planner");
+    ROS_INFO("Initializing the TebLocalPlanner");
     // subscribe to FeedbackMsg
-    ros::Subscriber feedback_sub = nh.subscribe("teb_feedback", 1, &TebLocalPlanner::feedback_cb, this);
+    feedback_sub = nh.subscribe("/local_planner/teb_feedback", 10, &TebLocalPlanner::feedback_cb, this);
 
     // load ros parameters from node handle
     config.loadRosParamFromNodeHandle(nh);
@@ -22,7 +22,7 @@ void TebLocalPlanner::initPlanner()
     visual = TebVisualizationPtr(new TebVisualization(nh, config));
     
     // Setup robot shape model
-    RobotFootprintModelPtr robot_model = TebLocalPlannerROS::getRobotFootprintFromParamServer(nh);
+    robot_model = TebLocalPlannerROS::getRobotFootprintFromParamServer(nh);
   
     // Setup planner (homotopy class planning or just the local teb planner)
     if (config.hcp.enable_homotopy_class_planning)
@@ -42,7 +42,6 @@ void TebLocalPlanner::feedback_cb(const teb_local_planner::FeedbackMsg::ConstPtr
 
 void TebLocalPlanner::loadObstacles()
 {   
-    ROS_INFO_ONCE("Obstacles loaded. This message is printed once.");
     // clear existing obstacles
     obst_vector.clear();
     // transform obstacles into the planning frame
@@ -56,11 +55,11 @@ void TebLocalPlanner::loadObstacles()
         polyobst->finalizePolygon();
         obst_vector.push_back(ObstaclePtr(polyobst)); //这里实际上是一个shared_ptr指向了创建的PolygonObstacle对象
     }
+    ROS_INFO_ONCE("Obstacles loaded. This message is printed once.");
 }
 
 void TebLocalPlanner::loadViaPoints()
 {
-    ROS_INFO_ONCE("Via-points loaded. This message is printed once.");
     // clear existing via-points
     via_points.clear();
     // transform via-points into the planning frame
@@ -68,6 +67,7 @@ void TebLocalPlanner::loadViaPoints()
     {
         via_points.emplace_back(ref_path[i], ref_path[i + 1]);
     }
+    ROS_INFO_ONCE("Via-points loaded. This message is printed once.");
 }
 
 void TebLocalPlanner::switchToMsg(const TrajectoryMsg &teb_trajectory, std::vector<float> &trajectory)
@@ -139,12 +139,13 @@ void TebLocalPlanner::planTrajectory(std::vector<float> &trajectory)
     // Plan the trajectory
     // no robot posture info
     is_plan_success = false;
-    planner->plan(PoseSE2(start_pos[0], start_pos[1], 0), PoseSE2(goal_pos[0], goal_pos[1], 0)); 
+    planner->plan(PoseSE2(start_pos[0], start_pos[1], 0), PoseSE2(goal_pos[0], goal_pos[1], 0));
     planner->visualize(); // pub FeedbackMsg to "teb_feedback"
 
     while (!is_plan_success)
     {
-       ros::Duration(0.01).sleep();
+        ROS_INFO("Wait Feedback info");
+       ros::Duration(0.1).sleep();
     }    
     // switch to the format of the output
     switchToMsg(teb_trajectory, trajectory);

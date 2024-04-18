@@ -78,10 +78,7 @@ add_library(${PROJECT_NAME}
   src/teb_local_planner.cpp
 )
 
-# add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} global_planner_generate_messages_cpp)
-# add_dependencies(${PROJECT_NAME} ${catkin_EXPORTED_TARGETS})
 add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-
 
 target_link_libraries(${PROJECT_NAME}
    ${catkin_LIBRARIES}
