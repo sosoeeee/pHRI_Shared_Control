@@ -1,5 +1,5 @@
 # include "ros/ros.h"
-# include "local_planner/teb_local_planner.h"
+# include "teb_local_planner.h"
 
 int main(int argc, char **argv)
 {

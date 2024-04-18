@@ -45,6 +45,7 @@ public:
     virtual void initPlanner()=0;
     virtual void planTrajectory(std::vector<float> &trajectory)=0;
     bool local_plan_cb(local_planner::LocalPlanning::Request &req, local_planner::LocalPlanning::Response &res);
+    void obstacle_cb(const visualization_msgs::MarkerArray::ConstPtr &msg);
 };
 
 BaseLocalPlanner::BaseLocalPlanner()
@@ -55,10 +56,10 @@ BaseLocalPlanner::BaseLocalPlanner()
 
     // subscribe to environment information
     ros::Subscriber sub = nh.subscribe("/env_obstacles", 1, &BaseLocalPlanner::obstacle_cb, this);
-    nh.getParam('/world_frame', target_frame);
+    nh.getParam("/world_frame", target_frame);
 }
 
-BaseLocalPlanner::obstacle_cb(const visualization_msgs::MarkerArray::ConstPtr &msg)
+void BaseLocalPlanner::obstacle_cb(const visualization_msgs::MarkerArray::ConstPtr &msg)
 {
     // transform the obstacles to the target frame
     // ATTENTION: after transforming, we only change the pose of each marker in MarkerArray, but the header frame_id is still the original frame_id
@@ -75,7 +76,7 @@ BaseLocalPlanner::obstacle_cb(const visualization_msgs::MarkerArray::ConstPtr &m
     }
 }
 
-BaseLocalPlanner::local_plan_cb(local_planner::LocalPlanning::Request &req, local_planner::LocalPlanning::Response &res)
+bool BaseLocalPlanner::local_plan_cb(local_planner::LocalPlanning::Request &req, local_planner::LocalPlanning::Response &res)
 {
     // Get information from the request
     start_pos.assign(req.start_pos.begin(), req.start_pos.end());
@@ -109,7 +110,7 @@ BaseLocalPlanner::local_plan_cb(local_planner::LocalPlanning::Request &req, loca
     return true;
 }
 
-BaseLocalPlanner::global_planner_client()
+void BaseLocalPlanner::global_planner_client()
 {
     // Initialize the client
     ros::service::waitForService("global_plan");
@@ -136,7 +137,7 @@ BaseLocalPlanner::global_planner_client()
     }
 }
 
-BaseLocalPlanner::run()
+void BaseLocalPlanner::run()
 {
     initPlanner();
     ros::spin();

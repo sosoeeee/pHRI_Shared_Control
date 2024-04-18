@@ -8,14 +8,14 @@ project(local_planner)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  message_generation  
   rospy
   roscpp
   geometry_msgs
-  message_generation
-  global_planner
   visualization_msgs
   tf2
   teb_local_planner
+  # global_planner
 )
 
 ## System dependencies are found with CMake's conventions
@@ -50,10 +50,9 @@ catkin_package(
   rospy
   roscpp
   geometry_msgs
-  message_generation
-  global_planner
   visualization_msgs
   tf2
+  # global_planner
   teb_local_planner
 #  DEPENDS system_lib
 )
@@ -68,15 +67,21 @@ include_directories(include)
 include_directories(
   ${catkin_INCLUDE_DIRS}
 )
+# message(STATUS "Include directories: ${CMAKE_CURRENT_SOURCE_DIR}/include")
+# message(STATUS "Include directories: ${catkin_INCLUDE_DIRS}")
 
 # add_dependencies(${PROJECT_NAME} ${catkin_EXPORTED_TARGETS})
 # add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_generate_messages_cpp)
-add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ library
 add_library(${PROJECT_NAME}
   src/teb_local_planner.cpp
 )
+
+# add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} global_planner_generate_messages_cpp)
+# add_dependencies(${PROJECT_NAME} ${catkin_EXPORTED_TARGETS})
+add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+
 
 target_link_libraries(${PROJECT_NAME}
    ${catkin_LIBRARIES}
@@ -84,6 +89,8 @@ target_link_libraries(${PROJECT_NAME}
 
 ## Declare a C++ executable
 add_executable(local_planner_node src/main.cpp)
+
+add_dependencies(local_planner_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 target_link_libraries(local_planner_node
   ${PROJECT_NAME}
@@ -109,3 +116,7 @@ catkin_install_python(PROGRAMS
 install(TARGETS local_planner_node
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
+
+# install(TARGETS ${PROJECT_NAME}
+#   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+# )

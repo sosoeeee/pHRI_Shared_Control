@@ -1,4 +1,4 @@
-#include "local_planner/teb_local_planner.h"
+#include "teb_local_planner.h"
 
 TebLocalPlanner::TebLocalPlanner()
 {
@@ -12,21 +12,24 @@ void TebLocalPlanner::initPlanner()
 {
     // Initialize the planner
     ROS_INFO("Initializing the planner");
+    // subscribe to FeedbackMsg
+    
+
     // load ros parameters from node handle
-    config.loadRosParamFromNodeHandle(nh)obstacles
+    config.loadRosParamFromNodeHandle(nh);
 
     // Setup visualization
     visual = TebVisualizationPtr(new TebVisualization(nh, config));
     
     // Setup robot shape model
-    config.robot_model = TebLocalPlannerROS::getRobotFootprintFromParamServer(nh, config);
-
-    // create planner
+    RobotFootprintModelPtr robot_model = TebLocalPlannerROS::getRobotFootprintFromParamServer(nh);
+  
     // Setup planner (homotopy class planning or just the local teb planner)
     if (config.hcp.enable_homotopy_class_planning)
-        planner = PlannerInterfacePtr(new HomotopyClassPlanner(config, &obst_vector, visual, &via_points));
+        planner = PlannerInterfacePtr(new HomotopyClassPlanner(config, &obst_vector, robot_model, visual, &via_points));
     else
-        planner = PlannerInterfacePtr(new TebOptimalPlanner(config, &obst_vector, visual, &via_points));
+        planner = PlannerInterfacePtr(new TebOptimalPlanner(config, &obst_vector, robot_model, visual, &via_points));
+
 }
 
 void TebLocalPlanner::loadObstacles()
@@ -127,6 +130,8 @@ void TebLocalPlanner::planTrajectory(std::vector<float> &trajectory)
     // Plan the trajectory
     // no robot posture info
     planner->plan(PoseSE2(start_pos[0], start_pos[1], 0), PoseSE2(goal_pos[0], goal_pos[1], 0)); 
+    planner->visualize(); // pub FeedbackMsg to "teb_feedback"
+
     std::vector<TrajectoryPointMsg> teb_trajectory;
     planner->getFullTrajectory(teb_trajectory);
 

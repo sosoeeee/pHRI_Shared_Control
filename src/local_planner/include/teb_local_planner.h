@@ -1,7 +1,7 @@
 # ifndef TEB_LOCAL_PLANNER_H_
 # define TEB_LOCAL_PLANNER_H_
 
-# include "local_planner/base_local_planner.h"
+# include "base_local_planner.h"
 #include <teb_local_planner/teb_local_planner_ros.h>
 
 using namespace teb_local_planner;
