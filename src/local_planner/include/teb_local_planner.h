@@ -15,12 +15,15 @@ private:
     std::vector<ObstaclePtr> obst_vector;
     ViaPointContainer via_points;
     TebConfig config;
+    bool is_plan_success;
+    TrajectoryMsg teb_trajectory;
 public:
     TebLocalPlanner();
     ~TebLocalPlanner();
     void loadObstacles();
     void loadViaPoints();
-    void switchToMsg(const std::vector<TrajectoryPointMsg> &teb_trajectory, std::vector<float> &trajectory);
+    void switchToMsg(const TrajectoryMsg &teb_trajectory, std::vector<float> &trajectory);
+    void feedback_cb(const teb_local_planner::FeedbackMsg::ConstPtr &feedback);
     // Implement the virtual functions
     void initPlanner();
     void planTrajectory(std::vector<float> &trajectory);

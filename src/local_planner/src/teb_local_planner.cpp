@@ -13,7 +13,7 @@ void TebLocalPlanner::initPlanner()
     // Initialize the planner
     ROS_INFO("Initializing the planner");
     // subscribe to FeedbackMsg
-    
+    ros::Subscriber feedback_sub = nh.subscribe("teb_feedback", 1, &TebLocalPlanner::feedback_cb, this);
 
     // load ros parameters from node handle
     config.loadRosParamFromNodeHandle(nh);
@@ -30,6 +30,14 @@ void TebLocalPlanner::initPlanner()
     else
         planner = PlannerInterfacePtr(new TebOptimalPlanner(config, &obst_vector, robot_model, visual, &via_points));
 
+}
+
+void TebLocalPlanner::feedback_cb(const teb_local_planner::FeedbackMsg::ConstPtr &feedback)
+{
+    // do something with the feedback
+    ROS_INFO("Trajecory feedback received");
+    teb_trajectory = feedback->trajectories[feedback->selected_trajectory_idx]; // deep copy
+    is_plan_success = true;
 }
 
 void TebLocalPlanner::loadObstacles()
@@ -62,8 +70,9 @@ void TebLocalPlanner::loadViaPoints()
     }
 }
 
-void TebLocalPlanner::switchToMsg(const std::vector<TrajectoryPointMsg> &teb_trajectory, std::vector<float> &trajectory)
+void TebLocalPlanner::switchToMsg(const TrajectoryMsg &teb_trajectory, std::vector<float> &trajectory)
 {
+    trajectory.clear();
     // g(t) = f(kt) 时间尺度变换
     double teb_total_time = teb_trajectory.back().time_from_start.toSec();
     double K = teb_total_time / double(total_time);
@@ -129,12 +138,14 @@ void TebLocalPlanner::planTrajectory(std::vector<float> &trajectory)
     
     // Plan the trajectory
     // no robot posture info
+    is_plan_success = false;
     planner->plan(PoseSE2(start_pos[0], start_pos[1], 0), PoseSE2(goal_pos[0], goal_pos[1], 0)); 
     planner->visualize(); // pub FeedbackMsg to "teb_feedback"
 
-    std::vector<TrajectoryPointMsg> teb_trajectory;
-    planner->getFullTrajectory(teb_trajectory);
-
-    std::vector<float> trajectory;
+    while (!is_plan_success)
+    {
+       ros::Duration(0.01).sleep();
+    }    
+    // switch to the format of the output
     switchToMsg(teb_trajectory, trajectory);
 }

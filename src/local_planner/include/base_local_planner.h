@@ -97,9 +97,7 @@ bool BaseLocalPlanner::local_plan_cb(local_planner::LocalPlanning::Request &req,
     // Plan the trajectory
     if (global_plan_success)
     {   
-        std::vector<float> traj;
-        planTrajectory(traj);
-        res.trajectory.assign(traj.begin(), traj.end());
+        planTrajectory(res.trajectory);
         res.success = true;
     }
     else
