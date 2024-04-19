@@ -54,6 +54,7 @@ void TebLocalPlanner::loadObstacles()
         polyobst->pushBackVertex(obstacles.markers[i].pose.position.x - obstacles.markers[i].scale.x / 2, obstacles.markers[i].pose.position.y + obstacles.markers[i].scale.y / 2);
         polyobst->finalizePolygon();
         obst_vector.push_back(ObstaclePtr(polyobst)); //这里实际上是一个shared_ptr指向了创建的PolygonObstacle对象
+        ROS_INFO("Obstacle %d: x: %f, y: %f, scale_x: %f, scale_y: %f", i, obstacles.markers[i].pose.position.x, obstacles.markers[i].pose.position.y, obstacles.markers[i].scale.x, obstacles.markers[i].scale.y);
     }
     ROS_INFO_ONCE("Obstacles loaded. This message is printed once.");
 }
@@ -66,6 +67,7 @@ void TebLocalPlanner::loadViaPoints()
     for (int i = 0; i < ref_path.size(); i += start_pos.size())
     {
         via_points.emplace_back(ref_path[i], ref_path[i + 1]);
+        ROS_INFO("Via-point %d: x: %f, y: %f", i, ref_path[i], ref_path[i + 1]);
     }
     ROS_INFO_ONCE("Via-points loaded. This message is printed once.");
 }
