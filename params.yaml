@@ -45,7 +45,7 @@ global_planner:
   publish_rate: 10
   publish_topic: "global_plan"
   obstacles_dilate: 0.02
-  smooth_step: 0.04  # actual distance between path points next to each other
+  smooth_step: 0.05  # actual distance between path points next to each other
   insert_step: 0.01
   
 RRT_planner:
@@ -171,7 +171,7 @@ shared_controller:
   threshold_force: 3.8
   local_len: 50
   replan_len: 380
-  replan_len_num: 20
+  replan_len_num: 10
   replan_freq: 2
   replan_timeout: 1
   alpha: 100

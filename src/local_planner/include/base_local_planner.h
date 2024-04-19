@@ -123,12 +123,13 @@ bool BaseLocalPlanner::local_plan_cb(local_planner::LocalPlanning::Request &req,
 void BaseLocalPlanner::global_planner_client()
 {
     // Initialize the client
-    ros::service::waitForService("global_plan");
-    ros::ServiceClient client = nh.serviceClient<global_planner::GlobalPlanning>("global_plan");
+    // ros::service::waitForService("global_plan");
+    ros::ServiceClient client = nh.serviceClient<global_planner::GlobalPlanning>("/global_plan");
     global_planner::GlobalPlanning srv;
     srv.request.start = start_pos;
     srv.request.goal = goal_pos;
-    
+
+    client.waitForExistence();
     if (client.call(srv))
     {
         global_plan_success = srv.response.success;
@@ -150,7 +151,11 @@ void BaseLocalPlanner::global_planner_client()
 void BaseLocalPlanner::run()
 {
     initPlanner();
-    ros::spin();
+    // ros::spin();
+    //multi spinnner
+    ROS_INFO("local planner running in multi thread spinner of %d", 4);
+    ros::MultiThreadedSpinner spinner(4);
+    spinner.spin();
 }
 
 BaseLocalPlanner::~BaseLocalPlanner()
