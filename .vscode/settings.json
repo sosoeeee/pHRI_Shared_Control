@@ -59,6 +59,7 @@
           "mutex": "cpp",
           "thread": "cpp",
           "cinttypes": "cpp",
-          "bit": "cpp"
+          "bit": "cpp",
+          "unordered_set": "cpp"
      }
 }

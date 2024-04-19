@@ -77,6 +77,8 @@ void TebLocalPlanner::switchToMsg(const TrajectoryMsg &teb_trajectory, std::vect
     trajectory.clear();
     // g(t) = f(kt) 时间尺度变换
     double teb_total_time = teb_trajectory.trajectory.back().time_from_start.toSec();
+    ROS_INFO("TEB time: %f", teb_total_time);
+    ROS_INFO("Target time: %f", total_time);
     double K = teb_total_time / double(total_time);
     int N = std::floor(total_time * control_frequency);
 
@@ -99,17 +101,18 @@ void TebLocalPlanner::switchToMsg(const TrajectoryMsg &teb_trajectory, std::vect
         t_e = teb_trajectory.trajectory[idx_teb + 1].time_from_start.toSec();
         if (t_s <= target_time && target_time < t_e)
         {
-            float dt = t_s - target_time;
-            float x = teb_trajectory.trajectory[idx_teb].pose.position.x;
-            float y = teb_trajectory.trajectory[idx_teb].pose.position.y;
-            float vx = teb_trajectory.trajectory[idx_teb].velocity.linear.x;
-            float vy = teb_trajectory.trajectory[idx_teb].velocity.linear.y;
+            ROS_INFO("Sample between [%f, %f], at %f", t_s, t_e, target_time);
+            float ratio = (target_time - t_s)/(t_e - t_s);
+            float x_s = teb_trajectory.trajectory[idx_teb].pose.position.x;
+            float y_s = teb_trajectory.trajectory[idx_teb].pose.position.y;
+            float x_e = teb_trajectory.trajectory[idx_teb+1].pose.position.x;
+            float y_e = teb_trajectory.trajectory[idx_teb+1].pose.position.y;
 
-            trajectory.push_back(x + vx * dt);
-            trajectory.push_back(y + vy * dt);
+            trajectory.push_back(x_s + (x_e - x_s) * ratio);
+            trajectory.push_back(y_s + (y_e - y_s) * ratio);
             trajectory.push_back(goal_pos[2]);
-            trajectory.push_back(vx);
-            trajectory.push_back(vy);
+            trajectory.push_back((x_e - x_s)/(t_e - t_s));
+            trajectory.push_back((y_e - y_s)/(t_e - t_s));
             trajectory.push_back(0);
             idx++;
             target_time = K * (idx * (1 / control_frequency));
@@ -141,7 +144,11 @@ void TebLocalPlanner::planTrajectory(std::vector<float> &trajectory)
     // Plan the trajectory
     // no robot posture info
     is_plan_success = false;
+    ROS_INFO("START [%f, %f, %f]", start_pos[0], start_pos[1], start_pos[2]);
+    ROS_INFO("GOAL [%f, %f, %f]", goal_pos[0], goal_pos[1], goal_pos[2]);
     planner->plan(PoseSE2(start_pos[0], start_pos[1], 0), PoseSE2(goal_pos[0], goal_pos[1], 0));
+    visual->publishObstacles(obst_vector);
+    visual->publishViaPoints(via_points);
     planner->visualize(); // pub FeedbackMsg to "teb_feedback"
 
     while (!is_plan_success)

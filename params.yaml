@@ -77,11 +77,11 @@ local_planner:
 
   # trajectory
   teb_autosize: True
-  dt_ref: 0.1 #
-  dt_hysteresis: 0.02 #
+  dt_ref: 0.3 #
+  dt_hysteresis: 0.1 #
   max_samples: 500
-  global_plan_viapoint_sep: 0.02 #   
-  via_points_ordered: False #
+  global_plan_viapoint_sep: 1 #   
+  via_points_ordered: true #
   publish_feedback: true #
   
   # Robot
@@ -135,14 +135,14 @@ local_planner:
   weight_adapt_factor: 2
 
   # Homotopy Class Planner
-  enable_homotopy_class_planning: false
+  enable_homotopy_class_planning: false #
   enable_multithreading: True
   max_number_classes: 4
   selection_cost_hysteresis: 1.0
   selection_prefer_initial_plan: 0.9
   selection_obst_cost_scale: 1.0
   selection_alternative_time_cost: False
-  selection_viapoint_cost_scale: 1.0
+  selection_viapoint_cost_scale: 1.0  #
   
   roadmap_graph_no_samples: 15
   roadmap_graph_area_width: 5
@@ -171,7 +171,7 @@ shared_controller:
   threshold_force: 3.8
   local_len: 50
   replan_len: 380
-  replan_len_num: 10
+  replan_len_num: 1
   replan_freq: 2
   replan_timeout: 1
   alpha: 100
