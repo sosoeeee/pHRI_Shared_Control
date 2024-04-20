@@ -1,5 +1,5 @@
 world_frame: "world"
-use_simulate: true
+use_simulate: false
 two_dimesion: true
 
 ## actuator params
@@ -175,7 +175,7 @@ shared_controller:
   replan_len: 380
   replan_len_num: 40
   replan_freq: 2
-  replan_timeout: 1
+  replan_timeout: 2
   alpha: 100
   weight_r: 1       # 追踪机器人期望轨迹的误差权重为 weight_r*weight_tracking
   weight_h: 10
