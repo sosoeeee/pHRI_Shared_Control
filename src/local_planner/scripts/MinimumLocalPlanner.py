@@ -94,9 +94,9 @@ class MinimumLocalPlanner(BaseLocalPlanner):
 
     def optimizeTime(self, interation):
         interation_N = interation
-        for _ in range(interation_N):
+        for n in range(interation_N):
 
-            # rospy.loginfo("start time parameters optimization, iteration is %d" % n)
+            rospy.loginfo("start time parameters optimization, iteration is %d" % n)
 
             # get duration of each segment
             self.durations = np.diff(self.ts)

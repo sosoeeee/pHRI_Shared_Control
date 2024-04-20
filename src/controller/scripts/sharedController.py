@@ -446,9 +446,9 @@ class SharedController(BaseController):
         endAcc = [0, 0, 0]
 
         # generate trajectory
-        rospy.wait_for_service('local_planner')
+        rospy.wait_for_service('/local_planner/local_plan')
         try:
-            plan_trajectory = rospy.ServiceProxy('local_planner', LocalPlanning)
+            plan_trajectory = rospy.ServiceProxy('/local_planner/local_plan', LocalPlanning)
             trajectoryFlatten = plan_trajectory(curStates.flatten()[:3].tolist(), startVel, startAcc,
                                                 self.goal, endVel, endAcc,
                                                 -1, -1,
@@ -500,9 +500,9 @@ class SharedController(BaseController):
 
             i += 1
             # generate trajectory
-            rospy.wait_for_service('local_planner')
+            rospy.wait_for_service('/local_planner/local_plan')
             try:
-                plan_trajectory = rospy.ServiceProxy('local_planner', LocalPlanning)
+                plan_trajectory = rospy.ServiceProxy('/local_planner/local_plan', LocalPlanning)
                 res = plan_trajectory(startPoint, startVel, startAcc,
                                                     endPoint, endVel, endAcc,
                                                     -1, -1,
@@ -651,7 +651,7 @@ class SharedController(BaseController):
         u_h = np.dot(k_0, k_h.dot(wx))
 
         # limit max ||u_r|| and ||u_h||
-        limit = 12.5
+        limit = 8.5
         if np.linalg.norm(u_r) > limit:
             u_r = u_r / np.linalg.norm(u_r) * limit
         if np.linalg.norm(u_h) > limit:

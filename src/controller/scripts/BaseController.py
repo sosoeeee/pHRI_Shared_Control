@@ -127,7 +127,7 @@ class BaseController:
                 # rospy.loginfo('cmd' + cmd)
 
                 # deactivate the controller when task is completed
-                if np.linalg.norm(self.currentStates[:3] - np.array(self.goal)) < self.tolerance:
+                if np.linalg.norm(self.currentStates[:3] - np.array(self.goal).reshape((3, 1))) < self.tolerance:
                     self.active = False
                     self.reInitial()
                     rospy.loginfo("Task has completed, controller is deactivated !")
