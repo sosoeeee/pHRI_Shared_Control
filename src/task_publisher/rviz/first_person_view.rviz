@@ -8,7 +8,6 @@ Panels:
         - /Status1
         - /Grid2/Offset1
         - /Grid3/Offset1
-        - /Path6
       Splitter Ratio: 0.4882352948188782
     Tree Height: 719
   - Class: rviz/Selection
@@ -91,13 +90,13 @@ Visualization Manager:
       Reference Frame: <Fixed Frame>
       Value: true
     - Class: rviz/MarkerArray
-      Enabled: false
+      Enabled: true
       Marker Topic: /env_obstacles
       Name: MarkerArray
       Namespaces:
-        {}
+        env: true
       Queue Size: 100
-      Value: false
+      Value: true
     - Alpha: 1
       Buffer Length: 1
       Class: rviz/Path
@@ -162,7 +161,7 @@ Visualization Manager:
       Marker Topic: /task/visual/humanForce
       Name: Marker
       Namespaces:
-        task: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -170,7 +169,7 @@ Visualization Manager:
       Marker Topic: /task/visual/followPath
       Name: Marker
       Namespaces:
-        task: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -178,7 +177,7 @@ Visualization Manager:
       Marker Topic: /task/visual/goal
       Name: Marker
       Namespaces:
-        task: true
+        {}
       Queue Size: 100
       Value: true
     - Alpha: 1
@@ -295,15 +294,14 @@ Visualization Manager:
       Marker Topic: /local_planner/teb_markers
       Name: Marker
       Namespaces:
-        PolyObstacles: true
-        ViaPoints: true
+        {}
       Queue Size: 100
       Value: true
     - Alpha: 1
       Buffer Length: 1
       Class: rviz/Path
       Color: 252; 175; 62
-      Enabled: true
+      Enabled: false
       Head Diameter: 0.30000001192092896
       Head Length: 0.20000000298023224
       Length: 0.30000001192092896
@@ -322,7 +320,7 @@ Visualization Manager:
       Shaft Length: 0.10000000149011612
       Topic: /local_planner/local_plan
       Unreliable: false
-      Value: true
+      Value: false
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -382,4 +380,4 @@ Window Geometry:
     collapsed: false
   Width: 1848
   X: 72
-  Y: 0
+  Y: 27

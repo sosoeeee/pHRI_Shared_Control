@@ -8,8 +8,8 @@ from geometry_msgs.msg import PoseStamped
 import tf
 
 # debug
-from nav_msgs.msg import Path
-from geometry_msgs.msg import PoseStamped
+# from nav_msgs.msg import Path
+# from geometry_msgs.msg import PoseStamped
 # cnt = 1
 
 import time
@@ -39,9 +39,9 @@ class BaseGlobalPlanner:
         self.path = None          # type np.ndarray, shape (N, 3)
 
         # debug
-        self.path_publisher = rospy.Publisher('global_path', Path, queue_size=1)
-        self.publish_rate = rospy.get_param('/global_planner/publish_rate', 10)
-        self.path_visual = None  # type nav_msgs/Path
+        # self.path_publisher = rospy.Publisher('global_path', Path, queue_size=1)
+        # self.publish_rate = rospy.get_param('/global_planner/publish_rate', 10)
+        # self.path_visual = None  # type nav_msgs/Path
 
     @abstractmethod
     def initPlanner(self):
@@ -140,30 +140,30 @@ class BaseGlobalPlanner:
             obstacle.pose = tar_pose.pose
 
     # # debug
-    def Array2Pose(self, point):
-        pose = PoseStamped()
-        pose.header.frame_id = self.world_frame
-        pose.header.stamp = rospy.Time.now()
-        pose.pose.position.x = point[0]
-        pose.pose.position.y = point[1]
-        pose.pose.position.z = point[2]
-        pose.pose.orientation.x = 0
-        pose.pose.orientation.y = 0
-        pose.pose.orientation.z = 0
-        pose.pose.orientation.w = 1
-        return pose
+    # def Array2Pose(self, point):
+    #     pose = PoseStamped()
+    #     pose.header.frame_id = self.world_frame
+    #     pose.header.stamp = rospy.Time.now()
+    #     pose.pose.position.x = point[0]
+    #     pose.pose.position.y = point[1]
+    #     pose.pose.position.z = point[2]
+    #     pose.pose.orientation.x = 0
+    #     pose.pose.orientation.y = 0
+    #     pose.pose.orientation.z = 0
+    #     pose.pose.orientation.w = 1
+    #     return pose
 
     def run(self):
         # debug
-        while not rospy.is_shutdown():
-            self.path_visual = Path()
-            self.path_visual.header.frame_id = self.world_frame
-            if self.path is not None:
-                for point in self.path:
-                    self.path_visual.poses.append(self.Array2Pose(point))
+        # while not rospy.is_shutdown():
+        #     self.path_visual = Path()
+        #     self.path_visual.header.frame_id = self.world_frame
+        #     if self.path is not None:
+        #         for point in self.path:
+        #             self.path_visual.poses.append(self.Array2Pose(point))
         
-            self.path_publisher.publish(self.path_visual)
+        #     self.path_publisher.publish(self.path_visual)
         
-            rospy.Rate(self.publish_rate).sleep()
-        # rospy.spin()
+        #     rospy.Rate(self.publish_rate).sleep()
+        rospy.spin()
 
