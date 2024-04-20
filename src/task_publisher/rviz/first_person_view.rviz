@@ -91,13 +91,13 @@ Visualization Manager:
       Reference Frame: <Fixed Frame>
       Value: true
     - Class: rviz/MarkerArray
-      Enabled: true
+      Enabled: false
       Marker Topic: /env_obstacles
       Name: MarkerArray
       Namespaces:
-        env: true
+        {}
       Queue Size: 100
-      Value: true
+      Value: false
     - Alpha: 1
       Buffer Length: 1
       Class: rviz/Path
@@ -295,7 +295,8 @@ Visualization Manager:
       Marker Topic: /local_planner/teb_markers
       Name: Marker
       Namespaces:
-        {}
+        PolyObstacles: true
+        ViaPoints: true
       Queue Size: 100
       Value: true
     - Alpha: 1

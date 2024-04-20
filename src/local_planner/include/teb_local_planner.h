@@ -28,8 +28,6 @@ private:
     // spacial scale
     float spacial_scale;
     boost::shared_ptr< dynamic_reconfigure::Server<TebLocalPlannerReconfigureConfig> > dynamic_recfg;
-    int plan_times;
-    std::vector<geometry_msgs::PoseStamped> init_plan;
 public:
     TebLocalPlanner();
     ~TebLocalPlanner();

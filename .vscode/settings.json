@@ -60,12 +60,6 @@
           "thread": "cpp",
           "cinttypes": "cpp",
           "bit": "cpp",
-          "unordered_set": "cpp",
-          "strstream": "cpp",
-          "list": "cpp",
-          "cfenv": "cpp",
-          "typeindex": "cpp",
-          "variant": "cpp",
-          "*.ipp": "cpp"
+          "unordered_set": "cpp"
      }
 }
