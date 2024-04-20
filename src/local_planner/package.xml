@@ -50,12 +50,30 @@
   <!--   <doc_depend>doxygen</doc_depend> -->
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>rospy</build_depend>
-  <build_export_depend>rospy</build_export_depend>
   <exec_depend>rospy</exec_depend>
 
+  <build_depend>roscpp</build_depend>
+  <exec_depend>roscpp</exec_depend>
+
   <build_depend>geometry_msgs</build_depend>
-  <build_export_depend>geometry_msgs</build_export_depend>
   <exec_depend>geometry_msgs</exec_depend>
+
+  <build_depend>visualization_msgs</build_depend>
+  <exec_depend>visualization_msgs</exec_depend>
+
+  <build_depend>tf2</build_depend>
+  <exec_depend>tf2</exec_depend>
+
+  <build_depend>teb_local_planner</build_depend>
+  <exec_depend>teb_local_planner</exec_depend>
+
+  <!-- <build_depend>global_planner</build_depend>
+  <exec_depend>global_planner</exec_depend> -->
+
+  <build_depend>geometry_msgs</build_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+
+  <!-- <depend>dynamic_reconfigure</depend> -->
 
   <build_depend>message_generation</build_depend>
   <exec_depend>message_runtime</exec_depend>

@@ -58,7 +58,7 @@ class PubGoalActionClient:
                     (controller_type, self._id, res.real_time_taken), actualTraj)
         k = 1
         for traj in self.robotTrajSet:
-            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/robotTraj_id%d_%d_%.3f" %
+            np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/robotTraj_id%d_%d_%.3f.txt" %
                         (controller_type, self._id, k, traj['time']), traj['path'])
             k += 1
         self.done = True

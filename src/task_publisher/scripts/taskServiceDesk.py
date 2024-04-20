@@ -39,6 +39,8 @@ if __name__ == '__main__':
                     try:
                         init = rospy.ServiceProxy('initRobot', initRobot)
                         res = init().isReady
+                        if res:
+                            rospy.loginfo("finish robot initialize")
                     except rospy.ServiceException as e:
                         rospy.loginfo("Service call failed: %s" % e)
 
