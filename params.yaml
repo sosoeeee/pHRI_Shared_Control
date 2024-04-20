@@ -1,5 +1,5 @@
 world_frame: "world"
-use_simulate: true
+use_simulate: false
 two_dimesion: true
 
 ## actuator params
@@ -9,7 +9,7 @@ actuator:
     # - {q1: 0.1783, q2: 0.5602, q3: -0.2449, q4: -1.5819, q5: 1.9484, q6: 0.1644, q7: 0.6433}
     - {q1: 0.1683, q2: 0.4251, q3: -0.0850, q4: -1.4250, q5: -0.0042, q6: 1.2527, q7: 1.2268}
     - {q1: -0.6816, q2: 0.4251, q3: -0.0850, q4: -1.4250, q5: -0.0042, q6: 1.2527, q7: 1.2268}
-    - {q1: -0.8157, q2: 0.8359, q3: -0.0850, q4: -1.4880, q5: 0.0859, q6: 0.8214, q7: 0.63917}
+    - {q1: -0.7438, q2: 0.7925, q3: -0.0850, q4: -1.5924, q5: -0.0112, q6: 0.7156, q7: 1.1889}
 
   # initJointPoses: 
   #   - {q1: -0.8073, q2: 0.6508, q3: -0.1780, q4: -1.4782, q5: 0.1215, q6: 1.0317, q7: 0.1414}   # used to calibrate VICON frame
@@ -45,18 +45,18 @@ global_planner:
   publish_rate: 10
   publish_topic: "global_plan"
   obstacles_dilate: 0.02
-  smooth_step: 0.07 # actual distance between path points next to each other
+  smooth_step: 0.04  # actual distance between path points next to each other
   insert_step: 0.01
   
 RRT_planner:
     max_iter: 2000
     step_size: 0.02
     line_collision_check_resolution: 0.005
-    check_goal_prob: 0.005
+    check_goal_prob: 0.01
     search_space:
       x:
         - 0.40
-        - 0.75
+        - 0.8
       y:
         - -0.45
         - 0.03
@@ -169,10 +169,10 @@ impedance_controller:
 shared_controller:
   M: 1
   C: 40
-  threshold_force: 3.8
+  threshold_force: 3.0
   local_len: 50
   replan_len: 380
-  replan_len_num: 1
+  replan_len_num: 40
   replan_freq: 2
   replan_timeout: 1
   alpha: 100
