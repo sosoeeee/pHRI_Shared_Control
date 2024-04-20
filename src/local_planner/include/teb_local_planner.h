@@ -21,6 +21,9 @@ private:
     bool is_plan_success;
     TrajectoryMsg teb_trajectory;
     ros::Subscriber feedback_sub;
+
+    // spacial scale
+    float spacial_scale;
 public:
     TebLocalPlanner();
     ~TebLocalPlanner();

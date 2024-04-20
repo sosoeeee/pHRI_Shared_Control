@@ -45,7 +45,7 @@ global_planner:
   publish_rate: 10
   publish_topic: "global_plan"
   obstacles_dilate: 0.02
-  smooth_step: 0.05  # actual distance between path points next to each other
+  smooth_step: 0.07 # actual distance between path points next to each other
   insert_step: 0.01
   
 RRT_planner:
@@ -74,6 +74,7 @@ MinimumLocalPlanner:
 local_planner:
   ## add any params you want to change in teb local planner
   map_frame: "world"
+  spacial_scale: 20
 
   # trajectory
   teb_autosize: True
@@ -91,7 +92,7 @@ local_planner:
 
   max_vel_x: 0.4
   max_vel_x_backwards: 0.2
-  max_vel_y: 0.1
+  max_vel_y: 0
   max_vel_theta: 0.3
   acc_lim_x: 0.5
   acc_lim_y: 0.2
@@ -99,15 +100,15 @@ local_planner:
   min_turning_radius: 0.0 # omni-drive robot (can turn on place!)
 
   # GoalTolerance
-  xy_goal_tolerance: 0.01 #
-  yaw_goal_tolerance: 0.02 #
+  xy_goal_tolerance: 0.1 #
+  yaw_goal_tolerance: 0.2 #
   free_goal_vel: False
   complete_global_plan: True
 
   # Obstacles
-  min_obstacle_dist: 0.02 # This value must also include our robot radius, since footprint_model is set to "point". #
-  inflation_dist: 0.022 #
-  obstacle_poses_affected: 15
+  min_obstacle_dist: 0.4 # This value must also include our robot radius, since footprint_model is set to "point". #
+  inflation_dist: 0.42 #
+  obstacle_poses_affected: 30
 
   # Optimization
   no_inner_iterations: 5
@@ -115,7 +116,7 @@ local_planner:
   optimization_activate: True
   optimization_verbose: False
   penalty_epsilon: 0.1
-  obstacle_cost_exponent: 4
+  obstacle_cost_exponent: 1
   weight_max_vel_x: 2
   weight_max_vel_y: 2
   weight_max_vel_theta: 1
@@ -128,26 +129,26 @@ local_planner:
   weight_optimaltime: 1 # must be > 0
   weight_shortest_path: 0
   weight_obstacle: 100
-  weight_inflation: 0.2
+  weight_inflation: 0.1
   weight_dynamic_obstacle: 10
   weight_dynamic_obstacle_inflation: 0.2
-  weight_viapoint: 1
+  weight_viapoint: 20
   weight_adapt_factor: 2
 
   # Homotopy Class Planner
-  enable_homotopy_class_planning: false #
+  enable_homotopy_class_planning: true #
   enable_multithreading: True
   max_number_classes: 4
   selection_cost_hysteresis: 1.0
   selection_prefer_initial_plan: 0.9
-  selection_obst_cost_scale: 1.0
+  selection_obst_cost_scale: 2.0
   selection_alternative_time_cost: False
-  selection_viapoint_cost_scale: 1.0  #
+  selection_viapoint_cost_scale: 20.0  #
   
   roadmap_graph_no_samples: 15
   roadmap_graph_area_width: 5
   roadmap_graph_area_length_scale: 1.0
-  h_signature_prescaler: 0.5
+  h_signature_prescaler: 1
   h_signature_threshold: 0.1
   obstacle_heading_threshold: 0.45
   switching_blocking_period: 0.0

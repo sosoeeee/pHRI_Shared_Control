@@ -12,6 +12,8 @@ void TebLocalPlanner::initPlanner()
 {
     // Initialize the planner
     ROS_INFO("Initializing the TebLocalPlanner");
+    nh.getParam("/local_planner/spacial_scale", spacial_scale);
+
     // subscribe to FeedbackMsg
     feedback_sub = nh.subscribe("/local_planner/teb_feedback", 10, &TebLocalPlanner::feedback_cb, this);
 
@@ -48,13 +50,12 @@ void TebLocalPlanner::loadObstacles()
     for (int i = 0; i < obstacles.markers.size(); i++)
     {
         PolygonObstacle* polyobst = new PolygonObstacle;
-        polyobst->pushBackVertex(obstacles.markers[i].pose.position.x - obstacles.markers[i].scale.x / 2, obstacles.markers[i].pose.position.y - obstacles.markers[i].scale.y / 2);
-        polyobst->pushBackVertex(obstacles.markers[i].pose.position.x + obstacles.markers[i].scale.x / 2, obstacles.markers[i].pose.position.y - obstacles.markers[i].scale.y / 2);
-        polyobst->pushBackVertex(obstacles.markers[i].pose.position.x + obstacles.markers[i].scale.x / 2, obstacles.markers[i].pose.position.y + obstacles.markers[i].scale.y / 2);
-        polyobst->pushBackVertex(obstacles.markers[i].pose.position.x - obstacles.markers[i].scale.x / 2, obstacles.markers[i].pose.position.y + obstacles.markers[i].scale.y / 2);
+        polyobst->pushBackVertex((obstacles.markers[i].pose.position.x - obstacles.markers[i].scale.x / 2) * spacial_scale, (obstacles.markers[i].pose.position.y - obstacles.markers[i].scale.y / 2) * spacial_scale);
+        polyobst->pushBackVertex((obstacles.markers[i].pose.position.x + obstacles.markers[i].scale.x / 2) * spacial_scale, (obstacles.markers[i].pose.position.y - obstacles.markers[i].scale.y / 2) * spacial_scale);
+        polyobst->pushBackVertex((obstacles.markers[i].pose.position.x + obstacles.markers[i].scale.x / 2) * spacial_scale, (obstacles.markers[i].pose.position.y + obstacles.markers[i].scale.y / 2) * spacial_scale);
+        polyobst->pushBackVertex((obstacles.markers[i].pose.position.x - obstacles.markers[i].scale.x / 2) * spacial_scale, (obstacles.markers[i].pose.position.y + obstacles.markers[i].scale.y / 2) * spacial_scale);
         polyobst->finalizePolygon();
         obst_vector.push_back(ObstaclePtr(polyobst)); //这里实际上是一个shared_ptr指向了创建的PolygonObstacle对象
-        ROS_INFO("Obstacle %d: x: %f, y: %f, scale_x: %f, scale_y: %f", i, obstacles.markers[i].pose.position.x, obstacles.markers[i].pose.position.y, obstacles.markers[i].scale.x, obstacles.markers[i].scale.y);
     }
     ROS_INFO_ONCE("Obstacles loaded. This message is printed once.");
 }
@@ -66,7 +67,7 @@ void TebLocalPlanner::loadViaPoints()
     // transform via-points into the planning frame
     for (int i = 0; i < ref_path.size(); i += start_pos.size())
     {
-        via_points.emplace_back(ref_path[i], ref_path[i + 1]);
+        via_points.emplace_back(ref_path[i] * spacial_scale, ref_path[i + 1] * spacial_scale);
         ROS_INFO("Via-point %d: x: %f, y: %f", i, ref_path[i], ref_path[i + 1]);
     }
     ROS_INFO_ONCE("Via-points loaded. This message is printed once.");
@@ -77,17 +78,17 @@ void TebLocalPlanner::switchToMsg(const TrajectoryMsg &teb_trajectory, std::vect
     trajectory.clear();
     // g(t) = f(kt) 时间尺度变换
     double teb_total_time = teb_trajectory.trajectory.back().time_from_start.toSec();
-    ROS_INFO("TEB time: %f", teb_total_time);
-    ROS_INFO("Target time: %f", total_time);
+    // ROS_INFO("TEB time: %f", teb_total_time);
+    // ROS_INFO("Target time: %f", total_time);
     double K = teb_total_time / double(total_time);
     int N = std::floor(total_time * control_frequency);
 
     // start point
-    trajectory.push_back(teb_trajectory.trajectory[0].pose.position.x);
-    trajectory.push_back(teb_trajectory.trajectory[0].pose.position.y);
+    trajectory.push_back(teb_trajectory.trajectory[0].pose.position.x / spacial_scale);
+    trajectory.push_back(teb_trajectory.trajectory[0].pose.position.y / spacial_scale);
     trajectory.push_back(goal_pos[2]);
-    trajectory.push_back(teb_trajectory.trajectory[0].velocity.linear.x);
-    trajectory.push_back(teb_trajectory.trajectory[0].velocity.linear.y);
+    trajectory.push_back(teb_trajectory.trajectory[0].velocity.linear.x / spacial_scale);
+    trajectory.push_back(teb_trajectory.trajectory[0].velocity.linear.y / spacial_scale);
     trajectory.push_back(0);
 
     int idx = 1;
@@ -101,12 +102,12 @@ void TebLocalPlanner::switchToMsg(const TrajectoryMsg &teb_trajectory, std::vect
         t_e = teb_trajectory.trajectory[idx_teb + 1].time_from_start.toSec();
         if (t_s <= target_time && target_time < t_e)
         {
-            ROS_INFO("Sample between [%f, %f], at %f", t_s, t_e, target_time);
+            // ROS_INFO("Sample between [%f, %f], at %f", t_s, t_e, target_time);
             float ratio = (target_time - t_s)/(t_e - t_s);
-            float x_s = teb_trajectory.trajectory[idx_teb].pose.position.x;
-            float y_s = teb_trajectory.trajectory[idx_teb].pose.position.y;
-            float x_e = teb_trajectory.trajectory[idx_teb+1].pose.position.x;
-            float y_e = teb_trajectory.trajectory[idx_teb+1].pose.position.y;
+            float x_s = teb_trajectory.trajectory[idx_teb].pose.position.x / spacial_scale;
+            float y_s = teb_trajectory.trajectory[idx_teb].pose.position.y / spacial_scale;
+            float x_e = teb_trajectory.trajectory[idx_teb+1].pose.position.x / spacial_scale;
+            float y_e = teb_trajectory.trajectory[idx_teb+1].pose.position.y / spacial_scale;
 
             trajectory.push_back(x_s + (x_e - x_s) * ratio);
             trajectory.push_back(y_s + (y_e - y_s) * ratio);
@@ -124,11 +125,11 @@ void TebLocalPlanner::switchToMsg(const TrajectoryMsg &teb_trajectory, std::vect
     }
 
     // end point
-    trajectory.push_back(teb_trajectory.trajectory.back().pose.position.x);
-    trajectory.push_back(teb_trajectory.trajectory.back().pose.position.y);
+    trajectory.push_back(teb_trajectory.trajectory.back().pose.position.x / spacial_scale);
+    trajectory.push_back(teb_trajectory.trajectory.back().pose.position.y / spacial_scale);
     trajectory.push_back(goal_pos[2]);
-    trajectory.push_back(teb_trajectory.trajectory.back().velocity.linear.x);
-    trajectory.push_back(teb_trajectory.trajectory.back().velocity.linear.y);
+    trajectory.push_back(teb_trajectory.trajectory.back().velocity.linear.x / spacial_scale);
+    trajectory.push_back(teb_trajectory.trajectory.back().velocity.linear.y / spacial_scale);
     trajectory.push_back(0);
 }
 
@@ -144,16 +145,19 @@ void TebLocalPlanner::planTrajectory(std::vector<float> &trajectory)
     // Plan the trajectory
     // no robot posture info
     is_plan_success = false;
-    ROS_INFO("START [%f, %f, %f]", start_pos[0], start_pos[1], start_pos[2]);
-    ROS_INFO("GOAL [%f, %f, %f]", goal_pos[0], goal_pos[1], goal_pos[2]);
-    planner->plan(PoseSE2(start_pos[0], start_pos[1], 0), PoseSE2(goal_pos[0], goal_pos[1], 0));
+    // ROS_INFO("START [%f, %f, %f]", start_pos[0], start_pos[1], start_pos[2]);
+    // ROS_INFO("GOAL [%f, %f, %f]", goal_pos[0], goal_pos[1], goal_pos[2]);
+    planner->clearPlanner();
+    planner->plan(PoseSE2(start_pos[0] * spacial_scale, start_pos[1] * spacial_scale, 0), PoseSE2(goal_pos[0] * spacial_scale, goal_pos[1] * spacial_scale, 0));
     visual->publishObstacles(obst_vector);
+    ros::Duration(2).sleep();
     visual->publishViaPoints(via_points);
+    ros::Duration(2).sleep();
     planner->visualize(); // pub FeedbackMsg to "teb_feedback"
 
     while (!is_plan_success)
     {
-        ROS_INFO("Wait Feedback info");
+       ROS_INFO("Wait Feedback info");
        ros::Duration(0.1).sleep();
     }    
     // switch to the format of the output
