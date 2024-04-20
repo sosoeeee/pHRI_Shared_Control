@@ -189,6 +189,7 @@ void TebLocalPlanner::planTrajectory(std::vector<float> &trajectory)
     // }
 
     is_plan_success = false;
+    planner->clearPlanner();
     for (int i = 0; i<plan_times; i++)
     {
         planner->plan(init_plan);
