@@ -6,6 +6,9 @@
 #include <teb_local_planner/TrajectoryMsg.h>
 #include <teb_local_planner/FeedbackMsg.h>
 
+#include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
+
 using namespace teb_local_planner;
 
 class TebLocalPlanner : public BaseLocalPlanner
@@ -24,6 +27,7 @@ private:
 
     // spacial scale
     float spacial_scale;
+    boost::shared_ptr< dynamic_reconfigure::Server<TebLocalPlannerReconfigureConfig> > dynamic_recfg;
 public:
     TebLocalPlanner();
     ~TebLocalPlanner();
@@ -31,6 +35,7 @@ public:
     void loadViaPoints();
     void switchToMsg(const TrajectoryMsg &teb_trajectory, std::vector<float> &trajectory);
     void feedback_cb(const teb_local_planner::FeedbackMsg::ConstPtr &feedback);
+    void CB_reconfigure(TebLocalPlannerReconfigureConfig& reconfig, uint32_t level);
     // Implement the virtual functions
     void initPlanner();
     void planTrajectory(std::vector<float> &trajectory);

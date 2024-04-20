@@ -17,6 +17,10 @@ void TebLocalPlanner::initPlanner()
     // subscribe to FeedbackMsg
     feedback_sub = nh.subscribe("/local_planner/teb_feedback", 10, &TebLocalPlanner::feedback_cb, this);
 
+    dynamic_recfg = boost::make_shared< dynamic_reconfigure::Server<TebLocalPlannerReconfigureConfig> >(nh);
+    dynamic_reconfigure::Server<TebLocalPlannerReconfigureConfig>::CallbackType cb = boost::bind(CB_reconifgure, _1, _2);
+    dynamic_recfg->setCallback(cb);
+
     // load ros parameters from node handle
     config.loadRosParamFromNodeHandle(nh);
 
@@ -32,6 +36,11 @@ void TebLocalPlanner::initPlanner()
     else
         planner = PlannerInterfacePtr(new TebOptimalPlanner(config, &obst_vector, robot_model, visual, &via_points));
 
+}
+
+void TebLocalPlanner::CB_reconfigure(TebLocalPlannerReconfigureConfig& reconfig, uint32_t level)
+{
+    config.reconfigure(reconfig);
 }
 
 void TebLocalPlanner::feedback_cb(const teb_local_planner::FeedbackMsg::ConstPtr &feedback)
@@ -147,18 +156,29 @@ void TebLocalPlanner::planTrajectory(std::vector<float> &trajectory)
     is_plan_success = false;
     // ROS_INFO("START [%f, %f, %f]", start_pos[0], start_pos[1], start_pos[2]);
     // ROS_INFO("GOAL [%f, %f, %f]", goal_pos[0], goal_pos[1], goal_pos[2]);
-    planner->clearPlanner();
-    planner->plan(PoseSE2(start_pos[0] * spacial_scale, start_pos[1] * spacial_scale, 0), PoseSE2(goal_pos[0] * spacial_scale, goal_pos[1] * spacial_scale, 0));
-    visual->publishObstacles(obst_vector);
-    ros::Duration(2).sleep();
-    visual->publishViaPoints(via_points);
-    ros::Duration(2).sleep();
-    planner->visualize(); // pub FeedbackMsg to "teb_feedback"
+    // planner->clearPlanner();
+    // planner->plan(PoseSE2(start_pos[0] * spacial_scale, start_pos[1] * spacial_scale, 0), PoseSE2(goal_pos[0] * spacial_scale, goal_pos[1] * spacial_scale, 0));
+    // visual->publishObstacles(obst_vector);
+    // ros::Duration(2).sleep();
+    // visual->publishViaPoints(via_points);
+    // ros::Duration(2).sleep();
+    // planner->visualize(); // pub FeedbackMsg to "teb_feedback"
+
+    // debug to adjust parameters
+    while (true)
+    {
+        planner->clearPlanner();
+        planner->plan(PoseSE2(start_pos[0] * spacial_scale, start_pos[1] * spacial_scale, 0), PoseSE2(goal_pos[0] * spacial_scale, goal_pos[1] * spacial_scale, 0));
+        visual->publishObstacles(obst_vector);
+        visual->publishViaPoints(via_points);
+        planner->visualize(); // pub FeedbackMsg to "teb_feedback"
+        ros::Duration(0.1).sleep();
+    }
 
     while (!is_plan_success)
     {
-       ROS_INFO("Wait Feedback info");
-       ros::Duration(0.1).sleep();
+        ROS_INFO("Wait Feedback info");
+        ros::Duration(0.1).sleep();
     }    
     // switch to the format of the output
     switchToMsg(teb_trajectory, trajectory);

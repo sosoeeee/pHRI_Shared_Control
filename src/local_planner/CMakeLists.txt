@@ -15,12 +15,14 @@ find_package(catkin REQUIRED COMPONENTS
   visualization_msgs
   tf2
   teb_local_planner
+  # dynamic_reconfigure
   # global_planner
 )
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
-
+# find_package(Boost REQUIRED COMPONENTS system thread graph)
+find_package(Boost REQUIRED COMPONENTS system)
 
 ## Generate services in the 'srv' folder
 add_service_files(
@@ -31,6 +33,12 @@ add_service_files(
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
   DEPENDENCIES
+)
+
+#add dynamic reconfigure api
+#find_package(catkin REQUIRED dynamic_reconfigure)
+generate_dynamic_reconfigure_options(
+  cfg/TebLocalPlannerReconfigure.cfg
 )
 
 ###################################
@@ -79,6 +87,8 @@ add_library(${PROJECT_NAME}
 )
 
 add_dependencies(${PROJECT_NAME} ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+# Dynamic reconfigure: make sure configure headers are built before any node using them
+add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_gencfg)
 
 target_link_libraries(${PROJECT_NAME}
    ${catkin_LIBRARIES}
