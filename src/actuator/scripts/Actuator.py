@@ -59,6 +59,10 @@ class Actuator:
 
         self.z_deviation = rospy.get_param("/actuator/endDeviation", 0.15)
 
+        # limit the position for safety
+        self.x_limit = rospy.get_param("/actuator/x_limit", [0.4, 0.7])
+        self.y_limit = rospy.get_param("/actuator/y_limit", [-0.45, 0.03])
+
     def initRobot(self):
         while self.currentJointPosition is None:
             rospy.loginfo("Can't receive robot state info, please check your connection")
@@ -130,6 +134,17 @@ class Actuator:
 
         # self.pubVelCmd_Cart.publish(cartesianVelCmd)
 
+        # limit the position for safety
+        if x < self.x_limit[0]:
+            x = self.x_limit[0]
+        elif x > self.x_limit[1]:
+            x = self.x_limit[1]
+        
+        if y < self.y_limit[0]:
+            y = self.y_limit[0]
+        elif y > self.y_limit[1]:
+            y = self.y_limit[1]
+
         cartesianPosCmd = PoseStamped()
         if self.PoseCmd_Cart is not None:
             cartesianPosCmd = self.PoseCmd_Cart.poseStamped
@@ -143,7 +158,7 @@ class Actuator:
 
             self.pubPoseCmd_Cart.publish(cartesianPosCmd)
             # rospy.loginfo('cmd %.2f, %.2f, %.2f' % (x, y, z))
-
+        
         # Jcob = Jacobian(self.currentJointPosition)
         # currentJointPositionVector = np.array(self.currentJointPosition).reshape((7, 1))
         # # Jcob = Jcob[:3, :]
