@@ -6,19 +6,20 @@ two_dimesion: true
 actuator:
   x_limit: 
     - 0.4
-    - 0.7
+    - 0.67
   y_limit:
-    - -0.45
+    - -0.44
     - 0.03
   z_limit:
     - 0
     - 0 
-  endDeviation: 0.14
+  endDeviation: 0.19
   initJointPoses:
     # - {q1: 0.1783, q2: 0.5602, q3: -0.2449, q4: -1.5819, q5: 1.9484, q6: 0.1644, q7: 0.6433}
     - {q1: 0.1683, q2: 0.4251, q3: -0.0850, q4: -1.4250, q5: -0.0042, q6: 1.2527, q7: 1.2268}
     - {q1: -0.6816, q2: 0.4251, q3: -0.0850, q4: -1.4250, q5: -0.0042, q6: 1.2527, q7: 1.2268}
-    - {q1: -0.8157, q2: 0.8359, q3: -0.0850, q4: -1.4880, q5: 0.0859, q6: 0.8214, q7: 0.63917}
+    # - {q1: -0.8157, q2: 0.8359, q3: -0.0850, q4: -1.4880, q5: 0.0859, q6: 0.8214, q7: 0.63917}
+    - {q1: -0.8157, q2: 0.7522, q3: -0.0850, q4: -1.4812, q5: 0.0731, q6: 0.9116, q7: 0.6476}
 
   # initJointPoses: 
   #   - {q1: -0.8073, q2: 0.6508, q3: -0.1780, q4: -1.4782, q5: 0.1215, q6: 1.0317, q7: 0.1414}   # used to calibrate VICON frame
@@ -65,7 +66,7 @@ RRT_planner:
     search_space:
       x:
         - 0.40
-        - 0.75
+        - 0.7
       y:
         - -0.45
         - 0.03
@@ -167,7 +168,7 @@ local_planner:
   max_ratio_detours_duration_best_duration: 3.0
 
 ## controller params
-controller_type: "Switching"  # Admittance, Shared, Switching
+controller_type: "Shared"  # Admittance, Shared, Switching
 
 controller:
   control_frequency: 10 # must slower than the frequency of sampling the sensor data
