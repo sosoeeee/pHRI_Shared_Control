@@ -4,6 +4,15 @@ two_dimesion: true
 
 ## actuator params
 actuator:
+  x_limit: 
+    - 0.4
+    - 0.7
+  y_limit:
+    - -0.45
+    - 0.03
+  z_limit:
+    - 0
+    - 0 
   endDeviation: 0.14
   initJointPoses:
     # - {q1: 0.1783, q2: 0.5602, q3: -0.2449, q4: -1.5819, q5: 1.9484, q6: 0.1644, q7: 0.6433}
