@@ -158,7 +158,7 @@ local_planner:
   max_ratio_detours_duration_best_duration: 3.0
 
 ## controller params
-controller_type: "Admittance"  # Admittance, Shared, Switching
+controller_type: "Switching"  # Admittance, Shared, Switching
 
 controller:
   control_frequency: 10 # must slower than the frequency of sampling the sensor data
