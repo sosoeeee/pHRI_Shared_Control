@@ -8,6 +8,6 @@ task_list:
   - {task_id: 4, task_type: 'initRobot', sleep_time: 5}
   - {task_id: 5, task_type: 'reachGoal', goal_x: 0.55, goal_y: 0, goal_z: 0.065, tolerance: 0.01, time_taken: 100}
   - {task_id: 5, task_type: 'followPath', goal_x: 0.55, goal_y: 0, goal_z: 0.065, tolerance: 0.01, file_path: "task/path.txt"}
-  - {task_id: 6, task_type: 'initRobot', sleep_time: 5}
-  - {task_id: 7, task_type: 'reachGoal', goal_x: 0.55, goal_y: 0, goal_z: 0.065, tolerance: 0.01, time_taken: 100}
-  - {task_id: 7, task_type: 'followPath', goal_x: 0.55, goal_y: 0, goal_z: 0.065, tolerance: 0.01, file_path: "task/path.txt"}
+  # - {task_id: 6, task_type: 'initRobot', sleep_time: 5}
+  # - {task_id: 7, task_type: 'reachGoal', goal_x: 0.55, goal_y: 0, goal_z: 0.065, tolerance: 0.01, time_taken: 100}
+  # - {task_id: 7, task_type: 'followPath', goal_x: 0.55, goal_y: 0, goal_z: 0.065, tolerance: 0.01, file_path: "task/path.txt"}
