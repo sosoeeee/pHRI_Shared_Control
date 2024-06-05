@@ -1,0 +1,4 @@
+<launch>
+  <node name="force_simulator" pkg="force_simulator" type="main.py">
+  </node>
+</launch>
