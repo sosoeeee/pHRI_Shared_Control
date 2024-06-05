@@ -181,4 +181,4 @@ shared_controller:
   weight_h: 10
   weight_tracking: 1000
   load_traj: false
-  deviation: 0.03   # the max tolerated deviation from robot desired traj
+  deviation: 0.1   # the max tolerated deviation from robot desired traj
