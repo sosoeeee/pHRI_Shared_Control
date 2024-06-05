@@ -247,6 +247,10 @@ class PubPathActionServer(BaseTaskServer):
         self.data_realTimeError = None
         self.data_humanForce = None
         self.pathPoints = None
+        self.data_deviation = None
+
+        rospy.Subscriber("/controller/robotDesPos", Point, self.update_robotDesPos, queue_size=1)
+        self.robotDesPos = np.zeros((3, 1))
 
         # visual publisher
         self.vis_pubPath = rospy.Publisher('/task/visual/followPath', Marker, queue_size=1)
@@ -280,6 +284,7 @@ class PubPathActionServer(BaseTaskServer):
         self._feedback.distance_to_path = 0
         self.data_reachError = [np.inf for _ in range(self.pathPoints.shape[0])]
         self.data_realTimeError = []
+        self.data_deviation = []
         self.data_humanForce = np.zeros((3, 1))
 
         # publish info to the console for the user
@@ -312,6 +317,7 @@ class PubPathActionServer(BaseTaskServer):
                 self._result.reach_error = self.data_reachError
                 self._result.human_force = self.data_humanForce.T.flatten().tolist()
                 self._result.real_time_error = self.data_realTimeError
+                self._result.deviation = self.data_deviation
                 self._as.set_succeeded(self._result)
                 break
 
@@ -340,6 +346,14 @@ class PubPathActionServer(BaseTaskServer):
             if error < miniError:
                 miniError = error
         self.data_realTimeError.append(miniError)
+        # compute deviation
+        dev = np.linalg.norm(self.robotDesPos - self.currentStates[:3, :])
+        self.data_deviation.append(dev)
+
+    def update_robotDesPos(self, msg):
+        self.robotDesPos[0, 0] = msg.x
+        self.robotDesPos[1, 0] = msg.y
+        self.robotDesPos[2, 0] = msg.z
 
 
 class PubTrajActionServer(BaseTaskServer):

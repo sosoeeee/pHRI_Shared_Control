@@ -146,12 +146,12 @@ class RRTPlanner(BaseGlobalPlanner):
         # else:
         X = SearchSpace(self.searchSpace, self.normalizedObstacles)
 
-        rrt = RRT(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb)
-        self.path = np.array(rrt.rrt_search())
+        # rrt = RRT(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb)
+        # self.path = np.array(rrt.rrt_search())
 
         # more smoooooooooooth
-        # rrt = RRTStarBidirectionalHeuristic(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb, 32)
-        # self.path = np.array(rrt.rrt_star_bid_h())
+        rrt = RRTStarBidirectionalHeuristic(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb, 32)
+        self.path = np.array(rrt.rrt_star_bid_h())
 
         # rrt = RRTStarBidirectional(X, self.step, x_init, x_goal, self.maxIterNum, self.r, self.checkGoalProb, 16)
         # self.path = np.array(rrt.rrt_star_bidirectional())

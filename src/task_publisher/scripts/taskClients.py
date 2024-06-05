@@ -106,6 +106,8 @@ class PubPathActionClient:
                    (controller_type, self._id), np.array(res.real_time_error).reshape((-1, 1)))
         np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/humanForce_id%d.txt" %
                    (controller_type, self._id), np.array(res.human_force).reshape((-1, 3)))
+        np.savetxt("/home/jun/pHRI_Shared_Control/src/task_publisher/data/%s/deviation_id%d.txt" %
+                   (controller_type, self._id), np.array(res.deviation).reshape((-1, 1)))
 
         self.done = True
 

@@ -24,20 +24,20 @@ env_publisher:
   publish_topic: "env_obstacles"
   VICON_topics:
     - "/vicon/shr_obs1/shr_obs1"
-    - "/vicon/shr_obs2/shr_obs2"
-    - "/ref1_1"
-    - "/ref1_2"
-    - "/ref2_1"
+    # - "/vicon/shr_obs2/shr_obs2"
+    # - "/ref1_1"
+    # - "/ref1_2"
+    # - "/ref2_1"
   static: true
 
 
   VICON_transform: {x: 2.36, y: -0.47, z: -0.54, qx: 0, qy: 0, qz: -0.707, qw: 0.707} # VICON frame according to world frame
   obstacle_args:
     - {id: 0, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, cor_x: 0.005, cor_y: 0.052, cor_z: -0.075, x: -0.1431, y: -1.6597, z: 0.625}  
-    - {id: 1, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, cor_x: 0.018, cor_y: 0.06, cor_z: -0.055, x: -0.3561, y: -1.7491, z: 0.617}  
-    - {id: 2, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, ref: 0, offset_x: 0, offset_y: -0.15, offset_z: 0}
-    - {id: 3, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, ref: 0, offset_x: 0, offset_y: -0.3, offset_z: 0}
-    - {id: 4, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, ref: 1, offset_x: 0, offset_y: -0.1, offset_z: 0}
+    # - {id: 1, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, cor_x: 0.018, cor_y: 0.06, cor_z: -0.055, x: -0.3561, y: -1.7491, z: 0.617}  
+    # - {id: 2, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, ref: 0, offset_x: 0, offset_y: -0.15, offset_z: 0}
+    # - {id: 3, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, ref: 0, offset_x: 0, offset_y: -0.3, offset_z: 0}
+    # - {id: 4, type: "cube", size_x: 0.1, size_y: 0.1, size_z: 0.1, ref: 1, offset_x: 0, offset_y: -0.1, offset_z: 0}
 
 
 ## Global planner params
@@ -170,7 +170,7 @@ impedance_controller:
 shared_controller:
   M: 1
   C: 40
-  threshold_force: 3.8
+  threshold_force: 10
   local_len: 50
   replan_len: 380
   replan_len_num: 40
@@ -180,5 +180,5 @@ shared_controller:
   weight_r: 1       # 追踪机器人期望轨迹的误差权重为 weight_r*weight_tracking
   weight_h: 10
   weight_tracking: 1000
-  load_traj: true
+  load_traj: false
   deviation: 0.03   # the max tolerated deviation from robot desired traj

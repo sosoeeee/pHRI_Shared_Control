@@ -9,6 +9,7 @@ string file_path                 # a file containing an array of key points
 float32[] reach_error            # the minimum distances to each key points
 float32[] real_time_error        # the minimum distances to each key points at each sampling time
 float32[] human_force            # the interaction force during the task sampled in control_frequency
+float32[] deviation              # the deviation between actual position and the desired position of robot
 ---
 # Define a feedback message
 float32 distance_to_path         # the minimum among the distances from the current point to all points on the path.
