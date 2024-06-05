@@ -171,15 +171,15 @@ class PubGoalActionServer(BaseTaskServer):
         self.vis_curPos.point.z = self.currentStates[2]
         self.vis_pubPos.publish(self.vis_curPos)
 
-        if np.linalg.norm(self.humanForce) != 0:
-            self.q = self.getQuaternion([1, 0, 0], self.humanForce[:3].flatten())
-            # rospy.loginfo("quaternion: (%.2f, %.2f, %.2f, %.2f)" % (self.q [0], self.q [1], self.q [2], self.q [3]))
+        # if np.linalg.norm(self.humanForce) != 0:
+        #     self.q = self.getQuaternion([1, 0, 0], self.humanForce[:3].flatten())
+        #     # rospy.loginfo("quaternion: (%.2f, %.2f, %.2f, %.2f)" % (self.q [0], self.q [1], self.q [2], self.q [3]))
 
-        self.br.sendTransform((self.vis_curPos.point.x, self.vis_curPos.point.y, self.vis_curPos.point.z),
-                              (self.q[0], self.q[1], self.q[2], self.q[3]),
-                              rospy.Time.now(),
-                              "camera",
-                              self.world_frame)
+        # self.br.sendTransform((self.vis_curPos.point.x, self.vis_curPos.point.y, self.vis_curPos.point.z),
+        #                       (self.q[0], self.q[1], self.q[2], self.q[3]),
+        #                       rospy.Time.now(),
+        #                       "camera",
+        #                       self.world_frame)
 
         # planned trajectory (if controller have)
         self.vis_pubTraj.publish(self.vis_traj)
