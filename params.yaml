@@ -180,5 +180,5 @@ shared_controller:
   weight_r: 1       # 追踪机器人期望轨迹的误差权重为 weight_r*weight_tracking
   weight_h: 10
   weight_tracking: 1000
-  load_traj: false
+  load_traj: true
   deviation: 0.03   # the max tolerated deviation from robot desired traj
