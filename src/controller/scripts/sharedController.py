@@ -651,7 +651,7 @@ class SharedController(BaseController):
         u_h = np.dot(k_0, k_h.dot(wx))
 
         # limit max ||u_r|| and ||u_h||
-        limit = 8.5
+        limit = 20
         if np.linalg.norm(u_r) > limit:
             u_r = u_r / np.linalg.norm(u_r) * limit
         if np.linalg.norm(u_h) > limit:

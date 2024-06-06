@@ -6,13 +6,18 @@ import os
 sys.path.append(os.path.dirname(__file__))
 
 from MinimumLocalPlanner import MinimumLocalPlanner
+from uniformPlanner import UniformPlanner
 import rospy
 
 
 if __name__ == '__main__':
     try:
         rospy.init_node('local_planner', anonymous=False)
-        localPlanner = MinimumLocalPlanner()
+
+        # localPlanner = MinimumLocalPlanner()
+
+        localPlanner = UniformPlanner()
+
         localPlanner.run()
 
     except rospy.ROSInterruptException:
